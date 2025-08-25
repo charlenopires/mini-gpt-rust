@@ -25,6 +25,7 @@ rand = "0.8"                 # Números aleatórios
 indicatif = "0.17"           # Barras de progresso
 clap = { version = "4.0", features = ["derive"] } # CLI
 thiserror = "1.0"            # Tratamento de erros estruturados
+chrono = { version = "0.4", features = ["serde"] } # Timestamps para checkpoints
 
 # Otimização e treinamento
 candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)

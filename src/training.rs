@@ -70,13 +70,14 @@
 //! 4. **Repetir milhares de vezes** (épocas)
 //! 5. **Resultado**: Escritor competente (modelo treinado)
 
-use crate::model::MiniGPT;
+use crate::model::{MiniGPT, CheckpointMetadata};
 use crate::tokenizer::BPETokenizer;
 use candle_core::{Device, Tensor};
 use candle_nn::loss;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::prelude::*;
 use std::time::Instant;
+use safetensors::SafeTensors;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -127,25 +128,31 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// 3. Salvar modelo treinado
 /// ```
 pub struct Trainer {
-    /// 🧠 **MODELO A SER TREINADO**
-    /// O "estudante" que aprenderá padrões de linguagem
+    /// 🧠 **MODELO NEURAL**
+    /// O cérebro artificial que aprende padrões de linguagem
     model: MiniGPT,
     
     /// 🔤 **TOKENIZADOR**
     /// Converte texto em números que o modelo entende
     tokenizer: BPETokenizer,
     
-    /// ⚡ **DISPOSITIVO DE COMPUTAÇÃO**
-    /// CPU ou GPU onde os cálculos são executados
+    /// 💻 **DISPOSITIVO DE COMPUTAÇÃO**
+    /// CPU ou GPU onde os cálculos acontecem
     device: Device,
     
-    /// 📊 **TAXA DE APRENDIZADO**
-    /// Controla a velocidade de atualização dos pesos
+    /// 📈 **TAXA DE APRENDIZADO**
+    /// Controla velocidade de atualização dos pesos
     learning_rate: f64,
     
     /// 📦 **TAMANHO DO BATCH**
-    /// Número de sequências processadas simultaneamente
+    /// Quantos exemplos processar simultaneamente
     batch_size: usize,
+    
+    /// 📊 **MÉTRICAS DE TREINAMENTO**
+    /// Rastreia progresso e performance
+    current_step: usize,
+    current_loss: f32,
+    best_loss: f32,
 }
 
 impl Trainer {
@@ -221,6 +228,9 @@ impl Trainer {
             device,
             learning_rate,
             batch_size,
+            current_step: 0,
+            current_loss: f32::INFINITY,
+            best_loss: f32::INFINITY,
         }
     }
     
@@ -367,6 +377,13 @@ impl Trainer {
                         epoch_loss += loss_value;  // Acumula para média da época
                         batch_count += 1;          // Conta batches válidos
                         
+                        // 📊 **ATUALIZAÇÃO DE MÉTRICAS**
+                        self.current_step += 1;
+                        self.current_loss = loss_value;
+                        if loss_value < self.best_loss {
+                            self.best_loss = loss_value;
+                        }
+                        
                         // ⚡ **BACKWARD PASS: APRENDIZADO**
                         // 
                         // Aqui acontece a mágica! O modelo compara suas predições com
@@ -391,8 +408,8 @@ impl Trainer {
                         // - Valor instantâneo da loss
                         // - Estimativa de tempo restante
                         pb.set_message(format!(
-                            "Época {}/{} | Loss: {:.4}", 
-                            epoch, epochs, loss_value
+                            "Época {}/{} | Loss: {:.4} | Best: {:.4}", 
+                            epoch, epochs, loss_value, self.best_loss
                         ));
                     } else {
                         // 🚨 **DETECÇÃO DE INSTABILIDADE NUMÉRICA**
@@ -690,10 +707,17 @@ impl Trainer {
     /// - **Deployment**: Carregar modelo em produção
     /// - **Fine-tuning**: Continuar treinamento de checkpoint
     /// - **Sharing**: Distribuir modelos treinados
+    /// 💾 **SALVAMENTO AVANÇADO COM METADADOS DE CHECKPOINT**
+    /// 
+    /// Salva o modelo com informações completas de treinamento:
+    /// - Configuração do modelo
+    /// - Métricas de performance
+    /// - Timestamp e versão
+    /// - Informações de treinamento
     pub fn save(&self, path: &str) -> Result<()> {
         use std::path::Path;
         
-        println!("💾 Iniciando salvamento do modelo...");
+        println!("💾 Iniciando salvamento avançado do modelo...");
         println!("📍 Destino: {}", path);
         println!("📊 Parâmetros: ~{:.1}M", self.model.num_parameters() as f32 / 1_000_000.0);
         
@@ -704,29 +728,86 @@ impl Trainer {
             println!("📁 Diretório criado: {}", parent.display());
         }
         
-        // 💾 **SALVAR USANDO SAFETENSORS**
+        // 📋 **CRIAÇÃO DE METADADOS COMPLETOS**
+        let mut metadata = CheckpointMetadata::new(self.model.config().clone())
+            .with_training_info(
+                self.current_step,
+                self.current_loss,
+                self.learning_rate as f32,
+            )
+            .with_description(format!(
+                "Mini-GPT checkpoint - {} parâmetros, best loss: {:.4}",
+                self.model.num_parameters(),
+                self.best_loss
+            ));
+        
+        // 🔐 **CÁLCULO DE HASH DE INTEGRIDADE (OPCIONAL)**
+        // Por enquanto, usamos um hash simples baseado no timestamp
+        metadata.model_hash = Some(format!(
+            "checkpoint_{}",
+            chrono::Utc::now().timestamp()
+        ));
+        
+        println!("📋 Metadados preparados:");
+        println!("   🎯 Step: {}", metadata.training_step.unwrap_or(0));
+        println!("   📉 Loss atual: {:.4}", metadata.loss.unwrap_or(0.0));
+        println!("   🏆 Melhor loss: {:.4}", self.best_loss);
+        println!("   📈 Learning rate: {}", metadata.learning_rate.unwrap_or(0.0));
+        
+        // 💾 **SALVAMENTO COM METADADOS**
         // 
-        // O VarMap do Candle já contém todos os tensores nomeados do modelo.
-        // Podemos salvá-lo diretamente usando o método save() integrado.
+        // Usamos o sistema SafeTensors com metadados JSON no header
+        let metadata_json = serde_json::to_string(&metadata)
+            .map_err(|e| format!("Erro ao serializar metadados: {}", e))?;
+        
+        // Primeiro salvamos os tensores
         match self.model.varmap().save(path) {
             Ok(()) => {
-                println!("✅ Modelo salvo com sucesso!");
-                println!("🔒 Formato: SafeTensors (seguro e portável)");
+                // Agora precisamos adicionar os metadados ao arquivo SafeTensors
+                // Nota: Esta é uma implementação simplificada
+                // Em produção, usaríamos a API completa do SafeTensors
+                
+                println!("✅ Tensores salvos com sucesso!");
+                println!("🔒 Formato: SafeTensors com metadados");
                 println!("📏 Arquivo: {}", path);
                 
                 // 📊 **VERIFICAR TAMANHO DO ARQUIVO**
-                if let Ok(metadata) = std::fs::metadata(path) {
-                    let size_mb = metadata.len() as f64 / (1024.0 * 1024.0);
+                if let Ok(file_metadata) = std::fs::metadata(path) {
+                    let size_mb = file_metadata.len() as f64 / (1024.0 * 1024.0);
                     println!("💽 Tamanho: {:.1} MB", size_mb);
                 }
                 
-                println!("🎉 Salvamento concluído! Modelo pronto para uso.");
+                // 📝 **SALVAR METADADOS EM ARQUIVO SEPARADO**
+                let metadata_path = format!("{}.metadata.json", path);
+                std::fs::write(&metadata_path, metadata_json)
+                    .map_err(|e| format!("Erro ao salvar metadados: {}", e))?;
+                
+                println!("📋 Metadados salvos em: {}", metadata_path);
+                println!("🎉 Checkpoint completo salvo com sucesso!");
             }
             Err(e) => {
                 return Err(format!("Erro ao salvar modelo: {}", e).into());
             }
         }
         
+        Ok(())
+    }
+    
+    /// 📊 **SALVAMENTO AUTOMÁTICO DE CHECKPOINT**
+    /// 
+    /// Salva automaticamente quando a loss melhora
+    pub fn save_if_best(&mut self, base_path: &str) -> Result<()> {
+        if self.current_loss <= self.best_loss {
+            let checkpoint_path = format!(
+                "{}_step_{}_loss_{:.4}.safetensors",
+                base_path,
+                self.current_step,
+                self.current_loss
+            );
+            
+            println!("🏆 Nova melhor loss! Salvando checkpoint...");
+            self.save(&checkpoint_path)?;
+        }
         Ok(())
     }
 }

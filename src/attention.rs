@@ -325,6 +325,38 @@ impl SelfAttention {
         self.w_out.forward(&attention) // [B, T, C]
     }
     
+    /// 🔧 **EXTRAÇÃO DE TENSORES Q, K, V PARA KERNELS FUSIONADOS**
+    /// 
+    /// Extrai e processa os tensores Query, Key e Value sem aplicar
+    /// o mecanismo de atenção completo. Usado por kernels fusionados
+    /// para otimizações de performance.
+    /// 
+    /// ## 📊 **Pipeline de Processamento:**
+    /// 1. **Projeções Lineares**: X → Q, K, V
+    /// 2. **Divisão em Cabeças**: Reshape para multi-head
+    /// 3. **Retorno**: Tensores prontos para atenção fusionada
+    /// 
+    /// ## 🎯 **Formato de Saída:**
+    /// - Q: [batch_size, n_head, seq_len, head_dim]
+    /// - K: [batch_size, n_head, seq_len, head_dim]
+    /// - V: [batch_size, n_head, seq_len, head_dim]
+    pub fn get_qkv_tensors(&self, x: &Tensor) -> Result<(Tensor, Tensor, Tensor)> {
+        // 📏 **EXTRAÇÃO DAS DIMENSÕES**
+        let (batch_size, seq_len, _) = x.dims3()?;
+        
+        // 🎯 **PROJEÇÕES LINEARES Q, K, V**
+        let q = self.w_query.forward(x)?;  // [B, T, C]
+        let k = self.w_key.forward(x)?;    // [B, T, C]
+        let v = self.w_value.forward(x)?;  // [B, T, C]
+        
+        // 🎭 **DIVISÃO EM MÚLTIPLAS CABEÇAS**
+        let q = self.split_heads(&q, batch_size, seq_len)?; // [B, H, T, D]
+        let k = self.split_heads(&k, batch_size, seq_len)?; // [B, H, T, D]
+        let v = self.split_heads(&v, batch_size, seq_len)?; // [B, H, T, D]
+        
+        Ok((q, k, v))
+    }
+    
     /// 🔀 **SPLIT HEADS: DIVIDINDO EM MÚLTIPLAS PERSPECTIVAS**
     /// 
     /// Transforma um tensor "monolítico" em múltiplas cabeças de atenção,
@@ -566,5 +598,24 @@ impl MultiHeadAttention {
     ///   com informações contextuais enriquecidas
     pub fn forward(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<Tensor> {
         self.attention.forward(x, mask)
+    }
+    
+    /// 🔧 **EXTRAÇÃO DE TENSORES Q, K, V PARA KERNELS FUSIONADOS**
+    /// 
+    /// Extrai os tensores Query, Key e Value processados para uso
+    /// em kernels fusionados de atenção otimizados.
+    /// 
+    /// ## 📊 **Formato de Saída:**
+    /// - Q: [batch_size, n_head, seq_len, head_dim]
+    /// - K: [batch_size, n_head, seq_len, head_dim] 
+    /// - V: [batch_size, n_head, seq_len, head_dim]
+    /// 
+    /// ## ⚡ **Uso em Kernels Fusionados:**
+    /// ```rust
+    /// let (q, k, v) = attention.get_qkv_tensors(&input)?;
+    /// let output = fused_attention_kernel.forward(&q, &k, &v, mask, dropout)?;
+    /// ```
+    pub fn get_qkv_tensors(&self, x: &Tensor) -> Result<(Tensor, Tensor, Tensor)> {
+        self.attention.get_qkv_tensors(x)
     }
 }

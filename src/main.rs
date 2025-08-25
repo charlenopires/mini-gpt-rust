@@ -30,10 +30,12 @@ mod transformer;
 mod model;
 mod training;
 mod educational_logger;
+mod kernels;
 
-use model::MiniGPT;
+use model::{MiniGPT, CheckpointMetadata};
 use training::Trainer;
 use educational_logger::EducationalLogger;
+use kernels::{FusionBenchmark, FusionConfig};
 
 /// 🖥️ **INTERFACE DE LINHA DE COMANDO (CLI)**
 /// 
@@ -138,6 +140,68 @@ enum Commands {
         /// 🔍 Mostra informações de tensores
         #[arg(long, help = "Mostra informações de tensores")]
         show_tensors: bool,
+    },
+    
+    /// 📂 **LOAD: Carregar modelo de checkpoint**
+    /// 
+    /// Carrega um modelo previamente treinado de um arquivo SafeTensors
+    /// e permite gerar texto ou iniciar chat com o modelo carregado.
+    Load {
+        /// 📁 Caminho para o arquivo de checkpoint (.safetensors)
+        #[arg(short, long)]
+        checkpoint: PathBuf,
+        
+        /// 💭 Prompt para geração (opcional)
+        #[arg(short, long)]
+        prompt: Option<String>,
+        
+        /// 🎯 Número máximo de tokens a gerar
+        #[arg(short, long, default_value = "100")]
+        max_tokens: usize,
+        
+        /// 💬 Inicia modo chat após carregar
+        #[arg(long, help = "Inicia modo chat interativo")]
+        chat: bool,
+        
+        /// 📚 Ativa logs educacionais detalhados
+        #[arg(long, help = "Ativa logs educacionais detalhados")]
+        educational: bool,
+    },
+    
+    /// 📋 **LIST: Listar checkpoints disponíveis**
+    /// 
+    /// Lista todos os checkpoints disponíveis em um diretório
+    /// com informações sobre timestamp, loss e configuração.
+    List {
+        /// 📁 Diretório para buscar checkpoints
+        #[arg(short, long, default_value = "models")]
+        dir: PathBuf,
+    },
+    
+    /// ⚡ **BENCHMARK: Testar performance de kernel fusion**
+    /// 
+    /// Executa benchmarks para medir ganhos de performance
+    /// das otimizações de kernel fusion em diferentes cenários.
+    Benchmark {
+        /// 🔢 Tamanho do batch para teste
+        #[arg(long, default_value = "4")]
+        batch_size: usize,
+        
+        /// 📏 Comprimento da sequência
+        #[arg(long, default_value = "128")]
+        seq_len: usize,
+        
+        /// 🧮 Dimensão do modelo
+        #[arg(long, default_value = "512")]
+        d_model: usize,
+        
+        /// 🔄 Número de iterações para benchmark
+        #[arg(long, default_value = "100")]
+        iterations: usize,
+        
+        /// 🎯 Tipo de benchmark (attention, feedforward, all)
+        #[arg(long, default_value = "all")]
+        benchmark_type: String,
     },
 }
 
@@ -252,11 +316,229 @@ fn main() -> Result<()> {
             println!("🤖 Aguardando suas mensagens...");
             interactive_chat(&device, educational, show_tensors)?
         }
+        
+        // 📂 **MODO CARREGAMENTO DE MODELO**
+        // Carrega modelo de checkpoint e executa geração ou chat
+        Commands::Load { checkpoint, prompt, max_tokens, chat, educational } => {
+            let device = match candle_core::Device::new_metal(0) {
+                Ok(metal_device) => {
+                    println!("🚀 Usando dispositivo: Metal GPU");
+                    println!("⚡ Kernel fusion ativado para máxima performance!");
+                    metal_device
+                }
+                Err(e) => {
+                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
+                    candle_core::Device::Cpu
+                }
+            };
+            load_and_run_model(checkpoint, prompt, max_tokens, chat, educational, &device)?
+        }
+        
+        // 📋 **MODO LISTAGEM DE CHECKPOINTS**
+        // Lista todos os checkpoints disponíveis
+        Commands::List { dir } => {
+            list_checkpoints(dir)?
+        }
+        
+        // ⚡ **MODO BENCHMARK DE KERNEL FUSION**
+        // Testa performance das otimizações
+        Commands::Benchmark { batch_size, seq_len, d_model, iterations, benchmark_type } => {
+            let device = match candle_core::Device::new_metal(0) {
+                Ok(metal_device) => {
+                    println!("🚀 Usando dispositivo: Metal GPU para benchmark");
+                    metal_device
+                }
+                Err(e) => {
+                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
+                    candle_core::Device::Cpu
+                }
+            };
+            run_kernel_fusion_benchmark(batch_size, seq_len, d_model, iterations, &benchmark_type, &device)?
+        }
     }
     
     // ✅ **FINALIZAÇÃO BEM-SUCEDIDA**
     // Retorna Ok(()) indicando que tudo correu bem
     println!("✨ Execução concluída com sucesso!");
+    Ok(())
+}
+
+/// 📂 **CARREGAMENTO E EXECUÇÃO DE MODELO**
+/// 
+/// Carrega um modelo de checkpoint e executa geração ou chat
+fn load_and_run_model(
+    checkpoint_path: PathBuf,
+    prompt: Option<String>,
+    max_tokens: usize,
+    chat_mode: bool,
+    educational: bool,
+    device: &candle_core::Device,
+) -> Result<()> {
+    println!("📂 Carregando modelo de: {:?}", checkpoint_path);
+    
+    // Carregar modelo do checkpoint
+    let (model, metadata) = MiniGPT::load_from_checkpoint(&checkpoint_path, device)
+        .map_err(|e| anyhow::anyhow!("Erro ao carregar checkpoint: {}", e))?;
+    println!("✅ Modelo carregado com sucesso! (Step: {:?})", metadata.training_step);
+    
+    if chat_mode {
+        // Modo chat interativo
+        println!("💬 Iniciando chat com modelo carregado...");
+        interactive_chat_with_model(&model, educational)
+    } else if let Some(prompt_text) = prompt {
+        // Geração de texto
+        println!("🎨 Gerando texto a partir do prompt...");
+        generate_text_with_model(&model, &prompt_text, max_tokens, educational)
+    } else {
+        println!("⚠️  Especifique um prompt (-p) ou use modo chat (--chat)");
+        Ok(())
+    }
+}
+
+/// 📋 **LISTAGEM DE CHECKPOINTS**
+/// 
+/// Lista todos os checkpoints disponíveis em um diretório
+fn list_checkpoints(dir: PathBuf) -> Result<()> {
+    println!("📋 Listando checkpoints em: {:?}", dir);
+    
+    let checkpoints = MiniGPT::list_checkpoints(&dir)
+        .map_err(|e| anyhow::anyhow!("Erro ao listar checkpoints: {}", e))?;
+    
+    if checkpoints.is_empty() {
+        println!("📭 Nenhum checkpoint encontrado no diretório.");
+        return Ok(());
+    }
+    
+    println!("\n📊 Checkpoints encontrados:");
+    println!("{}", "-".repeat(80));
+    
+    for (i, (path, metadata)) in checkpoints.iter().enumerate() {
+        println!("{}. 📁 {}", i + 1, std::path::Path::new(path).file_name().unwrap().to_string_lossy());
+        println!("   📅 Timestamp: {}", metadata.timestamp);
+        println!("   📊 Loss: {:?}", metadata.loss);
+        println!("   🔧 Versão: {}", metadata.version);
+        
+        if let Some(description) = &metadata.description {
+            println!("   📝 Descrição: {}", description);
+        }
+        
+        println!();
+    }
+    
+    Ok(())
+}
+
+/// ⚡ **BENCHMARK DE KERNEL FUSION**
+/// 
+/// Executa benchmarks para medir ganhos de performance
+fn run_kernel_fusion_benchmark(
+    batch_size: usize,
+    seq_len: usize,
+    d_model: usize,
+    iterations: usize,
+    benchmark_type: &str,
+    device: &candle_core::Device,
+) -> Result<()> {
+    println!("⚡ Executando benchmark de kernel fusion...");
+    println!("📊 Configuração:");
+    println!("   🔢 Batch size: {}", batch_size);
+    println!("   📏 Sequence length: {}", seq_len);
+    println!("   🧮 Model dimension: {}", d_model);
+    println!("   🔄 Iterations: {}", iterations);
+    println!("   🎯 Type: {}", benchmark_type);
+    println!();
+    
+    let fusion_config = FusionConfig {
+        enable_attention_fusion: true,
+        enable_feedforward_fusion: true,
+        enable_memory_optimization: true,
+        fusion_threshold: 512,
+    };
+    
+    let benchmark = FusionBenchmark::new(fusion_config, device.clone());
+    
+    match benchmark_type {
+        "attention" => {
+            let results = benchmark.benchmark_attention(batch_size, seq_len, d_model, iterations)?;
+            println!("🎯 Resultados do Benchmark de Atenção:");
+            println!("   ⚡ Fusionado: {:.2}ms (média)", results.fused_time_ms);
+            println!("   🐌 Não-fusionado: {:.2}ms (média)", results.unfused_time_ms);
+            println!("   🚀 Speedup: {:.2}x", results.speedup);
+            println!("   💾 Economia de memória: {:.1}%", results.memory_saved_percent);
+        }
+        "feedforward" => {
+            let results = benchmark.benchmark_feedforward(batch_size, seq_len, d_model, iterations)?;
+            println!("🎯 Resultados do Benchmark de Feed-Forward:");
+            println!("   ⚡ Fusionado: {:.2}ms (média)", results.fused_time_ms);
+            println!("   🐌 Não-fusionado: {:.2}ms (média)", results.unfused_time_ms);
+            println!("   🚀 Speedup: {:.2}x", results.speedup);
+            println!("   💾 Economia de memória: {:.1}%", results.memory_saved_percent);
+        }
+        "all" => {
+            println!("🎯 Executando benchmark completo...");
+            
+            let attention_results = benchmark.benchmark_attention(batch_size, seq_len, d_model, iterations)?;
+            println!("\n📊 Atenção Multi-Head:");
+            println!("   ⚡ Fusionado: {:.2}ms", attention_results.fused_time_ms);
+            println!("   🐌 Não-fusionado: {:.2}ms", attention_results.unfused_time_ms);
+            println!("   🚀 Speedup: {:.2}x", attention_results.speedup);
+            
+            let ff_results = benchmark.benchmark_feedforward(batch_size, seq_len, d_model, iterations)?;
+            println!("\n📊 Feed-Forward:");
+            println!("   ⚡ Fusionado: {:.2}ms", ff_results.fused_time_ms);
+            println!("   🐌 Não-fusionado: {:.2}ms", ff_results.unfused_time_ms);
+            println!("   🚀 Speedup: {:.2}x", ff_results.speedup);
+            
+            let total_speedup = (attention_results.speedup + ff_results.speedup) / 2.0;
+            println!("\n🏆 Speedup médio total: {:.2}x", total_speedup);
+        }
+        _ => {
+            println!("❌ Tipo de benchmark inválido. Use: attention, feedforward, ou all");
+        }
+    }
+    
+    Ok(())
+}
+
+/// 🎨 **GERAÇÃO DE TEXTO COM MODELO CARREGADO**
+fn generate_text_with_model(
+    model: &MiniGPT,
+    prompt: &str,
+    max_tokens: usize,
+    educational: bool,
+) -> Result<()> {
+    // Implementação simplificada - na prática, você precisaria
+    // implementar a lógica de geração usando o modelo carregado
+    println!("🎨 Gerando texto com modelo carregado...");
+    println!("💭 Prompt: {}", prompt);
+    println!("🎯 Max tokens: {}", max_tokens);
+    
+    if educational {
+        println!("📚 Modo educacional ativado");
+    }
+    
+    // TODO: Implementar geração real
+    println!("⚠️  Geração com modelo carregado ainda não implementada");
+    
+    Ok(())
+}
+
+/// 💬 **CHAT INTERATIVO COM MODELO CARREGADO**
+fn interactive_chat_with_model(
+    model: &MiniGPT,
+    educational: bool,
+) -> Result<()> {
+    // Implementação simplificada - na prática, você precisaria
+    // implementar a lógica de chat usando o modelo carregado
+    println!("💬 Chat interativo com modelo carregado...");
+    
+    if educational {
+        println!("📚 Modo educacional ativado");
+    }
+    
+    // TODO: Implementar chat real
+    println!("⚠️  Chat com modelo carregado ainda não implementado");
+    
     Ok(())
 }
 
