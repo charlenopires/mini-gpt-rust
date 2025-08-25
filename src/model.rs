@@ -1,48 +1,236 @@
-//! # Mini-GPT: Arquitetura Transformer Completa
-//! 
-//! ## 🧠 O que é um Modelo Transformer?
-//! 
-//! O Transformer é uma arquitetura revolucionária de deep learning que mudou
-//! completamente o campo de processamento de linguagem natural. Diferente de
-//! redes recorrentes (RNNs), o Transformer processa sequências inteiras em
-//! paralelo usando o mecanismo de "atenção".
-//! 
-//! ### 🏗️ Componentes Principais:
-//! 
-//! 1. **Token Embeddings** 📚
-//!    - Converte palavras/tokens em vetores densos de números reais
-//!    - Cada palavra vira um ponto no espaço multidimensional
-//!    - Palavras similares ficam próximas no espaço vetorial
-//! 
-//! 2. **Position Embeddings** 📍
-//!    - Adiciona informação sobre a posição da palavra na sequência
-//!    - Crucial porque Transformers não têm noção natural de ordem
-//!    - Permite distinguir "João ama Maria" de "Maria ama João"
-//! 
-//! 3. **Multi-Head Attention** 👁️
-//!    - Permite ao modelo "focar" em diferentes partes da entrada
-//!    - Múltiplas "cabeças" capturam diferentes tipos de relações
-//!    - Como ter vários "focos de atenção" simultâneos
-//! 
-//! 4. **Feed-Forward Networks** ⚡
-//!    - Redes neurais que processam cada posição independentemente
-//!    - Aplicam transformações não-lineares aos dados
-//!    - Aumentam a capacidade expressiva do modelo
-//! 
-//! 5. **Layer Normalization** ⚖️
-//!    - Estabiliza o treinamento normalizando ativações
-//!    - Acelera convergência e melhora performance
-//! 
-//! ### 🔄 Processo Autoregressivo:
-//! 
-//! O modelo GPT é "autoregressivo" - gera texto token por token:
-//! 1. Recebe sequência de tokens como entrada
-//! 2. Prediz probabilidades para o próximo token
-//! 3. Amostra um token baseado nessas probabilidades
-//! 4. Adiciona o token à sequência e repete
-//! 
-//! Este é nosso "cérebro artificial" completo que implementa
-//! toda essa arquitetura sofisticada em Rust!
+//! # 🧠 Mini-GPT: Construindo um Large Language Model do Zero
+//!
+//! ## 📚 GUIA EDUCACIONAL COMPLETO: Como Construir um LLM
+//!
+//! Este arquivo implementa um **Large Language Model (LLM)** completo baseado na
+//! arquitetura **Transformer GPT**. Vamos explicar cada componente em detalhes
+//! para que você entenda exatamente como um "cérebro artificial" funciona!
+//!
+//! ## 🎯 O QUE É UM LARGE LANGUAGE MODEL?
+//!
+//! Um LLM é um modelo de IA que:
+//! - **Entende** texto em linguagem natural
+//! - **Gera** texto coerente e contextualmente relevante
+//! - **Aprende** padrões da linguagem a partir de grandes volumes de texto
+//! - **Generaliza** conhecimento para tarefas não vistas durante o treinamento
+//!
+//! ### 🧮 MATEMÁTICA POR TRÁS DOS LLMs:
+//!
+//! **Objetivo**: Dado uma sequência de tokens [t₁, t₂, ..., tₙ], predizer tₙ₊₁
+//!
+//! **Função de Probabilidade**:
+//! ```
+//! P(tₙ₊₁ | t₁, t₂, ..., tₙ) = softmax(f(t₁, t₂, ..., tₙ))
+//! ```
+//!
+//! Onde `f()` é nossa rede neural Transformer que mapeia sequências para distribuições
+//! de probabilidade sobre o vocabulário.
+//!
+//! ## 🏗️ ARQUITETURA TRANSFORMER: OS BLOCOS FUNDAMENTAIS
+//!
+//! ### 1. 📚 **TOKEN EMBEDDINGS** - Convertendo Palavras em Números
+//!
+//! **Problema**: Computadores não entendem palavras, apenas números.
+//! **Solução**: Mapear cada palavra para um vetor de números reais.
+//!
+//! ```
+//! "gato" → [0.2, -0.1, 0.8, 0.3, ...] (vetor de 512 dimensões)
+//! "cão"  → [0.1, -0.2, 0.7, 0.4, ...] (vetor similar, pois são animais)
+//! ```
+//!
+//! **Por que funciona?**
+//! - Palavras similares têm vetores similares
+//! - O modelo aprende essas representações durante o treinamento
+//! - Permite operações matemáticas com conceitos linguísticos
+//!
+//! ### 2. 📍 **POSITION EMBEDDINGS** - Ensinando Ordem ao Modelo
+//!
+//! **Problema**: Transformers processam tokens em paralelo, perdendo noção de ordem.
+//! **Solução**: Adicionar informação posicional a cada token.
+//!
+//! ```
+//! "João ama Maria" vs "Maria ama João"
+//! Posição 0: João/Maria + embedding_pos[0]
+//! Posição 1: ama + embedding_pos[1]
+//! Posição 2: Maria/João + embedding_pos[2]
+//! ```
+//!
+//! ### 3. 🎯 **MULTI-HEAD ATTENTION** - O Coração do Transformer
+//!
+//! **Conceito**: Cada palavra "presta atenção" a todas as outras palavras.
+//!
+//! **Matemática da Atenção**:
+//! ```
+//! Q = X * W_q  (Query: "o que estou procurando?")
+//! K = X * W_k  (Key: "o que eu ofereço?")
+//! V = X * W_v  (Value: "qual informação eu carrego?")
+//!
+//! Attention(Q,K,V) = softmax(QK^T / √d_k) * V
+//! ```
+//!
+//! **Por que múltiplas cabeças?**
+//! - Cada cabeça captura um tipo diferente de relação
+//! - Cabeça 1: relações sintáticas (sujeito-verbo)
+//! - Cabeça 2: relações semânticas (causa-efeito)
+//! - Cabeça 3: relações de longa distância
+//!
+//! ### 4. ⚡ **FEED-FORWARD NETWORKS** - Processamento Não-Linear
+//!
+//! **Função**: Aplicar transformações complexas a cada posição.
+//!
+//! **Arquitetura**:
+//! ```
+//! FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+//! ```
+//!
+//! **Fluxo de Processamento**:
+//! ```
+//! Input [B, T, C] → Linear₁ [B, T, 4C] → GELU → Linear₂ [B, T, C]
+//! ```
+//!
+//! **Por que 4x expansão?**
+//! - Permite ao modelo "pensar" em um espaço maior
+//! - Captura interações complexas entre features
+//! - Compensa a linearidade da atenção
+//!
+//! ### 5. 🔄 **RESIDUAL CONNECTIONS** - Facilitando o Aprendizado
+//!
+//! **Problema**: Redes profundas sofrem com gradientes que desaparecem.
+//! **Solução**: Adicionar conexões diretas entre camadas.
+//!
+//! ```
+//! output = input + transformation(input)
+//! ```
+//!
+//! **Benefícios**:
+//! - Gradientes fluem diretamente para camadas anteriores
+//! - Permite treinar redes muito profundas (100+ camadas)
+//! - Modelo aprende refinamentos incrementais
+//!
+//! ### 6. ⚖️ **LAYER NORMALIZATION** - Estabilizando o Treinamento
+//!
+//! **Função**: Normalizar ativações para ter média 0 e variância 1.
+//!
+//! **Fórmula**:
+//! ```
+//! LayerNorm(x) = γ * (x - μ) / σ + β
+//! ```
+//!
+//! **Onde**:
+//! - μ: média das ativações
+//! - σ: desvio padrão das ativações  
+//! - γ, β: parâmetros aprendidos
+//!
+//! ## 🎓 PROCESSO DE TREINAMENTO: COMO O MODELO APRENDE
+//!
+//! ### 📖 **1. TOKENIZAÇÃO**
+//! ```
+//! "O gato subiu" → [15, 234, 1891] (IDs dos tokens)
+//! ```
+//!
+//! ### 🔢 **2. EMBEDDING**
+//! ```
+//! [15, 234, 1891] → [[0.1, 0.2, ...], [0.3, 0.1, ...], [0.8, 0.4, ...]]
+//! ```
+//!
+//! ### 🧠 **3. PROCESSAMENTO TRANSFORMER**
+//! ```
+//! Para cada bloco:
+//!   x = x + MultiHeadAttention(LayerNorm(x))
+//!   x = x + FeedForward(LayerNorm(x))
+//! ```
+//!
+//! ### 🎯 **4. PREDIÇÃO**
+//! ```
+//! hidden_states → logits → softmax → probabilidades
+//! ```
+//!
+//! ### 📊 **5. LOSS CALCULATION**
+//! ```
+//! loss = CrossEntropy(predicted_probs, actual_next_token)
+//! ```
+//!
+//! ### ⬅️ **6. BACKPROPAGATION**
+//! ```
+//! Ajustar pesos para minimizar loss usando gradientes
+//! ```
+//!
+//! ## 🚀 OTIMIZAÇÕES DE PERFORMANCE
+//!
+//! ### 🔥 **KERNEL FUSION**
+//! - Combina múltiplas operações em uma única passada
+//! - Reduz overhead de memória e comunicação
+//! - Melhora utilização de cache
+//!
+//! ### 🧠 **MEMORY MANAGEMENT**
+//! - Pool de memória reutilizável
+//! - Reduz fragmentação
+//! - Otimiza alocações/desalocações
+//!
+//! ### ⚡ **MIXED PRECISION**
+//! - Usa FP16 para forward pass (2x mais rápido)
+//! - Mantém FP32 para gradientes (precisão)
+//! - Reduz uso de memória pela metade
+//!
+//! ```
+//! FFN(x) = max(0, x * W₁ + b₁) * W₂ + b₂
+//! ```
+//!
+//! **Intuição**: Como neurônios no cérebro, cada FFN detecta padrões específicos
+//! e os transforma em representações mais úteis.
+//!
+//! ### 5. ⚖️ **LAYER NORMALIZATION** - Estabilizando o Aprendizado
+//!
+//! **Problema**: Gradientes podem explodir ou desaparecer em redes profundas.
+//! **Solução**: Normalizar ativações para ter média 0 e variância 1.
+//!
+//! ```
+//! LayerNorm(x) = γ * (x - μ) / σ + β
+//! ```
+//!
+//! ## 🔄 PROCESSO AUTOREGRESSIVO: Como o Modelo Gera Texto
+//!
+//! **Passo a Passo da Geração**:
+//!
+//! 1. **Entrada**: "O gato subiu na"
+//! 2. **Tokenização**: [15, 234, 567, 89] (IDs dos tokens)
+//! 3. **Embeddings**: Converter IDs em vetores densos
+//! 4. **Transformer**: Processar através de N camadas
+//! 5. **Projeção**: Mapear para probabilidades sobre vocabulário
+//! 6. **Sampling**: Escolher próximo token baseado nas probabilidades
+//! 7. **Repetir**: Adicionar token escolhido e continuar
+//!
+//! **Resultado**: "O gato subiu na árvore" (token "árvore" foi predito)
+//!
+//! ## 🎓 PROCESSO DE TREINAMENTO: Como o Modelo Aprende
+//!
+//! ### Forward Pass (Propagação Direta):
+//! ```
+//! Texto → Tokens → Embeddings → Transformer → Logits → Loss
+//! ```
+//!
+//! ### Backward Pass (Retropropagação):
+//! ```
+//! Loss → ∂Loss/∂W → Gradientes → Atualização dos Pesos
+//! ```
+//!
+//! ### Função de Loss (Cross-Entropy):
+//! ```
+//! Loss = -Σ log(P(token_correto | contexto))
+//! ```
+//!
+//! **Objetivo**: Maximizar a probabilidade do token correto dado o contexto.
+//!
+//! ## 💡 POR QUE ESTA ARQUITETURA FUNCIONA?
+//!
+//! 1. **Paralelização**: Processa toda sequência simultaneamente
+//! 2. **Atenção**: Captura dependências de longa distância
+//! 3. **Profundidade**: Múltiplas camadas permitem abstrações complexas
+//! 4. **Escala**: Funciona melhor com mais dados e parâmetros
+//! 5. **Generalização**: Aprende padrões transferíveis
+//!
+//! Este arquivo implementa todos esses conceitos em Rust puro,
+//! criando um LLM funcional e educativo!
 
 use candle_core::{DType, Device, Tensor, IndexOp, Var};
 use candle_nn::{embedding, layer_norm, linear, Embedding, LayerNorm, Linear, Module, VarBuilder, VarMap};
@@ -50,7 +238,7 @@ use crate::transformer::TransformerBlock;
 use crate::tokenizer::BPETokenizer;
 use crate::kernels::{FusionConfig, FusedMemoryManager};
 use safetensors::SafeTensors;
-use std::collections::HashMap;
+// use std::collections::HashMap; // Removido - não utilizado
 use std::fs;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
@@ -104,42 +292,54 @@ impl CheckpointMetadata {
     }
 }
 
-/// 🎛️ **CONFIGURAÇÃO DO MODELO GPT**
-/// 
-/// Esta estrutura define todos os hiperparâmetros que controlam
-/// a arquitetura e comportamento do modelo. É como o "DNA" do modelo!
-/// 
-/// ## 📊 Parâmetros Explicados:
-/// 
-/// ### `vocab_size` 📚
-/// - Quantas palavras/tokens diferentes o modelo conhece
-/// - Determina o tamanho da camada de saída
-/// - Exemplo: 50.000 = modelo conhece 50 mil palavras diferentes
-/// 
-/// ### `n_embd` 🧮
-/// - Dimensão dos vetores de embedding (largura do modelo)
-/// - Maior = mais capacidade, mas mais lento
-/// - GPT-3: 12.288, nosso modelo educacional: 128
-/// 
-/// ### `n_head` 👁️
-/// - Número de "cabeças" de atenção paralelas
-/// - Cada cabeça foca em aspectos diferentes do texto
-/// - Deve dividir `n_embd` igualmente
-/// 
-/// ### `n_layer` 🏗️
-/// - Profundidade do modelo (quantas camadas Transformer)
-/// - Mais camadas = mais capacidade de abstração
-/// - GPT-3: 96 camadas, nosso: 4 camadas
-/// 
-/// ### `block_size` 📏
-/// - Tamanho máximo da sequência de entrada (contexto)
-/// - Quantas palavras o modelo "lembra" de uma vez
-/// - Maior contexto = melhor compreensão, mas mais memória
-/// 
-/// ### `dropout` 🎲
-/// - Taxa de regularização para evitar overfitting
-/// - 0.1 = desliga 10% dos neurônios aleatoriamente
-/// - Usado apenas durante treinamento, não na inferência
+/// 🔧 **CONFIGURAÇÃO DO MODELO GPT** - Os "Genes" do Nosso LLM
+///
+/// Esta estrutura define a "arquitetura genética" do nosso modelo.
+/// Cada parâmetro controla um aspecto fundamental do comportamento do LLM.
+///
+/// ## 📊 **HIPERPARÂMETROS EXPLICADOS EM DETALHES**:
+///
+/// ### `vocab_size` 📚 - Tamanho do Vocabulário
+/// - **O que é**: Quantas palavras/tokens diferentes o modelo conhece
+/// - **Exemplo**: 50,000 = modelo conhece 50 mil palavras únicas
+/// - **Impacto**: Maior vocabulário = mais expressivo, mas mais memória
+/// - **Analogia**: Como o "dicionário" que o modelo tem acesso
+/// - **Matemática**: Determina dimensão da matriz de saída (vocab_size × n_embd)
+///
+/// ### `n_embd` 🧮 - Dimensão dos Embeddings
+/// - **O que é**: Tamanho dos vetores que representam cada palavra
+/// - **Exemplo**: 512 = cada palavra vira um vetor de 512 números
+/// - **Impacto**: Maior dimensão = mais capacidade expressiva
+/// - **Analogia**: "Resolução" da representação das palavras
+/// - **Trade-off**: Mais dimensões = mais parâmetros = mais memória/computação
+///
+/// ### `n_head` 👁️ - Número de Cabeças de Atenção
+/// - **O que é**: Quantos "focos de atenção" paralelos o modelo tem
+/// - **Exemplo**: 8 cabeças = 8 tipos diferentes de relações capturadas
+/// - **Impacto**: Mais cabeças = mais tipos de padrões detectados
+/// - **Analogia**: Como ter múltiplos "olhos" vendo aspectos diferentes
+/// - **Restrição**: n_embd deve ser divisível por n_head
+///
+/// ### `n_layer` 🏗️ - Número de Camadas Transformer
+/// - **O que é**: Profundidade da rede neural
+/// - **Exemplo**: 12 camadas = 12 níveis de processamento
+/// - **Impacto**: Mais camadas = abstrações mais complexas
+/// - **Analogia**: Como "níveis de pensamento" - superficial → profundo
+/// - **Comparação**: GPT-3 tem 96 camadas, nosso modelo educacional tem 4
+///
+/// ### `block_size` 📏 - Tamanho Máximo da Sequência
+/// - **O que é**: Quantos tokens o modelo pode processar de uma vez
+/// - **Exemplo**: 1024 = pode "lembrar" de até 1024 palavras anteriores
+/// - **Impacto**: Maior contexto = melhor compreensão, mas mais memória
+/// - **Analogia**: "Memória de trabalho" do modelo
+/// - **Complexidade**: Atenção é O(n²) em relação ao block_size
+///
+/// ### `dropout` 🎲 - Taxa de Regularização
+/// - **O que é**: Probabilidade de "desligar" neurônios durante treinamento
+/// - **Exemplo**: 0.1 = 10% dos neurônios são ignorados aleatoriamente
+/// - **Impacto**: Previne overfitting, melhora generalização
+/// - **Analogia**: Como "treinar com uma mão amarrada" para ficar mais forte
+/// - **Importante**: Usado apenas no treinamento, desabilitado na inferência
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GPTConfig {
     pub vocab_size: usize,   // 📚 Tamanho do vocabulário (quantas palavras o modelo conhece)
@@ -150,67 +350,86 @@ pub struct GPTConfig {
     pub dropout: f32,        // 🎲 Taxa de dropout para regularização
 }
 
-/// 🤖 **MINI-GPT: MODELO TRANSFORMER COMPLETO**
-/// 
-/// Esta é a implementação principal do nosso modelo de linguagem.
-/// Funciona como um "cérebro artificial" que aprendeu padrões de texto
-/// e pode gerar novas sequências baseadas no que aprendeu.
-/// 
-/// ## 🧩 Arquitetura Detalhada:
-/// 
+/// 🤖 **MINI-GPT: MODELO TRANSFORMER COMPLETO** - O "Cérebro" do LLM
+///
+/// Esta é a implementação principal do nosso Large Language Model.
+/// Funciona como um "cérebro artificial" que aprendeu padrões complexos
+/// da linguagem humana através de treinamento em vastos corpora de texto.
+///
+/// ## 🧠 **ARQUITETURA DETALHADA DO MODELO**:
+///
+/// ### 📊 **FLUXO DE DADOS COMPLETO**:
 /// ```text
-/// Input Tokens → Token Embeddings → Position Embeddings
-///                      ↓
-///              [Transformer Block 1]
-///                      ↓
-///              [Transformer Block 2]
-///                      ↓
-///                    ...
-///                      ↓
-///              [Transformer Block N]
-///                      ↓
-///               Layer Normalization
-///                      ↓
-///              Linear Projection (lm_head)
-///                      ↓
-///              Output Probabilities
+/// Texto: "O gato subiu na árvore"
+///   ↓ Tokenização
+/// Tokens: [15, 234, 567, 89, 1024]
+///   ↓ Token Embeddings (vocab_size → n_embd)
+/// Vetores: [[0.1, 0.2, ...], [0.3, 0.1, ...], ...]
+///   ↓ Position Embeddings (block_size → n_embd)
+/// Vetores + Posição: [[0.1+pos₀, 0.2+pos₀, ...], ...]
+///   ↓ Transformer Blocks (N camadas)
+/// [Atenção Multi-Cabeça + Feed-Forward + LayerNorm] × N
+/// Representações Contextuais: [[ctx₁], [ctx₂], ...]
+///   ↓ Layer Normalization Final
+/// Representações Normalizadas
+///   ↓ Language Model Head (n_embd → vocab_size)
+/// Logits: [score("O"), score("gato"), ..., score("árvore")]
+///   ↓ Softmax
+/// Probabilidades: [0.001, 0.002, ..., 0.85]
 /// ```
-/// 
-/// ### 🔄 Processo Autoregressivo:
-/// O modelo é "autoregressivo" - gera texto token por token:
-/// 1. 📝 Recebe sequência de tokens como entrada
-/// 2. 🧮 Calcula probabilidades para o próximo token
-/// 3. 🎲 Amostra um token baseado nessas probabilidades
-/// 4. ➕ Adiciona o token à sequência e repete
-/// 
-/// É como completar uma frase palavra por palavra, sempre
-/// considerando todo o contexto anterior!
+///
+/// ### 🔄 **PROCESSO AUTOREGRESSIVO**:
+///
+/// O modelo gera texto de forma **autoregressiva**:
+/// 1. **Entrada**: "O gato subiu na"
+/// 2. **Predição**: P(próximo_token | "O gato subiu na")
+/// 3. **Sampling**: Escolhe "árvore" baseado nas probabilidades
+/// 4. **Iteração**: "O gato subiu na árvore" → prediz próximo token
+/// 5. **Repetição**: Continua até token de fim ou limite atingido
+///
+/// ### 🎯 **MATEMÁTICA FUNDAMENTAL**:
+///
+/// **Objetivo do Modelo**:
+/// ```
+/// P(w₁, w₂, ..., wₙ) = ∏ᵢ P(wᵢ | w₁, w₂, ..., wᵢ₋₁)
+/// ```
+///
+/// **Função de Loss (Cross-Entropy)**:
+/// ```
+/// L = -1/N ∑ᵢ log P(wᵢ | contexto)
+/// ```
+///
+/// Onde cada componente abaixo contribui para essa capacidade preditiva:
 pub struct MiniGPT {
-    config: GPTConfig,              // 🎛️ Configuração do modelo
+    config: GPTConfig,              // 🎛️ Configuração do modelo (hiperparâmetros)
     
-    // 📚 **CAMADAS DE EMBEDDING**
-    // Convertem tokens discretos em representações vetoriais contínuas
-    token_embedding: Embedding,     // 🔤 Converte IDs de tokens em vetores densos
-    position_embedding: Embedding,  // 📍 Adiciona informação posicional aos tokens
+    // 📚 **CAMADAS DE EMBEDDING** - Convertendo Símbolos em Números
+    // Estas camadas transformam tokens discretos em representações vetoriais contínuas
+    // que o modelo pode processar matematicamente
+    token_embedding: Embedding,     // 🔤 Matriz (vocab_size × n_embd): converte IDs → vetores
+    position_embedding: Embedding,  // 📍 Matriz (block_size × n_embd): adiciona contexto posicional
     
-    // 🏗️ **BLOCOS TRANSFORMER EMPILHADOS**
-    // Cada bloco contém atenção multi-cabeça + feed-forward + normalizações
-    blocks: Vec<TransformerBlock>,  // 🧠 Stack de camadas que processam sequências
+    // 🏗️ **BLOCOS TRANSFORMER EMPILHADOS** - O "Processador" do Modelo
+    // Cada bloco contém: Multi-Head Attention + Feed-Forward + Layer Normalizations
+    // Juntos, eles capturam padrões complexos e dependências de longa distância
+    blocks: Vec<TransformerBlock>,  // 🧠 Stack de N camadas que refinam representações
     
-    // 🎯 **CAMADAS DE SAÍDA**
-    ln_final: LayerNorm,           // ⚖️ Normalização final para estabilidade
-    lm_head: Linear,               // 🎪 Projeta embeddings para vocabulário
+    // 🎯 **CAMADAS DE SAÍDA** - Convertendo Representações em Predições
+    ln_final: LayerNorm,           // ⚖️ Normalização final (estabiliza gradientes)
+    lm_head: Linear,               // 🎪 Matriz (n_embd × vocab_size): projeta para vocabulário
     
-    device: Device,                // 💻 Dispositivo de computação (CPU/GPU)
+    device: Device,                // 💻 Dispositivo de computação (CPU/GPU/TPU)
     
-    // 💾 **VARMAP PARA SALVAMENTO**
-    // Contém todos os pesos treináveis do modelo para serialização
-    varmap: VarMap,                // 🗂️ Mapa de variáveis para salvamento/carregamento
+    // 💾 **SISTEMA DE PERSISTÊNCIA** - Salvando o "Cérebro" Treinado
+    // O VarMap contém todos os pesos treináveis do modelo para serialização
+    // É como um "mapa" de todas as conexões neurais aprendidas
+    varmap: VarMap,                // 🗂️ Registro de todas as variáveis treináveis
     
-    // ⚡ **OTIMIZAÇÕES DE KERNEL FUSION**
-    // Configurações e gerenciador de memória para otimizações de baixo nível
-    fusion_config: FusionConfig,   // 🔧 Configuração das otimizações de fusion
-    memory_manager: Option<FusedMemoryManager>, // 🧠 Gerenciador de memória otimizado
+    // ⚡ **OTIMIZAÇÕES DE KERNEL FUSION** - Acelerando Computações
+    // Sistemas avançados que combinam operações para máxima eficiência
+    // Reduzem overhead de memória e aceleram forward/backward passes
+    fusion_config: FusionConfig,   // 🔧 Configuração de otimizações (quais kernels usar)
+    memory_manager: Option<FusedMemoryManager>, // 🧠 Pool inteligente de memória reutilizável
 }
 
 impl MiniGPT {
@@ -694,6 +913,47 @@ impl MiniGPT {
     /// ### 📤 Retorno:
     /// - `logits`: Probabilidades para próximo token em cada posição
     /// - `loss`: Função de perda (apenas se targets fornecidos)
+    /// 🚀 **FORWARD PASS: O CORAÇÃO DO MODELO**
+    /// 
+    /// Este método implementa o "pensamento" do modelo - como ele processa
+    /// uma sequência de tokens e produz predições para o próximo token.
+    /// 
+    /// ## 🔄 **Fluxo de Processamento:**
+    /// 
+    /// ### 📥 **Entrada:**
+    /// - `idx`: Tensor [batch_size, seq_len] com IDs dos tokens
+    /// - `targets`: Opcional - tokens corretos para calcular loss (treinamento)
+    /// 
+    /// ### 🧠 **Processamento:**
+    /// 1. **Token Embeddings**: IDs → vetores densos
+    /// 2. **Position Embeddings**: adiciona informação posicional
+    /// 3. **Transformer Blocks**: refinamento através de atenção e feed-forward
+    /// 4. **Layer Norm Final**: normalização das representações
+    /// 5. **Language Head**: projeção para vocabulário
+    /// 
+    /// ### 📤 **Saída:**
+    /// - `logits`: [batch_size, seq_len, vocab_size] - "confiança" para cada token
+    /// - `loss`: Opcional - erro entre predição e target (se fornecido)
+    /// 
+    /// ## 🎯 **Exemplo Prático:**
+    /// ```text
+    /// Entrada: "O gato subiu no"
+    /// Tokens:  [15, 234, 891, 45]  (IDs dos tokens)
+    /// 
+    /// Forward Pass:
+    /// [15, 234, 891, 45] → Embeddings → Attention → FFN → ... → Logits
+    /// 
+    /// Logits finais: [0.1, 2.3, 0.8, 4.1, ...]  (para cada palavra do vocabulário)
+    /// Predição: token com maior logit = "telhado" (ID 4)
+    /// 
+    /// Resultado: "O gato subiu no telhado"
+    /// ```
+    /// 
+    /// ## ⚡ **Otimizações Implementadas:**
+    /// - Kernel fusion para operações de atenção
+    /// - Memory pooling para reduzir alocações
+    /// - Verificações de integridade numérica
+    /// - Suporte a diferentes dispositivos (CPU/GPU)
     pub fn forward(&self, idx: &Tensor, targets: Option<&Tensor>) -> Result<(Tensor, Option<Tensor>)> {
         // 📏 **EXTRAÇÃO DAS DIMENSÕES**
         // batch_size: quantas sequências processamos simultaneamente
@@ -1057,6 +1317,59 @@ impl MiniGPT {
     /// - `max_tokens`: Máximo de tokens novos a gerar
     /// - `tokenizer`: Conversor texto ↔ números
     /// - `temperature`: Controle de criatividade (0.0 = determinístico)
+    /// 🎭 **GERAÇÃO DE TEXTO AUTOREGRESSIVA**
+    /// 
+    /// Este é o coração da geração de texto em LLMs! O método implementa
+    /// o processo autoregressivo onde cada token gerado alimenta a próxima predição.
+    /// 
+    /// ## 🔄 Processo Autoregressivo:
+    /// 
+    /// ```text
+    /// Prompt: "O gato subiu"
+    /// 
+    /// Passo 1: [O, gato, subiu] → Modelo → P(próximo_token)
+    ///          Escolhe: "na" (probabilidade 0.7)
+    /// 
+    /// Passo 2: [O, gato, subiu, na] → Modelo → P(próximo_token)
+    ///          Escolhe: "árvore" (probabilidade 0.5)
+    /// 
+    /// Passo 3: [O, gato, subiu, na, árvore] → Modelo → P(próximo_token)
+    ///          Escolhe: "." (probabilidade 0.8)
+    /// 
+    /// Resultado: "O gato subiu na árvore."
+    /// ```
+    /// 
+    /// ## 🌡️ Controle de Temperatura:
+    /// 
+    /// A temperatura controla o quão "criativo" vs "conservador" o modelo será:
+    /// 
+    /// - **Temperatura = 0.1**: Muito conservador, sempre escolhe o mais provável
+    ///   - Resultado: Texto previsível, mas coerente
+    ///   - Uso: Respostas factuais, traduções
+    /// 
+    /// - **Temperatura = 1.0**: Balanceado, respeita as probabilidades originais
+    ///   - Resultado: Boa mistura de coerência e criatividade
+    ///   - Uso: Conversação geral
+    /// 
+    /// - **Temperatura = 2.0**: Muito criativo, distribui probabilidades
+    ///   - Resultado: Texto mais variado, às vezes incoerente
+    ///   - Uso: Brainstorming, poesia
+    /// 
+    /// ## ⚡ Otimizações Implementadas:
+    /// 
+    /// 1. **Sliding Window**: Limita contexto para evitar overflow de memória
+    /// 2. **Batch Size = 1**: Otimizado para inferência interativa
+    /// 3. **Early Stopping**: Para quando encontra token de fim
+    /// 4. **Error Handling**: Propagação detalhada de erros
+    /// 
+    /// ## 📊 Parâmetros:
+    /// - `prompt`: Texto inicial para começar a geração
+    /// - `max_tokens`: Máximo de tokens a gerar (controla tamanho)
+    /// - `tokenizer`: Conversor texto ↔ números
+    /// - `temperature`: Controle criatividade (0.1 = conservador, 2.0 = criativo)
+    /// 
+    /// ## 🎯 Retorno:
+    /// String com o texto gerado (apenas a parte nova, sem o prompt)
     pub fn generate(
         &self,
         prompt: &str,

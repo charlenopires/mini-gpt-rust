@@ -73,11 +73,11 @@
 use crate::model::{MiniGPT, CheckpointMetadata};
 use crate::tokenizer::BPETokenizer;
 use candle_core::{Device, Tensor};
-use candle_nn::loss;
+// use candle_nn::loss; // Removido - não utilizado
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::prelude::*;
 use std::time::Instant;
-use safetensors::SafeTensors;
+// use safetensors::SafeTensors; // Removido - não utilizado
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -358,7 +358,7 @@ impl Trainer {
                 // 📊 **Retorno**: (logits, loss_opcional)
                 // - logits: probabilidades brutas para cada token do vocabulário
                 // - loss: erro calculado comparando predição vs. target (se fornecido)
-                let (logits, loss) = self.model.forward(inputs, Some(targets))?;
+                let (_logits, loss) = self.model.forward(inputs, Some(targets))?;
                 
                 if let Some(loss_tensor) = loss {
                     // 🔢 **EXTRAÇÃO DO VALOR ESCALAR DA LOSS**

@@ -44,7 +44,7 @@
 //! - **Cabeça 3**: Foca em dependências de longo alcance
 //! - **Cabeça N**: Cada uma aprende padrões diferentes!
 
-use candle_core::{DType, Device, Result, Tensor};
+use candle_core::{Result, Tensor};
 use candle_nn::{linear, Linear, Module, VarBuilder};
 
 /// 🎯 **SELF-ATTENTION: IMPLEMENTAÇÃO DO MECANISMO REVOLUCIONÁRIO**

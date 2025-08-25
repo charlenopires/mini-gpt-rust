@@ -146,10 +146,47 @@ enum Commands {
     /// 
     /// Carrega um modelo previamente treinado de um arquivo SafeTensors
     /// e permite gerar texto ou iniciar chat com o modelo carregado.
+    /// 
+    /// ## 🎯 **Modos de Carregamento:**
+    /// 1. **Direto**: Especifica caminho exato do checkpoint
+    /// 2. **Interativo**: Lista checkpoints disponíveis para seleção
+    /// 3. **Automático**: Carrega o melhor checkpoint (menor loss)
+    /// 4. **Por Nome**: Busca checkpoint por nome/padrão
+    /// 
+    /// ## 📊 **Filtros Disponíveis:**
+    /// - Por data de criação (mais recente/antigo)
+    /// - Por performance (menor/maior loss)
+    /// - Por step de treinamento
+    /// - Por descrição/tags
     Load {
         /// 📁 Caminho para o arquivo de checkpoint (.safetensors)
+        /// Se não especificado, entra em modo interativo
         #[arg(short, long)]
-        checkpoint: PathBuf,
+        checkpoint: Option<PathBuf>,
+        
+        /// 📂 Diretório para buscar checkpoints (modo interativo)
+        #[arg(short, long, default_value = "models")]
+        dir: PathBuf,
+        
+        /// 🎯 Carrega automaticamente o melhor checkpoint (menor loss)
+        #[arg(long, help = "Carrega automaticamente o checkpoint com menor loss")]
+        best: bool,
+        
+        /// 📅 Carrega o checkpoint mais recente
+        #[arg(long, help = "Carrega o checkpoint mais recente por timestamp")]
+        latest: bool,
+        
+        /// 🔍 Busca checkpoint por nome/padrão
+        #[arg(long, help = "Busca checkpoint que contenha este padrão no nome")]
+        name_pattern: Option<String>,
+        
+        /// 📊 Filtra por loss máximo
+        #[arg(long, help = "Carrega apenas checkpoints com loss menor que este valor")]
+        max_loss: Option<f32>,
+        
+        /// 🔢 Filtra por step mínimo de treinamento
+        #[arg(long, help = "Carrega apenas checkpoints com step maior que este valor")]
+        min_step: Option<usize>,
         
         /// 💭 Prompt para geração (opcional)
         #[arg(short, long)]
@@ -166,6 +203,10 @@ enum Commands {
         /// 📚 Ativa logs educacionais detalhados
         #[arg(long, help = "Ativa logs educacionais detalhados")]
         educational: bool,
+        
+        /// 🔍 Mostra informações detalhadas do checkpoint antes de carregar
+        #[arg(long, help = "Exibe metadados detalhados do checkpoint")]
+        info: bool,
     },
     
     /// 📋 **LIST: Listar checkpoints disponíveis**
@@ -319,7 +360,20 @@ fn main() -> Result<()> {
         
         // 📂 **MODO CARREGAMENTO DE MODELO**
         // Carrega modelo de checkpoint e executa geração ou chat
-        Commands::Load { checkpoint, prompt, max_tokens, chat, educational } => {
+        Commands::Load { 
+            checkpoint, 
+            dir, 
+            best, 
+            latest, 
+            name_pattern, 
+            max_loss, 
+            min_step, 
+            prompt, 
+            max_tokens, 
+            chat, 
+            educational, 
+            info 
+        } => {
             let device = match candle_core::Device::new_metal(0) {
                 Ok(metal_device) => {
                     println!("🚀 Usando dispositivo: Metal GPU");
@@ -331,7 +385,20 @@ fn main() -> Result<()> {
                     candle_core::Device::Cpu
                 }
             };
-            load_and_run_model(checkpoint, prompt, max_tokens, chat, educational, &device)?
+            
+            // 🎯 **SELEÇÃO INTELIGENTE DE CHECKPOINT**
+            let selected_checkpoint = select_checkpoint(
+                checkpoint,
+                &dir,
+                best,
+                latest,
+                name_pattern,
+                max_loss,
+                min_step,
+                info
+            )?;
+            
+            load_and_run_model(selected_checkpoint, prompt, max_tokens, chat, educational, &device)?
         }
         
         // 📋 **MODO LISTAGEM DE CHECKPOINTS**
@@ -393,6 +460,234 @@ fn load_and_run_model(
         println!("⚠️  Especifique um prompt (-p) ou use modo chat (--chat)");
         Ok(())
     }
+}
+
+/// 🎯 **SELEÇÃO INTELIGENTE DE CHECKPOINT**
+/// 
+/// Implementa lógica avançada para seleção de checkpoints baseada em critérios
+/// específicos como performance, data, nome e filtros customizados.
+/// 
+/// ## 🧠 **Algoritmo de Seleção:**
+/// 1. **Modo Direto**: Se caminho específico fornecido, usa diretamente
+/// 2. **Modo Automático**: Aplica filtros e critérios de ordenação
+/// 3. **Modo Interativo**: Apresenta lista filtrada para seleção manual
+/// 
+/// ## 📊 **Critérios de Priorização:**
+/// - **Best**: Menor loss (melhor performance)
+/// - **Latest**: Timestamp mais recente
+/// - **Pattern**: Correspondência de nome/descrição
+/// - **Filtros**: Loss máximo, step mínimo
+fn select_checkpoint(
+    direct_path: Option<PathBuf>,
+    search_dir: &PathBuf,
+    auto_best: bool,
+    auto_latest: bool,
+    name_pattern: Option<String>,
+    max_loss_filter: Option<f32>,
+    min_step_filter: Option<usize>,
+    show_info: bool,
+) -> Result<PathBuf> {
+    // 🎯 **MODO DIRETO: Caminho específico fornecido**
+    if let Some(path) = direct_path {
+        if !path.exists() {
+            return Err(anyhow::anyhow!("❌ Checkpoint não encontrado: {:?}", path));
+        }
+        
+        if show_info {
+            println!("📋 Carregando checkpoint específico: {:?}", path);
+            // Carrega apenas para mostrar informações, sem usar o modelo
+            if let Ok((_, metadata)) = MiniGPT::load_from_checkpoint(&path, &candle_core::Device::Cpu) {
+                display_checkpoint_info(&path, &metadata);
+            }
+        }
+        
+        return Ok(path);
+    }
+    
+    // 📂 **BUSCA E FILTRAGEM DE CHECKPOINTS**
+    println!("🔍 Buscando checkpoints em: {:?}", search_dir);
+    
+    let mut checkpoints = MiniGPT::list_checkpoints(search_dir)
+        .map_err(|e| anyhow::anyhow!("Erro ao listar checkpoints: {}", e))?;
+    
+    if checkpoints.is_empty() {
+        return Err(anyhow::anyhow!("📭 Nenhum checkpoint encontrado em {:?}", search_dir));
+    }
+    
+    println!("📊 Encontrados {} checkpoints", checkpoints.len());
+    
+    // 🔍 **APLICAÇÃO DE FILTROS**
+    
+    // Filtro por padrão de nome
+    if let Some(pattern) = &name_pattern {
+        checkpoints.retain(|(path, metadata)| {
+            let filename = std::path::Path::new(path)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
+            
+            let description = metadata.description
+                .as_ref()
+                .map(|d| d.to_lowercase())
+                .unwrap_or_default();
+            
+            let pattern_lower = pattern.to_lowercase();
+            filename.contains(&pattern_lower) || description.contains(&pattern_lower)
+        });
+        
+        println!("🔍 Após filtro por padrão '{}': {} checkpoints", pattern, checkpoints.len());
+    }
+    
+    // Filtro por loss máximo
+    if let Some(max_loss) = max_loss_filter {
+        checkpoints.retain(|(_, metadata)| {
+            metadata.loss.map_or(false, |loss| loss <= max_loss)
+        });
+        
+        println!("📊 Após filtro por loss ≤ {}: {} checkpoints", max_loss, checkpoints.len());
+    }
+    
+    // Filtro por step mínimo
+    if let Some(min_step) = min_step_filter {
+        checkpoints.retain(|(_, metadata)| {
+            metadata.training_step.map_or(false, |step| step >= min_step)
+        });
+        
+        println!("🔢 Após filtro por step ≥ {}: {} checkpoints", min_step, checkpoints.len());
+    }
+    
+    if checkpoints.is_empty() {
+        return Err(anyhow::anyhow!("❌ Nenhum checkpoint atende aos critérios especificados"));
+    }
+    
+    // 🎯 **SELEÇÃO AUTOMÁTICA**
+    
+    if auto_best {
+        // Seleciona checkpoint com menor loss
+        checkpoints.sort_by(|a, b| {
+            let loss_a = a.1.loss.unwrap_or(f32::INFINITY);
+            let loss_b = b.1.loss.unwrap_or(f32::INFINITY);
+            loss_a.partial_cmp(&loss_b).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        
+        let (best_path, best_metadata) = &checkpoints[0];
+        println!("🏆 Selecionado melhor checkpoint (loss: {:?}): {}", 
+                best_metadata.loss, 
+                std::path::Path::new(best_path).file_name().unwrap().to_string_lossy());
+        
+        if show_info {
+            display_checkpoint_info(&PathBuf::from(best_path), best_metadata);
+        }
+        
+        return Ok(PathBuf::from(best_path));
+    }
+    
+    if auto_latest {
+        // Seleciona checkpoint mais recente
+        checkpoints.sort_by(|a, b| b.1.timestamp.cmp(&a.1.timestamp));
+        
+        let (latest_path, latest_metadata) = &checkpoints[0];
+        println!("📅 Selecionado checkpoint mais recente: {}", 
+                std::path::Path::new(latest_path).file_name().unwrap().to_string_lossy());
+        
+        if show_info {
+            display_checkpoint_info(&PathBuf::from(latest_path), latest_metadata);
+        }
+        
+        return Ok(PathBuf::from(latest_path));
+    }
+    
+    // 🎮 **MODO INTERATIVO: Seleção manual**
+    println!("\n🎮 Modo de seleção interativa ativado!");
+    println!("{}", "=".repeat(80));
+    
+    // Ordena por loss (melhor primeiro) para apresentação
+    checkpoints.sort_by(|a, b| {
+        let loss_a = a.1.loss.unwrap_or(f32::INFINITY);
+        let loss_b = b.1.loss.unwrap_or(f32::INFINITY);
+        loss_a.partial_cmp(&loss_b).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    
+    for (i, (path, metadata)) in checkpoints.iter().enumerate() {
+        let filename = std::path::Path::new(path).file_name().unwrap().to_string_lossy();
+        println!("{}. 📁 {}", i + 1, filename);
+        println!("   📊 Loss: {:?} | 📅 {}", metadata.loss, metadata.timestamp);
+        
+        if let Some(step) = metadata.training_step {
+            println!("   🔢 Step: {}", step);
+        }
+        
+        if let Some(desc) = &metadata.description {
+            println!("   📝 {}", desc);
+        }
+        
+        println!();
+    }
+    
+    println!("Digite o número do checkpoint desejado (1-{}) ou 'q' para cancelar:", checkpoints.len());
+    
+    use std::io::{self, Write};
+    loop {
+        print!("🎯 Sua escolha: ");
+        io::stdout().flush()?;
+        
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let input = input.trim();
+        
+        if input.eq_ignore_ascii_case("q") || input.eq_ignore_ascii_case("quit") {
+            return Err(anyhow::anyhow!("❌ Seleção cancelada pelo usuário"));
+        }
+        
+        if let Ok(choice) = input.parse::<usize>() {
+            if choice >= 1 && choice <= checkpoints.len() {
+                let (selected_path, selected_metadata) = &checkpoints[choice - 1];
+                println!("✅ Checkpoint selecionado: {}", 
+                        std::path::Path::new(selected_path).file_name().unwrap().to_string_lossy());
+                
+                if show_info {
+                    display_checkpoint_info(&PathBuf::from(selected_path), selected_metadata);
+                }
+                
+                return Ok(PathBuf::from(selected_path));
+            }
+        }
+        
+        println!("❌ Opção inválida. Digite um número entre 1 e {} ou 'q' para cancelar.", checkpoints.len());
+    }
+}
+
+/// 📋 **EXIBIÇÃO DE INFORMAÇÕES DETALHADAS DO CHECKPOINT**
+/// 
+/// Mostra metadados completos de um checkpoint específico
+fn display_checkpoint_info(path: &PathBuf, metadata: &CheckpointMetadata) {
+    println!("\n📋 Informações Detalhadas do Checkpoint");
+    println!("{}", "=".repeat(50));
+    println!("📁 Arquivo: {}", path.file_name().unwrap().to_string_lossy());
+    println!("📂 Caminho: {:?}", path);
+    println!("📅 Timestamp: {}", metadata.timestamp);
+    println!("🔧 Versão: {}", metadata.version);
+    
+    if let Some(loss) = metadata.loss {
+        println!("📊 Loss: {:.6}", loss);
+    }
+    
+    if let Some(step) = metadata.training_step {
+        println!("🔢 Training Step: {}", step);
+    }
+    
+    if let Some(desc) = &metadata.description {
+        println!("📝 Descrição: {}", desc);
+    }
+    
+    // Informações do arquivo
+    if let Ok(file_metadata) = std::fs::metadata(path) {
+        let size_mb = file_metadata.len() as f64 / (1024.0 * 1024.0);
+        println!("💾 Tamanho: {:.2} MB", size_mb);
+    }
+    
+    println!("{}", "=".repeat(50));
 }
 
 /// 📋 **LISTAGEM DE CHECKPOINTS**
@@ -502,7 +797,7 @@ fn run_kernel_fusion_benchmark(
 
 /// 🎨 **GERAÇÃO DE TEXTO COM MODELO CARREGADO**
 fn generate_text_with_model(
-    model: &MiniGPT,
+    _model: &MiniGPT,
     prompt: &str,
     max_tokens: usize,
     educational: bool,
@@ -525,7 +820,7 @@ fn generate_text_with_model(
 
 /// 💬 **CHAT INTERATIVO COM MODELO CARREGADO**
 fn interactive_chat_with_model(
-    model: &MiniGPT,
+    _model: &MiniGPT,
     educational: bool,
 ) -> Result<()> {
     // Implementação simplificada - na prática, você precisaria
@@ -705,10 +1000,8 @@ fn generate_text(prompt: &str, max_tokens: usize, device: &candle_core::Device, 
     let start_time = Instant::now();
     
     // 🎓 **INICIALIZAÇÃO DO LOGGER EDUCACIONAL**
-    let logger = EducationalLogger::new()
-        .with_verbosity(educational)
-        .with_tensor_info(show_tensors)
-        .with_attention_maps(false);
+    let verbosity_level = if educational { if show_tensors { 3 } else { 2 } } else { 0 };
+    let logger = EducationalLogger::new(verbosity_level);
     
     // 🔧 **ETAPA 1: INICIALIZAÇÃO DO TOKENIZADOR**
     // 
@@ -920,10 +1213,8 @@ fn interactive_chat(device: &candle_core::Device, educational: bool, show_tensor
     use std::time::Instant;
     
     // 🎓 **INICIALIZAÇÃO DO LOGGER EDUCACIONAL**
-    let logger = EducationalLogger::new()
-        .with_verbosity(educational)
-        .with_tensor_info(show_tensors)
-        .with_attention_maps(false);
+    let verbosity_level = if educational { if show_tensors { 3 } else { 2 } } else { 0 };
+    let logger = EducationalLogger::new(verbosity_level);
     
     // 🔧 **ETAPA 1: INICIALIZAÇÃO DO TOKENIZADOR**
     // Prepara o sistema de tokenização para conversação interativa

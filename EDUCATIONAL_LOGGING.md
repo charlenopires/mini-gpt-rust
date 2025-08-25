@@ -107,10 +107,15 @@ Quando o modo educacional está ativo, você tem acesso a comandos especiais:
 O sistema de logging é altamente configurável:
 
 ```rust
-let logger = EducationalLogger::new()
-    .with_verbosity(true)        // Ativa logs detalhados
-    .with_tensor_info(true)      // Mostra informações de tensores
-    .with_attention_maps(false); // Mapas de atenção (futuro)
+// Níveis de verbosidade:
+// 0 = Mínimo (apenas erros)
+// 1 = Básico (operações principais)
+// 2 = Detalhado (explicações educacionais)
+// 3 = Expert (tensores + debugging)
+let logger = EducationalLogger::new(2);  // Nível educacional padrão
+
+// Ou usando o construtor padrão (equivale a nível 2)
+let logger = EducationalLogger::default();
 ```
 
 ## 📊 Estatísticas de Performance

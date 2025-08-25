@@ -78,6 +78,97 @@
 //! ## 🎭 **Exemplo Prático:**
 //! 
 //! ### 📝 **Texto Original:**
+//! ```
+//! "Eu amo programação em Rust!"
+//! ```
+//! 
+//! ### 🔤 **Após Tokenização BPE:**
+//! ```
+//! ["Eu", " amo", " program", "ação", " em", " Rust", "!"]
+//! ```
+//! 
+//! ### 🔢 **IDs Numéricos:**
+//! ```
+//! [156, 892, 1247, 3891, 234, 5672, 33]
+//! ```
+//! 
+//! ### 🧠 **Por que essa divisão?**
+//! - **"Eu"**: Palavra comum, tem seu próprio token
+//! - **" amo"**: Verbo frequente com espaço
+//! - **"program"**: Radical comum em "programação", "programar", etc.
+//! - **"ação"**: Sufixo comum em português
+//! - **" em"**: Preposição frequente
+//! - **" Rust"**: Nome próprio, aprendido como unidade
+//! - **"!"**: Pontuação comum
+//! 
+//! ## 🔄 **Processo de Encoding/Decoding:**
+//! 
+//! ### 📥 **ENCODING (Texto → Números):**
+//! ```text
+//! 1. Dividir texto em caracteres
+//! 2. Aplicar merges aprendidos (do mais frequente ao menos frequente)
+//! 3. Converter tokens para IDs usando vocabulário
+//! 4. Retornar sequência de números
+//! ```
+//! 
+//! ### 📤 **DECODING (Números → Texto):**
+//! ```text
+//! 1. Converter IDs para tokens usando vocabulário reverso
+//! 2. Concatenar tokens
+//! 3. Tratar espaços e caracteres especiais
+//! 4. Retornar texto original
+//! ```
+//! 
+//! ## 🎯 **Tokens Especiais:**
+//! 
+//! ### 🏁 **EOS (End of Sequence):**
+//! - **Função**: Marca o fim de uma sequência
+//! - **Uso**: Permite ao modelo saber quando parar de gerar
+//! - **Exemplo**: "Olá mundo<EOS>"
+//! 
+//! ### 🔤 **UNK (Unknown):**
+//! - **Função**: Representa tokens desconhecidos
+//! - **Uso**: Fallback para caracteres não vistos no treinamento
+//! - **Exemplo**: Emojis raros, símbolos especiais
+//! 
+//! ### 📍 **PAD (Padding):**
+//! - **Função**: Preenche sequências para ter o mesmo tamanho
+//! - **Uso**: Permite processamento em lotes (batches)
+//! - **Exemplo**: ["Oi", "<PAD>", "<PAD>"] para igualar tamanhos
+//! 
+//! ## 🧮 **Matemática da Tokenização:**
+//! 
+//! ### 📊 **Frequência de Pares:**
+//! ```
+//! freq(pair) = Σ count(pair, word) × freq(word)
+//! ```
+//! 
+//! ### 🎯 **Critério de Merge:**
+//! ```
+//! best_pair = argmax(freq(pair)) for all pairs
+//! ```
+//! 
+//! ### 📏 **Eficiência de Compressão:**
+//! ```
+//! compression_ratio = original_chars / final_tokens
+//! ```
+//! 
+//! ## 🚀 **Otimizações Implementadas:**
+//! 
+//! ### ⚡ **Cache de Merges:**
+//! - Armazena resultados de merges já computados
+//! - Evita recomputação desnecessária
+//! - Acelera encoding de textos similares
+//! 
+//! ### 🧠 **Vocabulário Reverso:**
+//! - HashMap para lookup O(1) durante decoding
+//! - Evita busca linear no vocabulário
+//! - Essencial para geração de texto rápida
+//! 
+//! ### 📈 **Processamento Incremental:**
+//! - Aplica merges em ordem de frequência
+//! - Permite interrupção e retomada do treinamento
+//! - Facilita debugging e análise
 //! ```text
 //! "O gato subiu no telhado. O gato desceu do telhado."
 //! ```
@@ -95,8 +186,8 @@
 //! ["O", " ", "gato", " ", "su", "bi", "u", " ", "no", " ", "telhado", ".", ...]
 //! ```
 
-use std::collections::{HashMap, HashSet};
-use anyhow::{Result, anyhow};
+use std::collections::HashMap;
+use anyhow::Result;
 
 /// 🔤 **TOKENIZADOR BPE: CONVERSOR INTELIGENTE DE TEXTO**
 /// 
