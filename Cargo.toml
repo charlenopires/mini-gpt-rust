@@ -1,0 +1,39 @@
+[package]
+name = "mini-gpt-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Tensor e computação numérica com suporte Metal
+candle-core = { version = "0.8", features = ["metal"] }  # Framework com Metal GPU
+candle-nn = { version = "0.8", features = ["metal"] }    # Camadas neurais com Metal
+candle-transformers = { version = "0.8", features = ["metal"] }  # Transformers com Metal
+ndarray = "0.15"              # Arrays multidimensionais
+
+# Tokenização e processamento de texto
+tokenizers = "0.15"           # Tokenização BPE da HuggingFace
+unicode-segmentation = "1.10" # Segmentação Unicode para PT-BR
+
+# Serialização e I/O
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+safetensors = "0.4"          # Formato eficiente para salvar modelos
+
+# Utilitários
+anyhow = "1.0"               # Tratamento de erros
+rand = "0.8"                 # Números aleatórios
+indicatif = "0.17"           # Barras de progresso
+clap = { version = "4.0", features = ["derive"] } # CLI
+thiserror = "1.0"            # Tratamento de erros estruturados
+
+# Otimização e treinamento
+candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
+
+# Suporte condicional para Metal (macOS)
+[target.'cfg(target_os = "macos")'.dependencies]
+candle-metal-kernels = "0.8"  # Kernels Metal para ARM Apple
+
+[profile.release]
+opt-level = 3
+lto = true                   # Link-time optimization
+codegen-units = 1           # Melhor otimização
