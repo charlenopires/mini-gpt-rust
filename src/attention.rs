@@ -361,9 +361,6 @@ impl SelfAttention {
         // Move a dimensão das cabeças para a segunda posição
         // [B, T, H, D] → [B, H, T, D]
         // Isso permite processamento paralelo de cada cabeça
-        reshaped.transpose(1, 2)
-        // Move a dimensão das cabeças para frente
-        // [B, T, H, D] → [B, H, T, D]
         // Agora cada cabeça pode processar independentemente!
         reshaped.transpose(1, 2)?.contiguous()
     }

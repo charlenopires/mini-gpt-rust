@@ -654,61 +654,78 @@ impl Trainer {
     
     /// 💾 **SALVAMENTO DO MODELO TREINADO**
     /// 
-    /// Este método salva o estado atual do modelo para uso posterior.
+    /// Salva o modelo treinado em formato SafeTensors para uso futuro.
+    /// É como "fotografar" o cérebro do modelo após o aprendizado!
     /// 
-    /// 🎯 **Objetivo**: Preservar o progresso do treinamento e permitir
-    /// reutilização do modelo sem necessidade de retreinar.
+    /// ## 🔒 **Por que SafeTensors?**
     /// 
-    /// 📚 **Analogia**: Como salvar um documento - você pode continuar
-    /// trabalhando nele mais tarde ou compartilhar com outros.
+    /// ### 🛡️ **Segurança:**
+    /// - **Sem código executável**: Apenas dados puros
+    /// - **Verificação de integridade**: Checksums automáticos
+    /// - **Proteção contra malware**: Formato read-only
     /// 
-    /// ## 💾 **Formato SafeTensors**:
+    /// ### ⚡ **Performance:**
+    /// - **Zero-copy loading**: Carregamento instantâneo
+    /// - **Memory mapping**: Acesso eficiente a arquivos grandes
+    /// - **Lazy loading**: Carrega apenas o necessário
     /// 
-    /// SafeTensors é o formato moderno recomendado para modelos ML:
-    /// - **Segurança**: Não executa código arbitrário (vs. pickle)
-    /// - **Performance**: Carregamento rápido com memory mapping
-    /// - **Portabilidade**: Funciona entre diferentes frameworks
-    /// - **Integridade**: Verificação de checksums automática
+    /// ### 🌐 **Portabilidade:**
+    /// - **Cross-platform**: Funciona em qualquer sistema
+    /// - **Language agnostic**: Python, Rust, JavaScript, etc.
+    /// - **Version stable**: Compatibilidade garantida
     /// 
-    /// ## 📦 **Conteúdo Salvo**:
-    /// - **Pesos do Modelo**: Todos os parâmetros treinados
-    /// - **Configuração**: Arquitetura e hiperparâmetros
-    /// - **Vocabulário**: Mapeamento de tokens (se necessário)
-    /// - **Metadados**: Versão, data de treinamento, métricas
+    /// ## 📁 **Estrutura do Arquivo Salvo:**
+    /// ```text
+    /// model.safetensors
+    /// ├── token_emb.weight     [vocab_size × n_embd]
+    /// ├── pos_emb.weight       [block_size × n_embd]
+    /// ├── block_0.attn.weight  [n_embd × n_embd]
+    /// ├── block_0.mlp.weight   [n_embd × 4*n_embd]
+    /// ├── ...
+    /// └── lm_head.weight       [n_embd × vocab_size]
+    /// ```
     /// 
-    /// ## 🔄 **Casos de Uso**:
-    /// - **Checkpointing**: Salvar progresso durante treinamento longo
+    /// ## 🎯 **Casos de Uso:**
+    /// - **Checkpointing**: Salvar progresso durante treinamento
     /// - **Deployment**: Carregar modelo em produção
-    /// - **Fine-tuning**: Usar como base para treinamento adicional
-    /// - **Backup**: Preservar modelos valiosos
+    /// - **Fine-tuning**: Continuar treinamento de checkpoint
+    /// - **Sharing**: Distribuir modelos treinados
     pub fn save(&self, path: &str) -> Result<()> {
-        println!("💾 Salvando modelo em: {}", path);
+        use std::path::Path;
         
-        // 🚧 **IMPLEMENTAÇÃO FUTURA**
-        // 
-        // TODO: Implementar salvamento completo com safetensors
-        // 
-        // Passos necessários:
-        // 1. Extrair todos os tensores do modelo
-        // 2. Criar metadados (config, vocab_size, etc.)
-        // 3. Serializar usando safetensors
-        // 4. Salvar arquivo com extensão .safetensors
-        // 5. Criar arquivo de configuração JSON separado
-        // 
-        // Exemplo de implementação:
-        // ```rust
-        // use safetensors::SafeTensors;
-        // 
-        // let mut tensors = HashMap::new();
-        // tensors.insert("embeddings.weight", self.model.embeddings.weight());
-        // tensors.insert("transformer.layers.0.attention.weight", ...);
-        // 
-        // let safetensors = SafeTensors::serialize(&tensors)?;
-        // std::fs::write(path, safetensors)?;
-        // ```
+        println!("💾 Iniciando salvamento do modelo...");
+        println!("📍 Destino: {}", path);
+        println!("📊 Parâmetros: ~{:.1}M", self.model.num_parameters() as f32 / 1_000_000.0);
         
-        println!("⚠️  Salvamento ainda não implementado - TODO para versão futura");
-        println!("💡 Por enquanto, o modelo existe apenas na memória durante a execução");
+        // 🗂️ **CRIAR DIRETÓRIO SE NÃO EXISTIR**
+        if let Some(parent) = Path::new(path).parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Erro ao criar diretório {}: {}", parent.display(), e))?;
+            println!("📁 Diretório criado: {}", parent.display());
+        }
+        
+        // 💾 **SALVAR USANDO SAFETENSORS**
+        // 
+        // O VarMap do Candle já contém todos os tensores nomeados do modelo.
+        // Podemos salvá-lo diretamente usando o método save() integrado.
+        match self.model.varmap().save(path) {
+            Ok(()) => {
+                println!("✅ Modelo salvo com sucesso!");
+                println!("🔒 Formato: SafeTensors (seguro e portável)");
+                println!("📏 Arquivo: {}", path);
+                
+                // 📊 **VERIFICAR TAMANHO DO ARQUIVO**
+                if let Ok(metadata) = std::fs::metadata(path) {
+                    let size_mb = metadata.len() as f64 / (1024.0 * 1024.0);
+                    println!("💽 Tamanho: {:.1} MB", size_mb);
+                }
+                
+                println!("🎉 Salvamento concluído! Modelo pronto para uso.");
+            }
+            Err(e) => {
+                return Err(format!("Erro ao salvar modelo: {}", e).into());
+            }
+        }
         
         Ok(())
     }

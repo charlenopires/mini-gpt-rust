@@ -21,6 +21,7 @@ Mini-GPT-Rust é uma implementação completa de um modelo GPT (Generative Pre-t
 - 🎓 **Sistema Educacional**: Logging detalhado para entender o funcionamento interno dos LLMs
 - 🔍 **Análise de Tokenização**: Visualização completa do processo de tokenização
 - 📊 **Métricas de Performance**: Estatísticas em tempo real de geração e processamento
+- 💾 **Persistência SafeTensors**: Salvamento e carregamento seguro de modelos
 - 🛡️ **Memory Safety**: Garantias de segurança de memória do Rust
 - ⚡ **Zero-Cost Abstractions**: Performance de baixo nível com ergonomia de alto nível
 
@@ -70,14 +71,32 @@ cargo build
 
 ```toml
 [dependencies]
-candle-core = { version = "0.3", features = ["metal"] }
-candle-nn = { version = "0.3", features = ["metal"] }
-candle-transformers = { version = "0.3", features = ["metal"] }
-candle-optimisers = "0.3"
-tokenizers = "0.15"
-indicatif = "0.17"
-rand = "0.8"
-anyhow = "1.0"
+# Framework Candle com suporte Metal GPU
+candle-core = { version = "0.8", features = ["metal"] }
+candle-nn = { version = "0.8", features = ["metal"] }
+candle-transformers = { version = "0.8", features = ["metal"] }
+candle-optimisers = "0.8"     # Otimizadores (Adam, SGD)
+
+# Persistência e serialização
+safetensors = "0.4"           # Persistência segura de modelos
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Tokenização e processamento
+tokenizers = "0.15"           # Tokenização BPE
+unicode-segmentation = "1.10" # Segmentação Unicode PT-BR
+
+# Utilitários e CLI
+indicatif = "0.17"            # Barras de progresso
+rand = "0.8"                  # Geração de números aleatórios
+anyhow = "1.0"                # Error handling
+thiserror = "1.0"             # Error handling estruturado
+clap = { version = "4.0", features = ["derive"] }  # CLI
+ndarray = "0.15"              # Arrays multidimensionais
+
+# Suporte Metal para macOS
+[target.'cfg(target_os = "macos")'.dependencies]
+candle-metal-kernels = "0.8"  # Kernels Metal ARM Apple
 ```
 
 ## 🎮 **Uso do Sistema**
@@ -85,7 +104,7 @@ anyhow = "1.0"
 ### **1. 🏋️ Treinamento do Modelo**
 
 ```bash
-# Treinamento básico
+# Treinamento básico (salva automaticamente em models/mini_gpt.safetensors)
 cargo run --release -- train
 
 # Treinamento com parâmetros customizados
@@ -102,6 +121,7 @@ cargo run --release -- train --epochs 10 --data data/corpus_pt_br.txt
    🧠 Memória: Configurado para 18GB ARM Apple
 🏋️ Iniciando treinamento...
 Época 1/5: Loss médio: 7.9030, Velocidade: 1996 tokens/seg
+💾 Modelo salvo com sucesso: models/mini_gpt.safetensors (4.0 MB)
 ```
 
 ### **2. 📝 Geração de Texto**
@@ -147,6 +167,42 @@ Quando o modo educacional está ativo, você pode usar:
 🔢 Embeddings: 512 dimensões por token
 🧠 Processamento: 4 camadas Transformer
 ⚡ Geração: 23 tokens em 0.45s (51.1 tok/s)
+```
+
+## 💾 **Sistema de Persistência SafeTensors**
+
+O Mini-GPT-Rust implementa um sistema robusto de persistência usando o formato SafeTensors, garantindo segurança e portabilidade dos modelos treinados.
+
+### **Características do Sistema**
+
+- **🔒 Formato Seguro**: SafeTensors previne ataques de deserialização
+- **📦 Portabilidade**: Modelos compatíveis entre diferentes plataformas
+- **⚡ Performance**: Carregamento rápido com mapeamento de memória
+- **🎯 Automático**: Salvamento automático após cada época de treinamento
+- **📁 Organização**: Estrutura de diretórios automática (`models/`)
+
+### **Uso do Sistema**
+
+```bash
+# Salvamento automático durante treinamento
+cargo run --release -- train  # Salva em models/mini_gpt.safetensors
+
+# Verificar modelo salvo
+ls -lh models/
+# -rw-r--r--  1 user  staff   4.0M  mini_gpt.safetensors
+```
+
+### **Estrutura do Arquivo SafeTensors**
+
+```rust
+// Tensores salvos automaticamente:
+- token_embedding.weight     // Embeddings de tokens
+- position_embedding.weight  // Embeddings posicionais  
+- transformer.layers.*.ln1   // Layer normalization 1
+- transformer.layers.*.ln2   // Layer normalization 2
+- transformer.layers.*.attn  // Pesos de atenção
+- transformer.layers.*.mlp   // Pesos do feed-forward
+- lm_head.weight            // Cabeça de linguagem
 ```
 
 ## 🧠 **Detalhes Técnicos**
@@ -200,9 +256,10 @@ O sistema utiliza Byte Pair Encoding (BPE) para tokenização eficiente:
 
 ### **Uso de Memória**
 
-- **Modelo**: ~50MB (parâmetros)
+- **Modelo**: ~4MB (parâmetros salvos em SafeTensors)
 - **Treinamento**: ~2GB (Metal GPU)
 - **Inferência**: ~500MB (Metal GPU)
+- **Modelo Salvo**: Formato SafeTensors portável e seguro
 
 ## 🔧 **Desenvolvimento e Contribuição**
 
@@ -214,12 +271,15 @@ src/
 ├── model.rs             # 🧠 Arquitetura GPT principal
 ├── transformer.rs       # 🏗️ Blocos Transformer
 ├── attention.rs         # 👁️ Mecanismo de atenção
-├── training.rs          # 🏋️ Loop de treinamento
+├── training.rs          # 🏋️ Loop de treinamento + persistência
 ├── tokenizer.rs         # 📝 Tokenização BPE
 └── educational_logger.rs # 🎓 Sistema de logging educacional
 
 data/
 └── corpus_pt_br.txt     # 📚 Dataset em português brasileiro
+
+models/
+└── mini_gpt.safetensors # 💾 Modelo treinado (SafeTensors)
 
 docs/
 └── EDUCATIONAL_LOGGING.md # 📖 Documentação do sistema educacional
@@ -249,6 +309,8 @@ cargo bench
 
 ### **🔥 Próximas Features**
 
+- [x] **Persistência SafeTensors**: Salvamento seguro de modelos ✅
+- [ ] **Carregamento de Modelos**: Sistema completo de checkpoint
 - [ ] **Quantização**: Suporte a INT8/FP16 para eficiência
 - [ ] **Distributed Training**: Treinamento distribuído
 - [ ] **Instruction Tuning**: Fine-tuning para seguir instruções
@@ -258,9 +320,10 @@ cargo bench
 ### **🚀 Otimizações Planejadas**
 
 - [ ] **Kernel Fusion**: Otimizações de baixo nível
-- [ ] **Memory Mapping**: Carregamento eficiente de modelos
+- [x] **Memory Mapping**: Carregamento eficiente com SafeTensors ✅
 - [ ] **Streaming**: Geração de texto em tempo real
 - [ ] **Caching**: Cache inteligente de atenção
+- [ ] **Model Compression**: Compressão de modelos salvos
 
 ### **📚 Melhorias de Qualidade**
 

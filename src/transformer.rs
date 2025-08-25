@@ -299,88 +299,24 @@ impl TransformerBlock {
     /// 
     /// ## 📤 **Retorno:**
     /// - Tensor processado [batch_size, seq_len, n_embd]
-            ln1: layer_norm(n_embd, 1e-5, vb.pp("ln1"))?,  // Antes da atenção
-            ln2: layer_norm(n_embd, 1e-5, vb.pp("ln2"))?,  // Antes do feed-forward
-        })
-    }
-    
-    /// 🚀 **FORWARD PASS: PROCESSAMENTO COMPLETO DO BLOCO**
-    /// 
-    /// Implementa a arquitetura Pre-LN com conexões residuais:
-    /// 1. **Atenção com Residual**: x + Attention(LayerNorm(x))
-    /// 2. **Feed-Forward com Residual**: x + FFN(LayerNorm(x))
-    /// 
-    /// ## 🔄 **Por que Conexões Residuais?**
-    /// 
-    /// ### 🎯 **Problema do Gradiente Desaparecendo:**
-    /// Em redes profundas, gradientes podem "desaparecer" durante
-    /// o backpropagation, tornando o treinamento impossível.
-    /// 
-    /// ### ✅ **Solução das Residuais:**
-    /// ```text
-    /// ∂L/∂x = ∂L/∂output × (1 + ∂F(x)/∂x)
-    /// ```
-    /// O termo "1" garante que sempre há um caminho direto
-    /// para os gradientes fluírem, mesmo se ∂F(x)/∂x ≈ 0.
-    /// 
-    /// ## 📏 **Layer Normalization:**
-    /// 
-    /// ### 🧮 **Fórmula:**
-    /// ```text
-    /// LayerNorm(x) = γ × (x - μ) / σ + β
-    /// 
-    /// Onde:
-    /// μ = mean(x)     # Média da camada
-    /// σ = std(x)      # Desvio padrão da camada
-    /// γ, β            # Parâmetros aprendíveis
-    /// ```
-    /// 
-    /// ### ✅ **Benefícios:**
-    /// - **Estabilidade**: Normaliza ativações para média 0, std 1
-    /// - **Velocidade**: Acelera convergência do treinamento
-    /// - **Robustez**: Menos sensível à inicialização de pesos
-    /// 
-    /// ## 🎯 Parâmetros:
-    /// - `x`: Tensor de entrada [batch_size, seq_len, n_embd]
-    /// - `mask`: Máscara causal opcional para atenção
-    /// 
-    /// ## 📤 Retorna:
-    /// - Tensor processado [batch_size, seq_len, n_embd]
     pub fn forward(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<Tensor> {
-        // 🎯 **ETAPA 1: ATENÇÃO COM CONEXÃO RESIDUAL**
+        // 🔄 **IMPLEMENTAÇÃO PRE-LN TRANSFORMER**
         // 
-        // Pre-LN: Normaliza ANTES da atenção (mais estável que Post-LN)
-        // Isso estabiliza os gradientes e acelera a convergência
-        let normalized_x = self.ln1.forward(x)?;
+        // Arquitetura: x + F(LayerNorm(x))
+        // Vantagens: Gradientes mais estáveis, convergência mais rápida
         
-        // 🔍 **MULTI-HEAD ATTENTION**
-        // Permite que o modelo "olhe" para diferentes posições simultaneamente
-        // A máscara causal garante que só vemos tokens anteriores (autoregressive)
-        let attn_out = self.attention.forward(&normalized_x, mask)?;
+        // 1️⃣ **ATENÇÃO COM CONEXÃO RESIDUAL**
+        // Normaliza → Atenção → Adiciona ao input original
+        let norm1 = self.ln1.forward(x)?;  // LayerNorm antes da atenção
+        let attn_out = self.attention.forward(&norm1, mask)?;  // Multi-head attention
+        let x = (x + attn_out)?;  // Conexão residual
         
-        // 🔄 **PRIMEIRA CONEXÃO RESIDUAL**
-        // x_new = x_original + attention_output
-        // Preserva a informação original e permite gradientes diretos
-        let x = (x + attn_out)?;
+        // 2️⃣ **FEED-FORWARD COM CONEXÃO RESIDUAL**
+        // Normaliza → FFN → Adiciona ao resultado anterior
+        let norm2 = self.ln2.forward(&x)?;  // LayerNorm antes do FFN
+        let ffn_out = self.feed_forward.forward(&norm2)?;  // Feed-forward
+        let output = (x + ffn_out)?;  // Conexão residual final
         
-        // 🍽️ **ETAPA 2: FEED-FORWARD COM CONEXÃO RESIDUAL**
-        // 
-        // Normalização antes do processamento feed-forward
-        let normalized_x2 = self.ln2.forward(&x)?;
-        
-        // 🧠 **PROCESSAMENTO FEED-FORWARD**
-        // Cada posição é processada independentemente
-        // Expansão 4x → GELU → Contração → Dropout
-        let ff_out = self.feed_forward.forward(&normalized_x2)?;
-        
-        // 🔄 **SEGUNDA CONEXÃO RESIDUAL**
-        // x_final = x_after_attention + feedforward_output
-        let x = (x + ff_out)?;
-        
-        // 📤 **SAÍDA FINAL**
-        // Tensor com representações refinadas de cada token
-        // Cada token agora "conhece" o contexto e foi processado individualmente
-        // Dimensões preservadas: [batch_size, seq_len, n_embd]
-        Ok(x)
+        Ok(output)
     }
 }

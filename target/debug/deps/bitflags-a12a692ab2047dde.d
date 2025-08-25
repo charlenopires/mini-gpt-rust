@@ -1,0 +1,11 @@
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/bitflags-a12a692ab2047dde.d: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/iter.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/parser.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/traits.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/public.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/internal.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/external.rs
+
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/libbitflags-a12a692ab2047dde.rmeta: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/iter.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/parser.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/traits.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/public.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/internal.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/external.rs
+
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/lib.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/iter.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/parser.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/traits.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/public.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/internal.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.3/src/external.rs:

@@ -1,0 +1,12 @@
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/libloading-d7281548e2cb962d.d: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/changelog.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/mod.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/mod.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/consts.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/util.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/error.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/safe.rs
+
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/liblibloading-d7281548e2cb962d.rmeta: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/changelog.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/mod.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/mod.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/consts.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/util.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/error.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/safe.rs
+
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/lib.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/changelog.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/mod.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/mod.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/os/unix/consts.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/util.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/error.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libloading-0.8.8/src/safe.rs:

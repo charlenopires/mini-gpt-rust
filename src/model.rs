@@ -45,7 +45,7 @@
 //! toda essa arquitetura sofisticada em Rust!
 
 use candle_core::{DType, Device, Tensor, IndexOp};
-use candle_nn::{embedding, layer_norm, linear, Embedding, LayerNorm, Linear, Module, VarBuilder};
+use candle_nn::{embedding, layer_norm, linear, Embedding, LayerNorm, Linear, Module, VarBuilder, VarMap};
 use crate::transformer::TransformerBlock;
 use crate::tokenizer::BPETokenizer;
 
@@ -149,6 +149,10 @@ pub struct MiniGPT {
     lm_head: Linear,               // 🎪 Projeta embeddings para vocabulário
     
     device: Device,                // 💻 Dispositivo de computação (CPU/GPU)
+    
+    // 💾 **VARMAP PARA SALVAMENTO**
+    // Contém todos os pesos treináveis do modelo para serialização
+    varmap: VarMap,                // 🗂️ Mapa de variáveis para salvamento/carregamento
 }
 
 impl MiniGPT {
@@ -208,7 +212,7 @@ impl MiniGPT {
         // std = sqrt(2.0 / (fan_in + fan_out))
         // ```
         // Onde fan_in/fan_out são dimensões de entrada/saída
-        let mut varmap = candle_nn::VarMap::new();
+        let varmap = candle_nn::VarMap::new();
         let vb = VarBuilder::from_varmap(&varmap, DType::F32, device);
         
         // 📚 **TOKEN EMBEDDINGS: TRANSFORMANDO SÍMBOLOS EM SIGNIFICADO**
@@ -221,7 +225,7 @@ impl MiniGPT {
         // 
         // Cada token (palavra/subpalavra) é mapeado para um vetor denso
         // Usando VarBuilder para inicialização adequada
-        let token_embedding = embedding(config.vocab_size, config.n_embd, vb.pp("token_emb"))?
+        let token_embedding = embedding(config.vocab_size, config.n_embd, vb.pp("token_emb"))?;
         
         // 📍 **POSITION EMBEDDINGS: ONDE ESTÁ A PALAVRA?**
         // 
@@ -233,7 +237,7 @@ impl MiniGPT {
         // 
         // Adiciona informação sobre posição na sequência
         // Usando VarBuilder para inicialização adequada
-        let position_embedding = embedding(config.block_size, config.n_embd, vb.pp("pos_emb"))?
+        let position_embedding = embedding(config.block_size, config.n_embd, vb.pp("pos_emb"))?;
         
         // 🏗️ **STACK DE BLOCOS TRANSFORMER: O CORAÇÃO DO MODELO**
         // 
@@ -307,7 +311,7 @@ impl MiniGPT {
         // 🎪 **CABEÇA DE LINGUAGEM (LANGUAGE MODELING HEAD)**
         // Projeta embeddings finais para espaço do vocabulário
         // Usando VarBuilder para inicialização adequada
-        let lm_head = linear(config.n_embd, config.vocab_size, vb.pp("lm_head"))?
+        let lm_head = linear(config.n_embd, config.vocab_size, vb.pp("lm_head"))?;
         
         // 🎉 **MONTAGEM FINAL DO MODELO**
         // Combina todos os componentes em uma estrutura coesa
@@ -319,6 +323,7 @@ impl MiniGPT {
             ln_final,                  // ⚖️ Normalização final
             lm_head,                   // 🎯 Projeção para vocabulário
             device: device.clone(),    // 💻 Dispositivo de computação
+            varmap,                    // 💾 Mapa de variáveis para salvamento
         })
     }
     
@@ -412,8 +417,8 @@ impl MiniGPT {
         // - Preserva informação de ambos (significado + posição)
         // - Permite que atenção considere tanto semântica quanto sintaxe
         // - Mais eficiente que concatenação (mantém dimensionalidade)
-        let pos_emb = pos_emb.unsqueeze(0)?.expand(&[batch_size, seq_len, self.config.n_embd])?
-        let mut x = (tok_emb + pos_emb)?;
+        let pos_emb = pos_emb.unsqueeze(0)?.expand(&[batch_size, seq_len, self.config.n_embd])?;
+        let mut x = (tok_emb.clone() + pos_emb.clone())?;
         
         // 🔍 **DEBUG: VERIFICAÇÃO DE INTEGRIDADE NUMÉRICA**
         // Detecta problemas numéricos que podem quebrar o treinamento
@@ -972,5 +977,25 @@ impl MiniGPT {
     /// - **Contexto menor**: Mais rápido e eficiente, mas pode "esquecer" informações importantes
     pub fn block_size(&self) -> usize {
         self.config.block_size
+    }
+    
+    /// 💾 **ACESSO AO VARMAP PARA SALVAMENTO**
+    /// 
+    /// Retorna uma referência ao VarMap que contém todos os pesos treináveis
+    /// do modelo. Este método é essencial para implementar salvamento e
+    /// carregamento de checkpoints.
+    /// 
+    /// ## 🗂️ **O que é o VarMap:**
+    /// - **Repositório**: Contém todos os tensores nomeados do modelo
+    /// - **Serialização**: Permite salvar em formato SafeTensors
+    /// - **Checkpoint**: Base para salvar/carregar estado do modelo
+    /// 
+    /// ## 🔧 **Uso Típico:**
+    /// ```rust
+    /// let varmap = model.varmap();
+    /// varmap.save("model.safetensors")?;
+    /// ```
+    pub fn varmap(&self) -> &VarMap {
+        &self.varmap
     }
 }
