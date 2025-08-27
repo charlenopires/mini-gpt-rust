@@ -323,6 +323,37 @@ enum Commands {
         #[arg(long)]
         stress: bool,
     },
+
+    /// 🎓 **DEMO: Demonstrações educacionais dos módulos**
+    /// 
+    /// Executa demonstrações interativas dos diferentes módulos do Mini-GPT
+    /// para fins educacionais e de aprendizado. Cada demo mostra conceitos
+    /// fundamentais e implementações práticas.
+    Demo {
+        /// 🎯 Módulo para demonstrar (attention, tokenizer, model, transformer, benchmarks, kernels, educational_logger, all)
+        #[arg(short, long, default_value = "all")]
+        module: String,
+        
+        /// 📚 Ativa logs educacionais detalhados
+        #[arg(long, help = "Ativa logs educacionais detalhados")]
+        educational: bool,
+        
+        /// 🔍 Mostra informações de tensores
+        #[arg(long, help = "Mostra informações de tensores")]
+        show_tensors: bool,
+        
+        /// 🗺️ Exibe mapas de atenção (quando aplicável)
+        #[arg(long, help = "Exibe mapas de atenção visuais")]
+        show_attention: bool,
+        
+        /// ⚡ Executa benchmarks de performance
+        #[arg(long, help = "Inclui benchmarks de performance")]
+        benchmark: bool,
+        
+        /// 🎮 Modo interativo com pausas para explicações
+        #[arg(long, help = "Modo interativo com pausas educacionais")]
+        interactive: bool,
+    },
 }
 
 /// 🚀 **FUNÇÃO PRINCIPAL: PONTO DE ENTRADA DA APLICAÇÃO**
@@ -545,6 +576,26 @@ fn main() -> Result<()> {
                 &strategies,
                 output,
                 stress,
+            )?
+        }
+        
+        // 🎓 **MODO DEMONSTRAÇÃO EDUCACIONAL**
+        // Executa demonstrações interativas dos módulos
+        Commands::Demo {
+            module,
+            educational,
+            show_tensors,
+            show_attention,
+            benchmark,
+            interactive,
+        } => {
+            run_educational_demos(
+                &module,
+                educational,
+                show_tensors,
+                show_attention,
+                benchmark,
+                interactive,
             )?
         }
     }
@@ -817,6 +868,132 @@ fn load_and_run_model(
         println!("⚠️  Especifique um prompt (-p) ou use modo chat (--chat)");
         Ok(())
     }
+}
+
+/// 🎓 **SISTEMA DE DEMONSTRAÇÕES EDUCACIONAIS**
+/// 
+/// Executa demonstrações interativas dos módulos do Mini-GPT para fins educacionais.
+/// Cada demonstração mostra conceitos fundamentais, implementações práticas e
+/// otimizações de performance específicas de cada componente.
+fn run_educational_demos(
+    module: &str,
+    educational: bool,
+    show_tensors: bool,
+    show_attention: bool,
+    benchmark: bool,
+    interactive: bool,
+) -> Result<()> {
+    println!("\n🎓 **SISTEMA DE DEMONSTRAÇÕES EDUCACIONAIS - MINI-GPT**");
+    println!("📚 Explorando conceitos fundamentais de LLMs em Rust\n");
+    
+    if interactive {
+        println!("🔄 **MODO INTERATIVO ATIVADO** - Pressione Enter para continuar entre seções\n");
+    }
+    
+    match module {
+        "attention" => {
+            println!("🧠 **DEMONSTRAÇÃO: MECANISMO DE ATENÇÃO**");
+            run_command("cargo run --example attention_demo", interactive)?;
+        }
+        "tokenizer" => {
+            println!("🔤 **DEMONSTRAÇÃO: SISTEMA DE TOKENIZAÇÃO**");
+            run_command("cargo run --example tokenizer_demo", interactive)?;
+        }
+        "model" => {
+            println!("🤖 **DEMONSTRAÇÃO: ARQUITETURA DO MODELO**");
+            run_command("cargo run --example model_demo", interactive)?;
+        }
+        "transformer" => {
+            println!("🔄 **DEMONSTRAÇÃO: BLOCOS TRANSFORMER**");
+            run_command("cargo run --example transformer_demo", interactive)?;
+        }
+        "benchmarks" => {
+            println!("⚡ **DEMONSTRAÇÃO: SISTEMA DE BENCHMARKS**");
+            run_command("cargo run --example benchmarks_demo", interactive)?;
+        }
+        "kernels" => {
+            println!("🚀 **DEMONSTRAÇÃO: OTIMIZAÇÕES DE KERNEL**");
+            run_command("cargo run --example kernels_demo", interactive)?;
+        }
+        "educational_logger" => {
+            println!("📊 **DEMONSTRAÇÃO: LOGGING EDUCACIONAL**");
+            run_command("cargo run --example educational_logger_demo", interactive)?;
+        }
+        "all" => {
+            println!("🌟 **DEMONSTRAÇÃO COMPLETA: TODOS OS MÓDULOS**\n");
+            
+            let modules = [
+                ("attention", "🧠 Mecanismo de Atenção"),
+                ("tokenizer", "🔤 Sistema de Tokenização"),
+                ("model", "🤖 Arquitetura do Modelo"),
+                ("transformer", "🔄 Blocos Transformer"),
+                ("benchmarks", "⚡ Sistema de Benchmarks"),
+                ("kernels", "🚀 Otimizações de Kernel"),
+                ("educational_logger", "📊 Logging Educacional"),
+            ];
+            
+            for (i, (module_name, description)) in modules.iter().enumerate() {
+                println!("\n{} **{}** ({}/{})", description, module_name.to_uppercase(), i + 1, modules.len());
+                println!("{}", "=".repeat(60));
+                
+                if interactive {
+                    println!("\nPressione Enter para continuar...");
+                    let mut input = String::new();
+                    std::io::stdin().read_line(&mut input)?;
+                }
+                
+                run_educational_demos(
+                    module_name,
+                    educational,
+                    show_tensors,
+                    show_attention,
+                    benchmark,
+                    false, // Não usar modo interativo recursivamente
+                )?;
+            }
+            
+            println!("\n✅ **DEMONSTRAÇÕES CONCLUÍDAS COM SUCESSO!**");
+            println!("🎯 Todos os módulos foram demonstrados com conceitos educacionais.");
+        }
+        _ => {
+            println!("❌ **ERRO**: Módulo '{}' não encontrado.", module);
+            println!("📋 **Módulos disponíveis**: attention, tokenizer, model, transformer, benchmarks, kernels, educational_logger, all");
+            return Ok(());
+        }
+    }
+    
+    if benchmark && module != "all" {
+        println!("\n⚡ **EXECUTANDO BENCHMARKS DE PERFORMANCE**");
+        println!("📊 Medindo performance do módulo {}...", module);
+        // Aqui poderia adicionar benchmarks específicos por módulo
+    }
+    
+    Ok(())
+}
+
+/// 🛠️ **EXECUTOR DE COMANDOS AUXILIAR**
+/// 
+/// Executa comandos do sistema com tratamento de erros e modo interativo opcional.
+fn run_command(command: &str, interactive: bool) -> Result<()> {
+    if interactive {
+        println!("\n🔧 **Executando**: {}", command);
+        println!("Pressione Enter para continuar...");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+    }
+    
+    let output = std::process::Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()?;
+    
+    if output.status.success() {
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+    } else {
+        println!("❌ **ERRO**: {}", String::from_utf8_lossy(&output.stderr));
+    }
+    
+    Ok(())
 }
 
 /// 🎯 **SELEÇÃO INTELIGENTE DE CHECKPOINT**

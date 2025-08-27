@@ -451,6 +451,15 @@ fn main() {
     let analyzer = SemanticAnalyzer::new();
     analyzer.demonstrate_semantic_relationships();
     
+    // === EXERCÍCIOS PRÁTICOS ===
+    println!("\n\n🎯 === EXERCÍCIOS PRÁTICOS ===");
+    exercicio_1_analise_dimensionalidade();
+    exercicio_2_clustering_semantico();
+    exercicio_3_analogias_vetoriais();
+    exercicio_4_visualizacao_embeddings();
+    exercicio_5_reducao_dimensionalidade();
+    exercicio_6_benchmark_operacoes();
+    
     // === CONCEITOS FUNDAMENTAIS ===
     println!("\n\n📚 === CONCEITOS FUNDAMENTAIS ===");
     
@@ -499,6 +508,269 @@ fn main() {
     println!("6. Implemente embedding de subpalavras");
     
     println!("\n✨ Embeddings explicados com sucesso! ✨");
+}
+
+/// EXERCÍCIO 1: Análise de Dimensionalidade
+fn exercicio_1_analise_dimensionalidade() {
+    println!("\n--- Exercício 1: Análise de Dimensionalidade ---");
+    
+    let dimensoes = vec![32, 64, 128, 256, 512];
+    let vocab_size = 1000;
+    
+    println!("\nImpacto da dimensionalidade nos embeddings:");
+    
+    for dim in dimensoes {
+        let token_emb = TokenEmbedding::new(vocab_size, dim);
+        
+        // Calcula estatísticas dos embeddings
+        let test_tokens = vec![1, 2, 3, 4, 5];
+        let embeddings = token_emb.forward(&test_tokens);
+        
+        // Calcula similaridade média entre tokens aleatórios
+        let mut total_similarity = 0.0;
+        let mut count = 0;
+        
+        for i in 0..embeddings.len() {
+            for j in i+1..embeddings.len() {
+                total_similarity += embeddings[i].cosine_similarity(&embeddings[j]);
+                count += 1;
+            }
+        }
+        
+        let avg_similarity = total_similarity / count as f32;
+        let memory_mb = (vocab_size * dim * 4) as f32 / (1024.0 * 1024.0);
+        
+        println!("  Dim {}: similaridade média={:.3}, memória={:.1}MB", 
+                dim, avg_similarity, memory_mb);
+    }
+    
+    println!("\n💡 Dica: Dimensões maiores capturam mais nuances, mas custam mais memória!");
+}
+
+/// EXERCÍCIO 2: Clustering Semântico
+fn exercicio_2_clustering_semantico() {
+    println!("\n--- Exercício 2: Clustering Semântico ---");
+    
+    let analyzer = SemanticAnalyzer::new();
+    
+    // Grupos semânticos para testar
+    let grupos = vec![
+        ("Animais", vec!["gato", "cachorro"]),
+        ("Transporte", vec!["carro", "bicicleta"]),
+        ("Moradia", vec!["casa", "apartamento"]),
+    ];
+    
+    println!("\nAnálise de coesão intra-grupo:");
+    
+    for (nome_grupo, palavras) in &grupos {
+        let mut similaridades = Vec::new();
+        
+        // Calcula similaridades dentro do grupo
+        for i in 0..palavras.len() {
+            for j in i+1..palavras.len() {
+                if let (Some(emb1), Some(emb2)) = (
+                    analyzer.get_word_embedding(palavras[i]),
+                    analyzer.get_word_embedding(palavras[j])
+                ) {
+                    let sim = emb1.cosine_similarity(&emb2);
+                    similaridades.push(sim);
+                }
+            }
+        }
+        
+        if !similaridades.is_empty() {
+            let media = similaridades.iter().sum::<f32>() / similaridades.len() as f32;
+            let min = similaridades.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+            let max = similaridades.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+            
+            println!("  {}: média={:.3}, min={:.3}, max={:.3}", 
+                    nome_grupo, media, min, max);
+        }
+    }
+    
+    println!("\n💡 Dica: Grupos semânticos devem ter alta similaridade interna!");
+}
+
+/// EXERCÍCIO 3: Analogias Vetoriais
+fn exercicio_3_analogias_vetoriais() {
+    println!("\n--- Exercício 3: Analogias Vetoriais ---");
+    
+    let analyzer = SemanticAnalyzer::new();
+    
+    // Testa analogias simples com palavras disponíveis
+    let analogias = vec![
+        ("gato", "animal", "carro", "veículo"),
+        ("casa", "moradia", "livro", "leitura"),
+        ("feliz", "alegre", "contente", "satisfeito"),
+    ];
+    
+    println!("\nTestando analogias vetoriais (A - B + C ≈ D):");
+    
+    for (a, b, c, d_esperado) in analogias {
+        if let (Some(emb_a), Some(emb_b), Some(emb_c), Some(emb_d)) = (
+            analyzer.get_word_embedding(a),
+            analyzer.get_word_embedding(b),
+            analyzer.get_word_embedding(c),
+            analyzer.get_word_embedding(d_esperado)
+        ) {
+            // Calcula: A - B + C
+            let resultado = emb_a.add(&emb_c).add(&emb_b.scale(-1.0));
+            let similaridade = resultado.cosine_similarity(&emb_d);
+            
+            println!("  {} - {} + {} ≈ {} (similaridade: {:.3})", 
+                    a, b, c, d_esperado, similaridade);
+        }
+    }
+    
+    println!("\n💡 Dica: Analogias funcionam porque embeddings capturam relações semânticas!");
+}
+
+/// EXERCÍCIO 4: Visualização de Embeddings
+fn exercicio_4_visualizacao_embeddings() {
+    println!("\n--- Exercício 4: Visualização de Embeddings ---");
+    
+    let analyzer = SemanticAnalyzer::new();
+    let palavras = vec!["gato", "cachorro", "carro", "casa", "feliz", "livro"];
+    
+    println!("\nProjeção 2D simplificada (primeiras 2 dimensões):");
+    
+    for palavra in &palavras {
+        if let Some(embedding) = analyzer.get_word_embedding(palavra) {
+            let x = embedding.vector[0];
+            let y = embedding.vector[1];
+            
+            // Normaliza para visualização
+            let x_norm = (x * 10.0) as i32;
+            let y_norm = (y * 10.0) as i32;
+            
+            println!("  {}: ({:.3}, {:.3}) -> ({}, {})", 
+                    palavra, x, y, x_norm, y_norm);
+        }
+    }
+    
+    // Simula mapa de calor de distâncias
+    println!("\nMapa de distâncias euclidianas:");
+    print!("      ");
+    for palavra in &palavras {
+        print!("{:>6}", &palavra[0..3]);
+    }
+    println!();
+    
+    for palavra1 in &palavras {
+        print!("{:>6}", &palavra1[0..3]);
+        for palavra2 in &palavras {
+            if let (Some(emb1), Some(emb2)) = (
+                analyzer.get_word_embedding(palavra1),
+                analyzer.get_word_embedding(palavra2)
+            ) {
+                let dist = emb1.euclidean_distance(&emb2);
+                print!("{:6.2}", dist);
+            } else {
+                print!("  N/A ");
+            }
+        }
+        println!();
+    }
+    
+    println!("\n💡 Dica: Visualização ajuda a entender relações espaciais entre conceitos!");
+}
+
+/// EXERCÍCIO 5: Redução de Dimensionalidade
+fn exercicio_5_reducao_dimensionalidade() {
+    println!("\n--- Exercício 5: Redução de Dimensionalidade ---");
+    
+    let dim_original = 128;
+    let dims_reduzidas = vec![64, 32, 16, 8];
+    
+    println!("\nImpacto da redução de dimensionalidade:");
+    
+    let token_emb = TokenEmbedding::new(100, dim_original);
+    let test_tokens = vec![1, 2, 3, 4, 5];
+    let embeddings_originais = token_emb.forward(&test_tokens);
+    
+    for dim_reduzida in dims_reduzidas {
+        // Simula redução truncando dimensões
+        let embeddings_reduzidos: Vec<Embedding> = embeddings_originais.iter()
+            .map(|emb| {
+                let mut vetor_reduzido = emb.vector[0..dim_reduzida].to_vec();
+                // Renormaliza após truncamento
+                let norma = vetor_reduzido.iter().map(|x| x * x).sum::<f32>().sqrt();
+                if norma > 0.0 {
+                    vetor_reduzido.iter_mut().for_each(|x| *x /= norma);
+                }
+                Embedding::from_values(vetor_reduzido)
+            })
+            .collect();
+        
+        // Calcula preservação de similaridades
+        let mut preservacao_total = 0.0;
+        let mut count = 0;
+        
+        for i in 0..embeddings_originais.len() {
+            for j in i+1..embeddings_originais.len() {
+                let sim_original = embeddings_originais[i].cosine_similarity(&embeddings_originais[j]);
+                let sim_reduzida = embeddings_reduzidos[i].cosine_similarity(&embeddings_reduzidos[j]);
+                
+                preservacao_total += (sim_original - sim_reduzida).abs();
+                count += 1;
+            }
+        }
+        
+        let erro_medio = preservacao_total / count as f32;
+        let reducao_memoria = (1.0 - dim_reduzida as f32 / dim_original as f32) * 100.0;
+        
+        println!("  {}D: erro médio={:.4}, redução memória={:.1}%", 
+                dim_reduzida, erro_medio, reducao_memoria);
+    }
+    
+    println!("\n💡 Dica: Redução de dimensionalidade economiza memória mas pode perder informação!");
+}
+
+/// EXERCÍCIO 6: Benchmark de Operações
+fn exercicio_6_benchmark_operacoes() {
+    println!("\n--- Exercício 6: Benchmark de Operações ---");
+    
+    let dimensoes = vec![64, 128, 256, 512];
+    let num_operacoes = 10000;
+    
+    println!("\nPerformance de operações com embeddings:");
+    
+    for dim in dimensoes {
+        let emb1 = Embedding::new(dim);
+        let emb2 = Embedding::new(dim);
+        
+        // Benchmark similaridade cosseno
+        let start = std::time::Instant::now();
+        for _ in 0..num_operacoes {
+            let _ = emb1.cosine_similarity(&emb2);
+        }
+        let tempo_cosine = start.elapsed();
+        
+        // Benchmark distância euclidiana
+        let start = std::time::Instant::now();
+        for _ in 0..num_operacoes {
+            let _ = emb1.euclidean_distance(&emb2);
+        }
+        let tempo_euclidean = start.elapsed();
+        
+        // Benchmark adição
+        let start = std::time::Instant::now();
+        for _ in 0..num_operacoes {
+            let _ = emb1.add(&emb2);
+        }
+        let tempo_add = start.elapsed();
+        
+        let ops_cosine = num_operacoes as f64 / tempo_cosine.as_secs_f64();
+        let ops_euclidean = num_operacoes as f64 / tempo_euclidean.as_secs_f64();
+        let ops_add = num_operacoes as f64 / tempo_add.as_secs_f64();
+        
+        println!("\n  Dimensão {}:", dim);
+        println!("    Cosseno: {:.0} ops/s", ops_cosine);
+        println!("    Euclidiana: {:.0} ops/s", ops_euclidean);
+        println!("    Adição: {:.0} ops/s", ops_add);
+    }
+    
+    println!("\n💡 Dica: Performance decresce com dimensionalidade, mas operações vetoriais são eficientes!");
 }
 
 #[cfg(test)]

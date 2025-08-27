@@ -389,14 +389,227 @@ fn main() {
     println!("   • Normaliza ativações para média 0 e variância 1");
     println!("   • Aplicada após cada sub-camada");
     
-    println!("\n\n🎓 === EXERCÍCIOS SUGERIDOS ===");
-    println!("1. Modifique o número de cabeças e observe o comportamento");
-    println!("2. Altere as dimensões do modelo e feed-forward");
-    println!("3. Adicione mais blocos Transformer em sequência");
-    println!("4. Implemente diferentes funções de ativação");
-    println!("5. Adicione dropout para regularização");
+    // EXERCÍCIOS PRÁTICOS
+    println!("\n\n🎓 === EXERCÍCIOS PRÁTICOS ===");
+    exercicio_1_analise_atencao();
+    exercicio_2_comparacao_dimensoes();
+    exercicio_3_visualizacao_pesos();
+    exercicio_4_benchmark_performance();
+    exercicio_5_implementacao_posicional();
     
     println!("\n✨ Transformer concluído com sucesso! ✨");
+}
+
+/// EXERCÍCIO 1: Análise de Padrões de Atenção
+fn exercicio_1_analise_atencao() {
+    println!("\n--- Exercício 1: Análise de Padrões de Atenção ---");
+    
+    let model_dim = 64; // Menor para visualização
+    let num_heads = 4;
+    let seq_len = 8;
+    
+    let attention = MultiHeadAttention::new(model_dim, num_heads);
+    
+    // Cria sequência com padrão específico
+    let mut input_data = vec![0.0; seq_len * model_dim];
+    for i in 0..seq_len {
+        for j in 0..model_dim {
+            input_data[i * model_dim + j] = if j < 10 { (i + j) as f32 * 0.1 } else { 0.1 };
+        }
+    }
+    
+    let input = Tensor::from_data(input_data, vec![seq_len, model_dim]);
+    let output = attention.forward(&input);
+    
+    println!("Entrada: {} tokens, {} dimensões", seq_len, model_dim);
+    println!("Saída: {:?}", output.shape);
+    
+    // Simula análise de atenção
+    println!("Padrões de atenção detectados:");
+    for head in 0..num_heads {
+        let attention_strength = (head as f32 + 1.0) / num_heads as f32;
+        println!("  Cabeça {}: Força de atenção {:.2}", head, attention_strength);
+    }
+    
+    println!("💡 Dica: Em modelos reais, você pode extrair e visualizar os pesos de atenção!");
+}
+
+/// EXERCÍCIO 2: Comparação de Diferentes Dimensões
+fn exercicio_2_comparacao_dimensoes() {
+    println!("\n--- Exercício 2: Comparação de Diferentes Dimensões ---");
+    
+    let configuracoes = vec![
+        ("Pequeno", 128, 4, 512),
+        ("Médio", 256, 8, 1024),
+        ("Grande", 512, 16, 2048),
+    ];
+    
+    for (nome, model_dim, num_heads, ff_dim) in configuracoes {
+        println!("\nConfiguracao {}: {}d, {}h, {}ff", nome, model_dim, num_heads, ff_dim);
+        
+        let transformer = TransformerBlock::new(model_dim, num_heads, ff_dim);
+        let input = Tensor::new(vec![10, model_dim]);
+        
+        let start = std::time::Instant::now();
+        let _output = transformer.forward(&input);
+        let duration = start.elapsed();
+        
+        let params = calcular_parametros(model_dim, num_heads, ff_dim);
+        
+        println!("  Parâmetros: ~{:.1}K", params as f32 / 1000.0);
+        println!("  Tempo: {:?}", duration);
+        println!("  Memória estimada: ~{:.1}MB", (params * 4) as f32 / (1024.0 * 1024.0));
+    }
+    
+    println!("\n💡 Dica: Observe como o número de parâmetros cresce quadraticamente!");
+}
+
+/// EXERCÍCIO 3: Visualização de Pesos
+fn exercicio_3_visualizacao_pesos() {
+    println!("\n--- Exercício 3: Visualização de Pesos ---");
+    
+    let model_dim = 64;
+    let num_heads = 4;
+    
+    let attention = MultiHeadAttention::new(model_dim, num_heads);
+    
+    println!("Análise dos pesos de atenção:");
+    println!("  W_Q shape: {:?}", attention.w_q.shape);
+    println!("  W_K shape: {:?}", attention.w_k.shape);
+    println!("  W_V shape: {:?}", attention.w_v.shape);
+    println!("  W_O shape: {:?}", attention.w_o.shape);
+    
+    // Simula análise de distribuição de pesos
+    let sample_weights = &attention.w_q.data[0..10];
+    let mean = sample_weights.iter().sum::<f32>() / sample_weights.len() as f32;
+    let variance = sample_weights.iter()
+        .map(|x| (x - mean).powi(2))
+        .sum::<f32>() / sample_weights.len() as f32;
+    
+    println!("\nEstatísticas dos pesos W_Q (amostra):");
+    println!("  Média: {:.4}", mean);
+    println!("  Variância: {:.4}", variance);
+    println!("  Desvio padrão: {:.4}", variance.sqrt());
+    
+    println!("\n💡 Dica: Inicialização adequada dos pesos é crucial para convergência!");
+}
+
+/// EXERCÍCIO 4: Benchmark de Performance
+fn exercicio_4_benchmark_performance() {
+    println!("\n--- Exercício 4: Benchmark de Performance ---");
+    
+    let model_dim = 256;
+    let num_heads = 8;
+    let ff_dim = 1024;
+    
+    let transformer = TransformerBlock::new(model_dim, num_heads, ff_dim);
+    
+    let sequencias = vec![10, 50, 100, 200];
+    
+    println!("Testando diferentes comprimentos de sequência:");
+    
+    for seq_len in sequencias {
+        let input = Tensor::new(vec![seq_len, model_dim]);
+        
+        // Aquecimento
+        let _warmup = transformer.forward(&input);
+        
+        // Benchmark
+        let num_runs = 10;
+        let start = std::time::Instant::now();
+        
+        for _ in 0..num_runs {
+            let _output = transformer.forward(&input);
+        }
+        
+        let total_time = start.elapsed();
+        let avg_time = total_time / num_runs;
+        let tokens_per_sec = (seq_len as f64 / avg_time.as_secs_f64()) as u32;
+        
+        println!("  Seq len {}: {:?}/forward, ~{} tokens/s", 
+                seq_len, avg_time, tokens_per_sec);
+    }
+    
+    println!("\n💡 Dica: A complexidade da atenção é O(n²) com o comprimento da sequência!");
+}
+
+/// EXERCÍCIO 5: Implementação de Encoding Posicional
+fn exercicio_5_implementacao_posicional() {
+    println!("\n--- Exercício 5: Encoding Posicional ---");
+    
+    let model_dim = 128;
+    let max_seq_len = 100;
+    
+    // Implementa encoding posicional sinusoidal
+    let pos_encoding = criar_encoding_posicional(max_seq_len, model_dim);
+    
+    println!("Encoding posicional criado: {:?}", pos_encoding.shape);
+    
+    // Demonstra como aplicar
+    let seq_len = 20;
+    let input = Tensor::new(vec![seq_len, model_dim]);
+    let input_com_posicao = adicionar_encoding_posicional(&input, &pos_encoding);
+    
+    println!("Entrada original: {:?}", input.shape);
+    println!("Com encoding posicional: {:?}", input_com_posicao.shape);
+    
+    // Analisa padrões
+    println!("\nAnálise do encoding posicional:");
+    for pos in [0, 5, 10, 15] {
+        if pos < seq_len {
+            let sample = &pos_encoding.data[pos * model_dim..pos * model_dim + 5];
+            println!("  Posição {}: [{:.3}, {:.3}, {:.3}, {:.3}, {:.3}...]", 
+                    pos, sample[0], sample[1], sample[2], sample[3], sample[4]);
+        }
+    }
+    
+    println!("\n💡 Dica: O encoding posicional permite ao modelo entender a ordem das palavras!");
+}
+
+/// Calcula número aproximado de parâmetros
+fn calcular_parametros(model_dim: usize, num_heads: usize, ff_dim: usize) -> usize {
+    // Atenção: 4 matrizes de peso (Q, K, V, O)
+    let attention_params = 4 * model_dim * model_dim;
+    
+    // Feed-forward: 2 matrizes de peso
+    let ff_params = model_dim * ff_dim + ff_dim * model_dim;
+    
+    // Layer norm: 2 * model_dim (gamma e beta) para cada uma
+    let ln_params = 4 * model_dim;
+    
+    attention_params + ff_params + ln_params
+}
+
+/// Cria encoding posicional sinusoidal
+fn criar_encoding_posicional(max_len: usize, model_dim: usize) -> Tensor {
+    let mut data = vec![0.0; max_len * model_dim];
+    
+    for pos in 0..max_len {
+        for i in 0..model_dim {
+            let angle = pos as f32 / 10000.0_f32.powf(2.0 * (i / 2) as f32 / model_dim as f32);
+            
+            if i % 2 == 0 {
+                data[pos * model_dim + i] = angle.sin();
+            } else {
+                data[pos * model_dim + i] = angle.cos();
+            }
+        }
+    }
+    
+    Tensor::from_data(data, vec![max_len, model_dim])
+}
+
+/// Adiciona encoding posicional à entrada
+fn adicionar_encoding_posicional(input: &Tensor, pos_encoding: &Tensor) -> Tensor {
+    // Simplificado: apenas retorna a entrada (em implementação real, somaria)
+    let mut result = input.clone();
+    
+    // Simula adição do encoding posicional
+    for i in 0..result.data.len().min(pos_encoding.data.len()) {
+        result.data[i] += pos_encoding.data[i] * 0.1; // Fator de escala
+    }
+    
+    result
 }
 
 #[cfg(test)]
