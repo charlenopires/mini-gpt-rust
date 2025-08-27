@@ -31,11 +31,15 @@ mod model;
 mod training;
 mod educational_logger;
 mod kernels;
+mod chunking;
+mod benchmarks;
 
 use model::{MiniGPT, CheckpointMetadata};
 use training::Trainer;
 use educational_logger::EducationalLogger;
 use kernels::{FusionBenchmark, FusionConfig};
+use chunking::{ChunkProcessor, ChunkingConfig, ChunkingStrategy};
+use benchmarks::{BenchmarkRunner, BenchmarkConfig};
 
 /// 🖥️ **INTERFACE DE LINHA DE COMANDO (CLI)**
 /// 
@@ -244,6 +248,81 @@ enum Commands {
         #[arg(long, default_value = "all")]
         benchmark_type: String,
     },
+    
+    /// 📄 **CHUNKING: Demonstra sistema de chunking de texto**
+    /// 
+    /// Testa diferentes estratégias de chunking em texto:
+    /// - Chunking fixo: divide em pedaços de tamanho fixo
+    /// - Chunking semântico: preserva significado e estrutura
+    /// - Chunking adaptativo: ajusta tamanho baseado no conteúdo
+    /// - Chunking com sobreposição: mantém contexto entre chunks
+    Chunk {
+        /// 📁 Caminho para o arquivo de texto a ser processado
+        #[arg(short, long, default_value = "data/sample_text.txt")]
+        input: PathBuf,
+        
+        /// 🎯 Estratégia de chunking (fixed, semantic, adaptive, overlap)
+        #[arg(short, long, default_value = "semantic")]
+        strategy: String,
+        
+        /// 📏 Tamanho máximo do chunk em tokens
+        #[arg(long, default_value = "512")]
+        max_size: usize,
+        
+        /// 📐 Tamanho mínimo do chunk em tokens
+        #[arg(long, default_value = "64")]
+        min_size: usize,
+        
+        /// 🔄 Razão de sobreposição (0.0 a 1.0)
+        #[arg(long, default_value = "0.1")]
+        overlap: f32,
+        
+        /// 📊 Exibe estatísticas detalhadas
+        #[arg(long, help = "Mostra análise detalhada dos chunks")]
+        analyze: bool,
+        
+        /// 🎯 Preserva sentenças completas
+        #[arg(long, help = "Evita quebrar sentenças no meio")]
+        preserve_sentences: bool,
+        
+        /// 📝 Preserva parágrafos completos
+        #[arg(long, help = "Evita quebrar parágrafos no meio")]
+        preserve_paragraphs: bool,
+        
+        /// 💾 Salva chunks em arquivo
+        #[arg(short, long, help = "Arquivo para salvar os chunks processados")]
+        output: Option<PathBuf>,
+    },
+    
+    /// 📊 **CHUNK BENCHMARK: Testa performance de chunking**
+    /// 
+    /// Executa benchmarks abrangentes das estratégias de chunking
+    /// para avaliar performance, qualidade e uso de memória.
+    ChunkBench {
+        /// 📁 Arquivo de texto para benchmark
+        #[arg(short, long)]
+        input: PathBuf,
+        
+        /// 📏 Tamanhos de texto para testar (separados por vírgula)
+        #[arg(long, default_value = "1000,5000,10000,50000")]
+        sizes: String,
+        
+        /// 🔄 Número de iterações por teste
+        #[arg(long, default_value = "10")]
+        iterations: usize,
+        
+        /// 🎯 Estratégias para testar (separadas por vírgula)
+        #[arg(long, default_value = "fixed,semantic,adaptive,overlapping")]
+        strategies: String,
+        
+        /// 📁 Arquivo de saída para relatório
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        
+        /// 🧪 Executar testes de stress
+        #[arg(long)]
+        stress: bool,
+    },
 }
 
 /// 🚀 **FUNÇÃO PRINCIPAL: PONTO DE ENTRADA DA APLICAÇÃO**
@@ -422,6 +501,52 @@ fn main() -> Result<()> {
             };
             run_kernel_fusion_benchmark(batch_size, seq_len, d_model, iterations, &benchmark_type, &device)?
         }
+        
+        // 📄 **MODO CHUNKING DE TEXTO**
+        // Demonstra diferentes estratégias de chunking
+        Commands::Chunk { 
+            input, 
+            strategy, 
+            max_size, 
+            min_size, 
+            overlap, 
+            analyze, 
+            preserve_sentences, 
+            preserve_paragraphs, 
+            output 
+        } => {
+            run_chunking_demo(
+                input, 
+                &strategy, 
+                max_size, 
+                min_size, 
+                overlap, 
+                analyze, 
+                preserve_sentences, 
+                preserve_paragraphs, 
+                output
+            )?
+        }
+
+        // 📊 **MODO BENCHMARK DE CHUNKING**
+        // Executa testes de performance para diferentes estratégias
+        Commands::ChunkBench {
+            input,
+            sizes,
+            iterations,
+            strategies,
+            output,
+            stress,
+        } => {
+            run_chunking_benchmark(
+                input,
+                &sizes,
+                iterations,
+                &strategies,
+                output,
+                stress,
+            )?
+        }
     }
     
     // ✅ **FINALIZAÇÃO BEM-SUCEDIDA**
@@ -430,7 +555,239 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// 📂 **CARREGAMENTO E EXECUÇÃO DE MODELO**
+/// 📄 **DEMONSTRAÇÃO DO SISTEMA DE CHUNKING**
+/// 
+/// Executa uma demonstração completa do sistema de chunking,
+/// mostrando diferentes estratégias e suas características.
+fn run_chunking_demo(
+    input_path: PathBuf,
+    strategy: &str,
+    max_size: usize,
+    min_size: usize,
+    overlap: f32,
+    analyze: bool,
+    preserve_sentences: bool,
+    preserve_paragraphs: bool,
+    output_path: Option<PathBuf>,
+) -> Result<()> {
+    use std::fs;
+    use tokenizer::BPETokenizer;
+    
+    println!("📄 === DEMONSTRAÇÃO DO SISTEMA DE CHUNKING ===");
+    println!("📁 Arquivo de entrada: {:?}", input_path);
+    println!("🎯 Estratégia: {}", strategy);
+    println!("📏 Tamanho máximo: {} tokens", max_size);
+    println!("📐 Tamanho mínimo: {} tokens", min_size);
+    println!("🔄 Sobreposição: {:.1}%", overlap * 100.0);
+    println!();
+    
+    // 📖 **CARREGAMENTO DO TEXTO**
+    let text = fs::read_to_string(&input_path)
+        .map_err(|e| anyhow::anyhow!("Erro ao ler arquivo: {}", e))?;
+    
+    println!("📊 Texto carregado: {} caracteres", text.len());
+    
+    // 🔧 **INICIALIZAÇÃO DO TOKENIZER**
+    let mut tokenizer = BPETokenizer::new(50000)
+        .map_err(|e| anyhow::anyhow!("Erro ao inicializar tokenizer: {}", e))?;
+    
+    // Treina o tokenizer com uma amostra do texto para demonstração
+    let sample_text = if text.len() > 10000 { &text[..10000] } else { &text };
+    tokenizer.train(sample_text)
+        .map_err(|e| anyhow::anyhow!("Erro ao treinar tokenizer: {}", e))?;
+    
+    // 📝 **CONFIGURAÇÃO DO CHUNKING**
+    let strategy_enum = match strategy.to_lowercase().as_str() {
+        "fixed" => ChunkingStrategy::Fixed,
+        "semantic" => ChunkingStrategy::Semantic,
+        "adaptive" => ChunkingStrategy::Adaptive,
+        "overlapping" => ChunkingStrategy::Overlapping,
+        _ => {
+            println!("⚠️  Estratégia desconhecida '{}', usando 'semantic'", strategy);
+            ChunkingStrategy::Semantic
+        }
+    };
+    
+    let config = ChunkingConfig {
+        max_chunk_size: max_size,
+        min_chunk_size: min_size,
+        overlap_ratio: overlap,
+        strategy: strategy_enum,
+        preserve_sentences,
+        preserve_paragraphs,
+    };
+    
+    let mut processor = ChunkProcessor::new(config);
+    
+    // 🚀 **PROCESSAMENTO DOS CHUNKS**
+    println!("🔄 Processando chunks...");
+    let chunks = processor.process_text(&text, &tokenizer)
+        .map_err(|e| anyhow::anyhow!("Erro no chunking: {}", e))?;
+    
+    println!("✅ Processamento concluído!");
+    println!("📊 Total de chunks gerados: {}", chunks.len());
+    println!();
+    
+    // 📈 **ANÁLISE DETALHADA (se solicitada)**
+    if analyze {
+        println!("📈 === ANÁLISE DETALHADA DOS CHUNKS ===");
+        
+        let total_tokens: usize = chunks.iter().map(|c| c.tokens.len()).sum();
+        let avg_tokens = if !chunks.is_empty() { total_tokens / chunks.len() } else { 0 };
+        let min_tokens = chunks.iter().map(|c| c.tokens.len()).min().unwrap_or(0);
+        let max_tokens = chunks.iter().map(|c| c.tokens.len()).max().unwrap_or(0);
+        
+        println!("📊 Estatísticas gerais:");
+        println!("   • Total de tokens: {}", total_tokens);
+        println!("   • Média de tokens por chunk: {}", avg_tokens);
+        println!("   • Menor chunk: {} tokens", min_tokens);
+        println!("   • Maior chunk: {} tokens", max_tokens);
+        println!();
+        
+        // 🔍 **DETALHES DE CADA CHUNK**
+        for (i, chunk) in chunks.iter().enumerate().take(5) {
+            println!("📄 Chunk {} (Índice: {}):", i + 1, chunk.chunk_index);
+            println!("   • Tokens: {}", chunk.tokens.len());
+            println!("   • Caracteres: {}", chunk.text.len());
+            println!("   • Densidade: {:.3}", chunk.metadata.information_density);
+            println!("   • Sentenças: {}", chunk.metadata.sentence_count);
+            println!("   • Parágrafos: {}", chunk.metadata.paragraph_count);
+            
+            // Mostra preview do conteúdo
+            let preview = if chunk.text.len() > 100 {
+                format!("{}...", &chunk.text[..100])
+            } else {
+                chunk.text.clone()
+            };
+            println!("   • Preview: {}", preview.replace('\n', " "));
+            println!();
+        }
+        
+        if chunks.len() > 5 {
+            println!("   ... e mais {} chunks", chunks.len() - 5);
+            println!();
+        }
+        
+        // 📊 **ESTATÍSTICAS GERAIS**
+        let stats = processor.calculate_statistics(&chunks);
+        println!("📊 Estatísticas detalhadas:");
+        println!("   • Tamanho médio: {:.1} tokens", stats.avg_chunk_size);
+        println!("   • Densidade média: {:.3}", stats.avg_information_density);
+        println!("   • Taxa de preservação: {:.1}%", stats.boundary_preservation_rate * 100.0);
+        println!();
+    }
+    
+    // 💾 **SALVAMENTO (se solicitado)**
+    if let Some(output) = output_path {
+        println!("💾 Salvando chunks em: {:?}", output);
+        
+        let mut output_content = String::new();
+        output_content.push_str(&format!("# Chunks processados com estratégia: {}\n\n", strategy));
+        output_content.push_str(&format!("Total de chunks: {}\n", chunks.len()));
+        output_content.push_str(&format!("Configuração: max={}, min={}, overlap={:.1}%\n\n", 
+                                       max_size, min_size, overlap * 100.0));
+        
+        for (i, chunk) in chunks.iter().enumerate() {
+            output_content.push_str(&format!("## Chunk {} (Índice: {})\n", i + 1, chunk.chunk_index));
+            output_content.push_str(&format!("- Tokens: {}\n", chunk.tokens.len()));
+            output_content.push_str(&format!("- Densidade: {:.3}\n", chunk.metadata.information_density));
+            output_content.push_str(&format!("- Sentenças: {}\n", chunk.metadata.sentence_count));
+            output_content.push_str(&format!("- Parágrafos: {}\n\n", chunk.metadata.paragraph_count));
+            output_content.push_str(&chunk.text);
+            output_content.push_str("\n\n---\n\n");
+        }
+        
+        fs::write(&output, output_content)
+            .map_err(|e| anyhow::anyhow!("Erro ao salvar arquivo: {}", e))?;
+        
+        println!("✅ Chunks salvos com sucesso!");
+    }
+    
+    println!("🎉 Demonstração de chunking concluída!");
+    Ok(())
+}
+
+/// 📊 **BENCHMARK DO SISTEMA DE CHUNKING**
+/// 
+/// Executa testes de performance para diferentes estratégias de chunking,
+/// medindo tempo, qualidade e uso de memória.
+fn run_chunking_benchmark(
+    input_path: PathBuf,
+    sizes: &str,
+    iterations: usize,
+    strategies: &str,
+    output_path: Option<PathBuf>,
+    stress: bool,
+) -> Result<()> {
+    println!("🚀 Iniciando benchmarks de chunking...");
+    
+    // Carregamento do texto
+    let text = std::fs::read_to_string(&input_path)?;
+    println!("📄 Texto carregado: {} caracteres", text.len());
+    
+    // Parse das estratégias
+    let strategy_list: Vec<ChunkingStrategy> = strategies
+        .split(',')
+        .map(|s| match s.trim() {
+            "fixed" => ChunkingStrategy::Fixed,
+            "semantic" => ChunkingStrategy::Semantic,
+            "adaptive" => ChunkingStrategy::Adaptive,
+            "overlapping" => ChunkingStrategy::Overlapping,
+            _ => ChunkingStrategy::Fixed,
+        })
+        .collect();
+    
+    // Configuração do benchmark com valores padrão
+    let mut chunking_configs = std::collections::HashMap::new();
+    
+    // Configurações padrão para cada estratégia
+    for strategy in &strategy_list {
+        let config = ChunkingConfig {
+            max_chunk_size: 512,
+            min_chunk_size: 64,
+            overlap_ratio: 0.1,
+            strategy: strategy.clone(),
+            preserve_sentences: true,
+            preserve_paragraphs: false,
+        };
+        chunking_configs.insert(strategy.clone(), config);
+    }
+    
+    let config = BenchmarkConfig {
+        text_sizes: vec![1000, 5000, 10000],
+        iterations,
+        strategies: strategy_list,
+        chunking_configs,
+        warmup_iterations: 3,
+    };
+    
+    // Execução dos benchmarks
+    let mut runner = BenchmarkRunner::new(config)?;
+    let results = runner.run_all_benchmarks(&text)?;
+    
+    // Geração do relatório
+    let report = runner.generate_report(&results);
+    
+    // Exibição dos resultados
+    println!("\n📈 Resultados dos Benchmarks:");
+    println!("{}", report);
+    
+    // Salvamento opcional
+    if let Some(output) = output_path {
+        std::fs::write(&output, &report)?;
+        println!("💾 Relatório salvo em: {}", output.display());
+    }
+    
+    // Execução de testes de stress se solicitado
+    if stress {
+        println!("\n🔥 Executando testes de stress...");
+        benchmarks::run_stress_tests(&text)?;
+    }
+    
+    Ok(())
+}
+
+/// 🔄 **CARREGAMENTO E EXECUÇÃO DE MODELO**
 /// 
 /// Carrega um modelo de checkpoint e executa geração ou chat
 fn load_and_run_model(

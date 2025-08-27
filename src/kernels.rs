@@ -349,7 +349,19 @@ impl FusedAttentionKernel {
     fn fused_attention_output(&self, attention: &Tensor, v: &Tensor) -> Result<Tensor> {
         // A multiplicação é otimizada pelo backend do Candle
         // mas podemos adicionar hints para melhor performance
-        attention.matmul(v)
+        let result = attention.matmul(v)?;
+        
+        // 🔄 **MERGE HEADS: RECONSTRÓI TENSOR ORIGINAL**
+        // O resultado da atenção está em formato [B, H, T, D]
+        // Precisamos converter de volta para [B, T, C] onde C = H * D
+        let (batch_size, n_head, seq_len, head_dim) = result.dims4()?;
+        
+        // Transpõe de [B, H, T, D] para [B, T, H, D]
+        let transposed = result.transpose(1, 2)?;
+        
+        // Reshape para [B, T, C] onde C = H * D
+        let n_embd = n_head * head_dim;
+        transposed.reshape(&[batch_size, seq_len, n_embd])
     }
 
     /// Implementação padrão (não fusionada) para comparação
@@ -374,7 +386,19 @@ impl FusedAttentionKernel {
         };
 
         let attention_weights = candle_nn::ops::softmax_last_dim(&masked_scores)?;
-        attention_weights.matmul(v)
+        let result = attention_weights.matmul(v)?;
+        
+        // 🔄 **MERGE HEADS: RECONSTRÓI TENSOR ORIGINAL**
+        // O resultado da atenção está em formato [B, H, T, D]
+        // Precisamos converter de volta para [B, T, C] onde C = H * D
+        let (batch_size, n_head, seq_len, head_dim) = result.dims4()?;
+        
+        // Transpõe de [B, H, T, D] para [B, T, H, D]
+        let transposed = result.transpose(1, 2)?;
+        
+        // Reshape para [B, T, C] onde C = H * D
+        let n_embd = n_head * head_dim;
+        transposed.reshape(&[batch_size, seq_len, n_embd])
     }
     
     /// 📊 **ESTATÍSTICAS DE MEMÓRIA**

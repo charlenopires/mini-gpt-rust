@@ -34,6 +34,19 @@ candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
 [target.'cfg(target_os = "macos")'.dependencies]
 candle-metal-kernels = "0.8"  # Kernels Metal para ARM Apple
 
+# Exemplos educacionais
+[[example]]
+name = "transformer_architecture"
+path = "examples/educational/transformer_architecture.rs"
+
+[[example]]
+name = "tokenization_process"
+path = "examples/educational/tokenization_process.rs"
+
+[[example]]
+name = "embeddings_explained"
+path = "examples/educational/embeddings_explained.rs"
+
 [profile.release]
 opt-level = 3
 lto = true                   # Link-time optimization

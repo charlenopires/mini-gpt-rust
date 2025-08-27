@@ -1,0 +1,70 @@
+# 📊 RELATÓRIO DE BENCHMARKS DE CHUNKING
+
+## 🏆 Ranking por Performance (chars/s)
+
+1. **Fixed**: 2181976871 chars/s (0.00ms)
+2. **Semantic**: 1621796951 chars/s (0.01ms)
+3. **Fixed**: 1276557712 chars/s (0.00ms)
+4. **Semantic**: 821798455 chars/s (0.01ms)
+5. **Semantic**: 585480094 chars/s (0.00ms)
+6. **Fixed**: 533333333 chars/s (0.00ms)
+
+## 🎯 Ranking por Qualidade (densidade de informação)
+
+1. **Fixed**: 0.161 densidade (0.0% preservação)
+2. **Semantic**: 0.152 densidade (100.0% preservação)
+3. **Semantic**: 0.123 densidade (100.0% preservação)
+4. **Semantic**: 0.110 densidade (100.0% preservação)
+5. **Fixed**: 0.103 densidade (0.0% preservação)
+6. **Fixed**: 0.101 densidade (0.0% preservação)
+
+## 📈 Detalhes Completos
+
+### Fixed
+
+- **Performance**: 533333333 chars/s, 368000000 tokens/s
+- **Tempo**: 0.00ms
+- **Chunks**: 2 total, 345.0 ± 167.0 tokens
+- **Qualidade**: 0.161 densidade, 0.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+
+### Semantic
+
+- **Performance**: 585480094 chars/s, 402224824 tokens/s
+- **Tempo**: 0.00ms
+- **Chunks**: 2 total, 343.5 ± 134.5 tokens
+- **Qualidade**: 0.152 densidade, 100.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+
+### Fixed
+
+- **Performance**: 1276557712 chars/s, 885342186 tokens/s
+- **Tempo**: 0.00ms
+- **Chunks**: 7 total, 495.3 ± 40.9 tokens
+- **Qualidade**: 0.103 densidade, 0.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+
+### Semantic
+
+- **Performance**: 821798455 chars/s, 566332402 tokens/s
+- **Tempo**: 0.01ms
+- **Chunks**: 8 total, 430.6 ± 90.3 tokens
+- **Qualidade**: 0.123 densidade, 100.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+
+### Fixed
+
+- **Performance**: 2181976871 chars/s, 1525420031 tokens/s
+- **Tempo**: 0.00ms
+- **Chunks**: 14 total, 499.4 ± 45.6 tokens
+- **Qualidade**: 0.101 densidade, 0.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+
+### Semantic
+
+- **Performance**: 1621796951 chars/s, 1124878365 tokens/s
+- **Tempo**: 0.01ms
+- **Chunks**: 15 total, 462.4 ± 41.2 tokens
+- **Qualidade**: 0.110 densidade, 100.0% preservação
+- **Memória**: 0.00MB pico, 0.09KB/chunk
+

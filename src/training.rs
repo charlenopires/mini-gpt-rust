@@ -72,6 +72,7 @@
 
 use crate::model::{MiniGPT, CheckpointMetadata};
 use crate::tokenizer::BPETokenizer;
+use crate::chunking::{ChunkProcessor, ChunkingConfig, ChunkingStrategy};
 use candle_core::{Device, Tensor};
 // use candle_nn::loss; // Removido - não utilizado
 use indicatif::{ProgressBar, ProgressStyle};
@@ -135,6 +136,10 @@ pub struct Trainer {
     /// 🔤 **TOKENIZADOR**
     /// Converte texto em números que o modelo entende
     tokenizer: BPETokenizer,
+    
+    /// ✂️ **PROCESSADOR DE CHUNKS**
+    /// Sistema inteligente de divisão de texto
+    chunk_processor: ChunkProcessor,
     
     /// 💻 **DISPOSITIVO DE COMPUTAÇÃO**
     /// CPU ou GPU onde os cálculos acontecem
@@ -221,10 +226,23 @@ impl Trainer {
             }
         };
         
+        // ✂️ **CONFIGURAÇÃO DO SISTEMA DE CHUNKING**
+        let chunking_config = ChunkingConfig {
+            max_chunk_size: 512,  // Tamanho otimizado para contexto
+            min_chunk_size: 64,   // Evita chunks muito pequenos
+            overlap_ratio: 0.1,   // 10% de sobreposição para contexto
+            strategy: ChunkingStrategy::Semantic,  // Preserva integridade semântica
+            preserve_sentences: true,
+            preserve_paragraphs: true,
+        };
+        
+        let chunk_processor = ChunkProcessor::new(chunking_config);
+        
         // 🏗️ **CONSTRUÇÃO DO TREINADOR OTIMIZADO**
         Self {
             model,
             tokenizer,
+            chunk_processor,
             device,
             learning_rate,
             batch_size,
@@ -293,6 +311,42 @@ impl Trainer {
     /// - **Backward**: Professor corrige e explica erros
     /// - **Update**: Aluno aprende e melhora
     pub fn train(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
+        self.train_with_chunking(tokens, epochs)
+    }
+    
+    /// ✂️ **TREINAMENTO COM CHUNKING INTELIGENTE**
+    /// 
+    /// Versão avançada que usa o sistema de chunking para otimizar
+    /// a qualidade dos dados de treinamento e melhorar a convergência.
+    pub fn train_with_chunking(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
+        // 📝 **PREPARAÇÃO DO TEXTO PARA CHUNKING**
+        let text = self.tokenizer.decode(tokens)?;
+        
+        // ✂️ **APLICAÇÃO DO CHUNKING INTELIGENTE**
+        let chunks = self.chunk_processor.process_text(&text, &self.tokenizer)
+            .map_err(|e| format!("Erro no chunking: {}", e))?;
+        
+        println!("✂️ Chunking aplicado: {} chunks gerados", chunks.len());
+        
+        // 📊 **ESTATÍSTICAS DE CHUNKING**
+        let stats = self.chunk_processor.calculate_statistics(&chunks);
+        println!("📊 Estatísticas de Chunking:");
+        println!("   📏 Tamanho médio: {:.1} tokens", stats.avg_chunk_size);
+        println!("   📐 Variação: {} - {} tokens", stats.min_chunk_size, stats.max_chunk_size);
+        println!("   🎯 Taxa de preservação: {:.1}%", stats.boundary_preservation_rate * 100.0);
+        
+        // 🔄 **CONVERSÃO DE CHUNKS PARA TOKENS**
+        let chunked_tokens: Vec<usize> = chunks.iter()
+            .flat_map(|chunk| chunk.tokens.iter().map(|&t| t as usize))
+            .collect();
+        
+        self.train_standard(&chunked_tokens, epochs)
+    }
+    
+    /// 🏋️‍♀️ **TREINAMENTO PADRÃO (SEM CHUNKING)**
+    /// 
+    /// Versão original do treinamento para compatibilidade.
+    pub fn train_standard(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
         let block_size = self.model.block_size();
         
         // 📋 **RELATÓRIO INICIAL DE CONFIGURAÇÃO**

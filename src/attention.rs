@@ -420,12 +420,12 @@ impl SelfAttention {
         // 🔄 **PASSO 1: TRANSPOSE DE VOLTA**
         // [B, H, T, D] → [B, T, H, D]
         // Reorganiza para que as cabeças fiquem na última dimensão
-        let transposed = x.transpose(1, 2)?.contiguous();
+        let transposed = x.transpose(1, 2)?.contiguous()?;
         
         // 🔗 **PASSO 2: CONCATENAÇÃO DAS CABEÇAS**
         // [B, T, H, D] → [B, T, C] onde C = H × D
         // Achata as dimensões H e D em uma única dimensão
-        transposed?.reshape(&[batch_size, seq_len, self.n_embd])
+        transposed.reshape(&[batch_size, seq_len, self.n_embd])
     }
     
     /// 🧮 **ATTENTION SCORES: O CORAÇÃO DO MECANISMO**
