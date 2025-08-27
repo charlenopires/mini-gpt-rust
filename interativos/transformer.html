@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demonstração Interativa da Arquitetura Transformer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .transformer-block {
+            position: relative;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .transformer-block:hover {
+            border-color: #60a5fa;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        .transformer-block.active {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        .data-flow {
+            position: relative;
+            height: 40px;
+            background: linear-gradient(90deg, #1e40af, #3b82f6, #60a5fa);
+            border-radius: 20px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            overflow: hidden;
+        }
+        .data-flow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: flow 2s infinite;
+        }
+        .data-flow.active::before {
+            animation: flow 1s infinite;
+        }
+        @keyframes flow {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .attention-head {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .attention-head:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        .attention-head.active {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            animation: pulse 1s infinite;
+        }
+        .matrix-cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .matrix-cell:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.2);
+        }
+        .layer-norm {
+            background: linear-gradient(90deg, #10b981, #059669);
+            height: 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .layer-norm::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: normalize 1.5s infinite;
+        }
+        @keyframes normalize {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .feed-forward {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+        .feed-forward::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: process 2s infinite;
+        }
+        @keyframes process {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .positional-encoding {
+            background: repeating-linear-gradient(
+                45deg,
+                #6366f1,
+                #6366f1 10px,
+                #8b5cf6 10px,
+                #8b5cf6 20px
+            );
+            height: 20px;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+        .token-box {
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 4px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .token-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+        }
+        .token-box.active {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            animation: highlight 1s infinite;
+        }
+        @keyframes highlight {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .architecture-diagram {
+            position: relative;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 600px;
+            overflow: hidden;
+        }
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .connection-line.active {
+            opacity: 1;
+            animation: flow-line 1s infinite;
+        }
+        @keyframes flow-line {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .parameter-display {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .step-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">Arquitetura Transformer</h1>
+            <p class="text-xl opacity-90">Explore a arquitetura que revolucionou o processamento de linguagem natural</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Painel de Controle -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Configurações</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Sequência de Entrada</label>
+                            <textarea id="inputSequence" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite uma frase...">
+O gato subiu no telhado</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Número de Camadas</label>
+                            <input type="range" id="numLayers" min="1" max="12" value="6" class="w-full">
+                            <span id="numLayersValue" class="text-sm opacity-75">6 camadas</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Cabeças de Atenção</label>
+                            <input type="range" id="numHeads" min="1" max="16" value="8" class="w-full">
+                            <span id="numHeadsValue" class="text-sm opacity-75">8 cabeças</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Dimensão do Modelo</label>
+                            <select id="modelDim" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                                <option value="512">512 (Base)</option>
+                                <option value="768">768 (Large)</option>
+                                <option value="1024">1024 (XL)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Tipo de Arquitetura</label>
+                            <select id="architectureType" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                                <option value="encoder-only">Encoder Only (BERT)</option>
+                                <option value="decoder-only">Decoder Only (GPT)</option>
+                                <option value="encoder-decoder">Encoder-Decoder (T5)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showParameters" class="mr-2">
+                                <span class="text-sm font-medium">Mostrar Parâmetros</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="animateFlow" class="mr-2" checked>
+                                <span class="text-sm font-medium">Animar Fluxo de Dados</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button id="processSequence" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        Processar Sequência
+                    </button>
+                </div>
+                
+                <!-- Componentes -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Componentes</h2>
+                    <div class="space-y-2">
+                        <div class="transformer-block component-item" data-component="embedding">
+                            <div class="step-indicator">1</div>
+                            <h3 class="font-semibold">Token + Positional Embedding</h3>
+                            <p class="text-sm opacity-75">Converte tokens em vetores</p>
+                        </div>
+                        <div class="transformer-block component-item" data-component="attention">
+                            <div class="step-indicator">2</div>
+                            <h3 class="font-semibold">Multi-Head Attention</h3>
+                            <p class="text-sm opacity-75">Captura relações entre tokens</p>
+                        </div>
+                        <div class="transformer-block component-item" data-component="norm1">
+                            <div class="step-indicator">3</div>
+                            <h3 class="font-semibold">Layer Normalization</h3>
+                            <p class="text-sm opacity-75">Normaliza e estabiliza</p>
+                        </div>
+                        <div class="transformer-block component-item" data-component="feedforward">
+                            <div class="step-indicator">4</div>
+                            <h3 class="font-semibold">Feed Forward</h3>
+                            <p class="text-sm opacity-75">Transformação não-linear</p>
+                        </div>
+                        <div class="transformer-block component-item" data-component="norm2">
+                            <div class="step-indicator">5</div>
+                            <h3 class="font-semibold">Layer Normalization</h3>
+                            <p class="text-sm opacity-75">Normalização final</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualização Principal -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Diagrama da Arquitetura -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Diagrama da Arquitetura</h2>
+                    <div id="architectureDiagram" class="architecture-diagram">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Tokens de Entrada -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Tokens de Entrada</h2>
+                    <div id="inputTokens" class="flex flex-wrap gap-2">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Matriz de Atenção -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Matriz de Atenção</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Cabeças de Atenção</h3>
+                            <div id="attentionHeads" class="flex flex-wrap">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Matriz de Atenção (Cabeça 1)</h3>
+                            <div id="attentionMatrix" class="grid gap-1 max-w-xs">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parâmetros do Modelo -->
+                <div id="modelParameters" class="glass-effect p-6 rounded-2xl" style="display: none;">
+                    <h2 class="text-2xl font-semibold mb-4">Parâmetros do Modelo</h2>
+                    <div id="parametersDisplay" class="parameter-display">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Saída do Modelo -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Saída do Modelo</h2>
+                    <div id="modelOutput" class="space-y-4">
+                        <p class="text-white/70">A saída aparecerá aqui após processar a sequência.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DO DOM ---
+        const inputSequence = document.getElementById('inputSequence');
+        const numLayers = document.getElementById('numLayers');
+        const numLayersValue = document.getElementById('numLayersValue');
+        const numHeads = document.getElementById('numHeads');
+        const numHeadsValue = document.getElementById('numHeadsValue');
+        const modelDim = document.getElementById('modelDim');
+        const architectureType = document.getElementById('architectureType');
+        const showParameters = document.getElementById('showParameters');
+        const animateFlow = document.getElementById('animateFlow');
+        const processSequence = document.getElementById('processSequence');
+        const architectureDiagram = document.getElementById('architectureDiagram');
+        const inputTokens = document.getElementById('inputTokens');
+        const attentionHeads = document.getElementById('attentionHeads');
+        const attentionMatrix = document.getElementById('attentionMatrix');
+        const modelParameters = document.getElementById('modelParameters');
+        const parametersDisplay = document.getElementById('parametersDisplay');
+        const modelOutput = document.getElementById('modelOutput');
+        const componentItems = document.querySelectorAll('.component-item');
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let tokens = [];
+        let currentStep = 0;
+        let isProcessing = false;
+        let attentionWeights = [];
+        let processingInterval;
+
+        // --- FUNÇÕES UTILITÁRIAS ---
+
+        /**
+         * Tokeniza uma sequência de entrada
+         */
+        function tokenizeSequence(text) {
+            return text.trim().split(/\s+/).filter(token => token.length > 0);
+        }
+
+        /**
+         * Calcula o número total de parâmetros
+         */
+        function calculateParameters() {
+            const layers = parseInt(numLayers.value);
+            const heads = parseInt(numHeads.value);
+            const dim = parseInt(modelDim.value);
+            const vocabSize = 50000; // Tamanho típico do vocabulário
+            
+            // Embedding parameters
+            const embeddingParams = vocabSize * dim + 512 * dim; // token + positional
+            
+            // Attention parameters per layer
+            const attentionParams = 4 * dim * dim; // Q, K, V, O projections
+            
+            // Feed-forward parameters per layer
+            const ffParams = 2 * dim * (4 * dim); // Two linear layers with 4x expansion
+            
+            // Layer norm parameters per layer
+            const layerNormParams = 2 * 2 * dim; // 2 layer norms per layer, 2 params each
+            
+            // Total per layer
+            const paramsPerLayer = attentionParams + ffParams + layerNormParams;
+            
+            // Total parameters
+            const totalParams = embeddingParams + (layers * paramsPerLayer);
+            
+            return {
+                embedding: embeddingParams,
+                attention: attentionParams * layers,
+                feedforward: ffParams * layers,
+                layerNorm: layerNormParams * layers,
+                total: totalParams
+            };
+        }
+
+        /**
+         * Gera matriz de atenção simulada
+         */
+        function generateAttentionMatrix(tokens, headIndex = 0) {
+            const size = tokens.length;
+            const matrix = [];
+            
+            for (let i = 0; i < size; i++) {
+                const row = [];
+                for (let j = 0; j < size; j++) {
+                    // Simula padrões de atenção baseados na posição e conteúdo
+                    let attention = 0;
+                    
+                    if (i === j) {
+                        attention = 0.3 + Math.random() * 0.4; // Self-attention
+                    } else {
+                        const distance = Math.abs(i - j);
+                        attention = Math.exp(-distance * 0.5) * (0.1 + Math.random() * 0.3);
+                    }
+                    
+                    // Diferentes cabeças focam em diferentes padrões
+                    if (headIndex % 2 === 0) {
+                        // Cabeças pares: foco em tokens próximos
+                        attention *= Math.exp(-Math.abs(i - j) * 0.3);
+                    } else {
+                        // Cabeças ímpares: foco em dependências de longo alcance
+                        if (Math.abs(i - j) > 2) attention *= 1.5;
+                    }
+                    
+                    row.push(Math.max(0, Math.min(1, attention)));
+                }
+                
+                // Normaliza a linha (softmax simulado)
+                const sum = row.reduce((a, b) => a + b, 0);
+                matrix.push(row.map(val => val / sum));
+            }
+            
+            return matrix;
+        }
+
+        // --- FUNÇÕES DE VISUALIZAÇÃO ---
+
+        /**
+         * Atualiza os valores dos sliders
+         */
+        function updateSliderValues() {
+            numLayersValue.textContent = `${numLayers.value} camadas`;
+            numHeadsValue.textContent = `${numHeads.value} cabeças`;
+        }
+
+        /**
+         * Cria o diagrama da arquitetura
+         */
+        function createArchitectureDiagram() {
+            architectureDiagram.innerHTML = '';
+            
+            const layers = parseInt(numLayers.value);
+            const archType = architectureType.value;
+            
+            // Cria estrutura baseada no tipo de arquitetura
+            if (archType === 'encoder-only' || archType === 'encoder-decoder') {
+                createEncoderStack(layers);
+            }
+            
+            if (archType === 'decoder-only' || archType === 'encoder-decoder') {
+                createDecoderStack(layers, archType === 'encoder-decoder');
+            }
+        }
+
+        /**
+         * Cria stack do encoder
+         */
+        function createEncoderStack(layers) {
+            const encoderDiv = document.createElement('div');
+            encoderDiv.className = 'absolute left-4 top-4 w-1/3';
+            encoderDiv.innerHTML = `<h3 class="text-lg font-bold text-center mb-4 text-gray-800">Encoder</h3>`;
+            
+            for (let i = 0; i < layers; i++) {
+                const layerDiv = document.createElement('div');
+                layerDiv.className = 'border-2 border-blue-500 rounded-lg p-3 mb-2 bg-blue-50';
+                layerDiv.innerHTML = `
+                    <div class="text-sm font-semibold text-gray-800 mb-2">Camada ${i + 1}</div>
+                    <div class="space-y-1">
+                        <div class="h-4 bg-purple-200 rounded text-xs flex items-center justify-center text-gray-700">Multi-Head Attention</div>
+                        <div class="h-2 bg-green-200 rounded"></div>
+                        <div class="h-4 bg-red-200 rounded text-xs flex items-center justify-center text-gray-700">Feed Forward</div>
+                        <div class="h-2 bg-green-200 rounded"></div>
+                    </div>
+                `;
+                encoderDiv.appendChild(layerDiv);
+            }
+            
+            architectureDiagram.appendChild(encoderDiv);
+        }
+
+        /**
+         * Cria stack do decoder
+         */
+        function createDecoderStack(layers, hasEncoder) {
+            const decoderDiv = document.createElement('div');
+            decoderDiv.className = hasEncoder ? 'absolute right-4 top-4 w-1/3' : 'absolute left-1/3 top-4 w-1/3';
+            decoderDiv.innerHTML = `<h3 class="text-lg font-bold text-center mb-4 text-gray-800">Decoder</h3>`;
+            
+            for (let i = 0; i < layers; i++) {
+                const layerDiv = document.createElement('div');
+                layerDiv.className = 'border-2 border-orange-500 rounded-lg p-3 mb-2 bg-orange-50';
+                layerDiv.innerHTML = `
+                    <div class="text-sm font-semibold text-gray-800 mb-2">Camada ${i + 1}</div>
+                    <div class="space-y-1">
+                        <div class="h-4 bg-purple-200 rounded text-xs flex items-center justify-center text-gray-700">Masked Self-Attention</div>
+                        <div class="h-2 bg-green-200 rounded"></div>
+                        ${hasEncoder ? '<div class="h-4 bg-blue-200 rounded text-xs flex items-center justify-center text-gray-700">Cross-Attention</div><div class="h-2 bg-green-200 rounded"></div>' : ''}
+                        <div class="h-4 bg-red-200 rounded text-xs flex items-center justify-center text-gray-700">Feed Forward</div>
+                        <div class="h-2 bg-green-200 rounded"></div>
+                    </div>
+                `;
+                decoderDiv.appendChild(layerDiv);
+            }
+            
+            architectureDiagram.appendChild(decoderDiv);
+        }
+
+        /**
+         * Exibe os tokens de entrada
+         */
+        function displayInputTokens() {
+            inputTokens.innerHTML = '';
+            
+            tokens.forEach((token, index) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token-box';
+                tokenDiv.textContent = token;
+                tokenDiv.dataset.index = index;
+                
+                tokenDiv.addEventListener('click', () => {
+                    highlightTokenAttention(index);
+                });
+                
+                inputTokens.appendChild(tokenDiv);
+            });
+        }
+
+        /**
+         * Cria as cabeças de atenção
+         */
+        function createAttentionHeads() {
+            attentionHeads.innerHTML = '';
+            const heads = parseInt(numHeads.value);
+            
+            for (let i = 0; i < heads; i++) {
+                const headDiv = document.createElement('div');
+                headDiv.className = 'attention-head';
+                headDiv.textContent = i + 1;
+                headDiv.dataset.head = i;
+                
+                headDiv.addEventListener('click', () => {
+                    selectAttentionHead(i);
+                });
+                
+                attentionHeads.appendChild(headDiv);
+            }
+        }
+
+        /**
+         * Seleciona uma cabeça de atenção
+         */
+        function selectAttentionHead(headIndex) {
+            // Remove seleção anterior
+            document.querySelectorAll('.attention-head').forEach(head => {
+                head.classList.remove('active');
+            });
+            
+            // Seleciona nova cabeça
+            const selectedHead = document.querySelector(`[data-head="${headIndex}"]`);
+            if (selectedHead) {
+                selectedHead.classList.add('active');
+            }
+            
+            // Atualiza matriz de atenção
+            displayAttentionMatrix(headIndex);
+        }
+
+        /**
+         * Exibe a matriz de atenção
+         */
+        function displayAttentionMatrix(headIndex = 0) {
+            attentionMatrix.innerHTML = '';
+            
+            if (tokens.length === 0) return;
+            
+            const matrix = generateAttentionMatrix(tokens, headIndex);
+            attentionWeights = matrix;
+            
+            // Define grid
+            attentionMatrix.style.gridTemplateColumns = `repeat(${tokens.length}, 1fr)`;
+            
+            matrix.forEach((row, i) => {
+                row.forEach((weight, j) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    cell.textContent = weight.toFixed(2);
+                    
+                    // Cor baseada no peso
+                    const intensity = weight;
+                    cell.style.backgroundColor = `rgba(59, 130, 246, ${intensity})`;
+                    cell.style.color = intensity > 0.5 ? 'white' : 'black';
+                    
+                    cell.addEventListener('click', () => {
+                        highlightAttentionConnection(i, j, weight);
+                    });
+                    
+                    attentionMatrix.appendChild(cell);
+                });
+            });
+        }
+
+        /**
+         * Destaca conexão de atenção
+         */
+        function highlightAttentionConnection(from, to, weight) {
+            // Remove destaques anteriores
+            document.querySelectorAll('.token-box').forEach(token => {
+                token.classList.remove('active');
+            });
+            
+            // Destaca tokens
+            const fromToken = document.querySelector(`[data-index="${from}"]`);
+            const toToken = document.querySelector(`[data-index="${to}"]`);
+            
+            if (fromToken) fromToken.classList.add('active');
+            if (toToken) toToken.classList.add('active');
+            
+            // Mostra informação da conexão
+            modelOutput.innerHTML = `
+                <div class="bg-blue-600/20 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Conexão de Atenção</h3>
+                    <p><strong>De:</strong> "${tokens[from]}" (posição ${from})</p>
+                    <p><strong>Para:</strong> "${tokens[to]}" (posição ${to})</p>
+                    <p><strong>Peso:</strong> ${weight.toFixed(4)}</p>
+                    <p class="text-sm mt-2 opacity-75">
+                        ${weight > 0.3 ? 'Atenção forte' : weight > 0.1 ? 'Atenção moderada' : 'Atenção fraca'}
+                    </p>
+                </div>
+            `;
+        }
+
+        /**
+         * Destaca atenção de um token
+         */
+        function highlightTokenAttention(tokenIndex) {
+            if (attentionWeights.length === 0) return;
+            
+            // Remove destaques anteriores
+            document.querySelectorAll('.token-box').forEach(token => {
+                token.classList.remove('active');
+            });
+            
+            // Destaca token selecionado
+            const selectedToken = document.querySelector(`[data-index="${tokenIndex}"]`);
+            if (selectedToken) selectedToken.classList.add('active');
+            
+            // Mostra distribuição de atenção
+            const attentionRow = attentionWeights[tokenIndex];
+            let output = `
+                <div class="bg-purple-600/20 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Atenção do Token: "${tokens[tokenIndex]}"</h3>
+                    <div class="space-y-2">
+            `;
+            
+            attentionRow.forEach((weight, i) => {
+                output += `
+                    <div class="flex justify-between items-center">
+                        <span>"${tokens[i]}"</span>
+                        <div class="flex items-center">
+                            <div class="w-20 h-2 bg-gray-600 rounded mr-2">
+                                <div class="h-full bg-blue-500 rounded" style="width: ${weight * 100}%"></div>
+                            </div>
+                            <span class="text-sm">${weight.toFixed(3)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            output += '</div></div>';
+            modelOutput.innerHTML = output;
+        }
+
+        /**
+         * Exibe parâmetros do modelo
+         */
+        function displayModelParameters() {
+            const params = calculateParameters();
+            
+            parametersDisplay.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Configuração</h4>
+                        <p>Camadas: ${numLayers.value}</p>
+                        <p>Cabeças de Atenção: ${numHeads.value}</p>
+                        <p>Dimensão: ${modelDim.value}</p>
+                        <p>Arquitetura: ${architectureType.value}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">Parâmetros</h4>
+                        <p>Embedding: ${(params.embedding / 1e6).toFixed(1)}M</p>
+                        <p>Atenção: ${(params.attention / 1e6).toFixed(1)}M</p>
+                        <p>Feed-Forward: ${(params.feedforward / 1e6).toFixed(1)}M</p>
+                        <p>Layer Norm: ${(params.layerNorm / 1e6).toFixed(1)}M</p>
+                        <p><strong>Total: ${(params.total / 1e6).toFixed(1)}M</strong></p>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Processa a sequência com animação
+         */
+        function processSequenceWithAnimation() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            currentStep = 0;
+            
+            // Tokeniza entrada
+            tokens = tokenizeSequence(inputSequence.value);
+            
+            if (tokens.length === 0) {
+                alert('Digite uma sequência válida!');
+                isProcessing = false;
+                return;
+            }
+            
+            // Atualiza visualizações
+            displayInputTokens();
+            createAttentionHeads();
+            displayAttentionMatrix();
+            
+            if (showParameters.checked) {
+                displayModelParameters();
+            }
+            
+            // Inicia animação se habilitada
+            if (animateFlow.checked) {
+                animateProcessing();
+            } else {
+                // Mostra resultado final
+                showFinalOutput();
+                isProcessing = false;
+            }
+        }
+
+        /**
+         * Anima o processamento
+         */
+        function animateProcessing() {
+            const steps = ['embedding', 'attention', 'norm1', 'feedforward', 'norm2'];
+            
+            processingInterval = setInterval(() => {
+                // Remove destaque anterior
+                componentItems.forEach(item => item.classList.remove('active'));
+                
+                // Destaca componente atual
+                const currentComponent = document.querySelector(`[data-component="${steps[currentStep]}"]`);
+                if (currentComponent) {
+                    currentComponent.classList.add('active');
+                }
+                
+                // Atualiza saída baseada no passo
+                updateOutputForStep(steps[currentStep]);
+                
+                currentStep++;
+                
+                if (currentStep >= steps.length) {
+                    clearInterval(processingInterval);
+                    showFinalOutput();
+                    isProcessing = false;
+                    
+                    // Remove todos os destaques
+                    setTimeout(() => {
+                        componentItems.forEach(item => item.classList.remove('active'));
+                    }, 2000);
+                }
+            }, 1500);
+        }
+
+        /**
+         * Atualiza saída para o passo atual
+         */
+        function updateOutputForStep(step) {
+            let content = '';
+            
+            switch (step) {
+                case 'embedding':
+                    content = `
+                        <div class="bg-cyan-600/20 p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2">1. Token + Positional Embedding</h3>
+                            <p>Convertendo tokens em vetores de ${modelDim.value} dimensões...</p>
+                            <div class="mt-2 space-y-1">
+                                ${tokens.map(token => `<div class="text-sm">"${token}" → [${Array(3).fill(0).map(() => (Math.random() - 0.5).toFixed(3)).join(', ')}...]</div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'attention':
+                    content = `
+                        <div class="bg-purple-600/20 p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2">2. Multi-Head Attention</h3>
+                            <p>Calculando atenção entre todos os pares de tokens...</p>
+                            <p class="text-sm mt-2">Usando ${numHeads.value} cabeças de atenção para capturar diferentes tipos de relações.</p>
+                        </div>
+                    `;
+                    break;
+                case 'norm1':
+                    content = `
+                        <div class="bg-green-600/20 p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2">3. Layer Normalization</h3>
+                            <p>Normalizando e estabilizando as representações...</p>
+                            <p class="text-sm mt-2">Aplicando conexão residual: output = LayerNorm(input + attention_output)</p>
+                        </div>
+                    `;
+                    break;
+                case 'feedforward':
+                    content = `
+                        <div class="bg-red-600/20 p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2">4. Feed Forward Network</h3>
+                            <p>Aplicando transformação não-linear...</p>
+                            <p class="text-sm mt-2">FFN(x) = max(0, xW₁ + b₁)W₂ + b₂</p>
+                            <p class="text-sm">Dimensão intermediária: ${parseInt(modelDim.value) * 4}</p>
+                        </div>
+                    `;
+                    break;
+                case 'norm2':
+                    content = `
+                        <div class="bg-green-600/20 p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2">5. Layer Normalization Final</h3>
+                            <p>Normalizando saída da camada...</p>
+                            <p class="text-sm mt-2">Aplicando segunda conexão residual: output = LayerNorm(norm1_output + ffn_output)</p>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            modelOutput.innerHTML = content;
+        }
+
+        /**
+         * Mostra saída final
+         */
+        function showFinalOutput() {
+            const archType = architectureType.value;
+            let outputDescription = '';
+            
+            switch (archType) {
+                case 'encoder-only':
+                    outputDescription = 'Representações contextualizadas para cada token (útil para classificação, NER, etc.)';
+                    break;
+                case 'decoder-only':
+                    outputDescription = 'Probabilidades para o próximo token (geração de texto)';
+                    break;
+                case 'encoder-decoder':
+                    outputDescription = 'Sequência de saída gerada (tradução, sumarização, etc.)';
+                    break;
+            }
+            
+            modelOutput.innerHTML = `
+                <div class="bg-blue-600/20 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Processamento Concluído!</h3>
+                    <p class="mb-4">${outputDescription}</p>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold">Representações Finais:</h4>
+                        ${tokens.map((token, i) => `
+                            <div class="flex justify-between items-center bg-white/10 p-2 rounded">
+                                <span>"${token}"</span>
+                                <span class="text-sm font-mono">[${Array(3).fill(0).map(() => (Math.random() - 0.5).toFixed(3)).join(', ')}...]</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-sm mt-4 opacity-75">
+                        Clique nos tokens acima para ver suas distribuições de atenção, ou nas cabeças de atenção para explorar diferentes padrões.
+                    </p>
+                </div>
+            `;
+        }
+
+        // --- EVENT LISTENERS ---
+
+        // Sliders
+        numLayers.addEventListener('input', updateSliderValues);
+        numHeads.addEventListener('input', () => {
+            updateSliderValues();
+            createAttentionHeads();
+        });
+
+        // Seletores
+        modelDim.addEventListener('change', () => {
+            if (showParameters.checked) displayModelParameters();
+        });
+
+        architectureType.addEventListener('change', createArchitectureDiagram);
+
+        // Checkboxes
+        showParameters.addEventListener('change', (e) => {
+            modelParameters.style.display = e.target.checked ? 'block' : 'none';
+            if (e.target.checked) displayModelParameters();
+        });
+
+        // Botão principal
+        processSequence.addEventListener('click', processSequenceWithAnimation);
+
+        // Componentes clicáveis
+        componentItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const component = item.dataset.component;
+                updateOutputForStep(component);
+            });
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSliderValues();
+            createArchitectureDiagram();
+            createAttentionHeads();
+        });
+    </script>
+</body>
+</html>

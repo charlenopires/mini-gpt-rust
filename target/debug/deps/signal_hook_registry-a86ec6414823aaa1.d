@@ -1,0 +1,8 @@
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/signal_hook_registry-a86ec6414823aaa1.d: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/half_lock.rs
+
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/libsignal_hook_registry-a86ec6414823aaa1.rlib: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/half_lock.rs
+
+/Users/fazapp/training/ai/mini-gpt-rust/target/debug/deps/libsignal_hook_registry-a86ec6414823aaa1.rmeta: /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/lib.rs /Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/half_lock.rs
+
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/lib.rs:
+/Users/fazapp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.6/src/half_lock.rs:

@@ -1,6 +1,6 @@
 # Mini GPT em Rust 🦀🧠
 
-Uma implementação educacional completa de um Large Language Model (LLM) em Rust, demonstrando desde os conceitos fundamentais até técnicas avançadas de otimização e treinamento. Agora com **Sistema de Demonstrações Educacionais Interativas**!
+Uma implementação educacional completa de um Large Language Model (LLM) em Rust, demonstrando desde os conceitos fundamentais até técnicas avançadas de otimização e treinamento. Agora com **Sistema de Demonstrações Educacionais Interativas** e **Servidor Web de Interativos**!
 
 ## 🎯 Objetivo
 
@@ -11,6 +11,7 @@ Este projeto foi criado para ensinar os componentes essenciais de um LLM moderno
 - **Concorrência**: Paralelismo seguro e eficiente
 - **Educação**: Exemplos práticos e exercícios interativos
 - **Demonstrações**: Sistema completo de demos educacionais integradas
+- **Interface Web**: Servidor web com interativos educacionais visuais
 
 ## 🏗️ Arquitetura do Projeto
 
@@ -115,9 +116,46 @@ mini-gpt-rust/
 - **Treinamento**: Sistema completo com otimizadores
 - **Transformer**: Arquitetura detalhada com visualizações
 
+### 🌐 **Servidor Web de Interativos** (`src/web_server.rs`)
+- **Framework Axum**: Servidor web assíncrono de alta performance
+- **Interface Responsiva**: Design moderno com Tailwind CSS
+- **Interativos Visuais**: 6 demonstrações educacionais interativas
+  - **Tokenização**: Visualização do processo de tokenização de texto
+  - **Atenção**: Demonstração do mecanismo de self-attention
+  - **Embeddings**: Exploração de representações vetoriais
+  - **Transformer**: Arquitetura completa com visualizações
+  - **Treinamento**: Processo de treinamento com métricas
+  - **Inferência**: Motor de inferência em tempo real
+  - **Text Chunking**: Estratégias de divisão de texto
+- **Servir Arquivos**: Sistema de roteamento para arquivos estáticos
+- **CLI Integrado**: Comando `web` para iniciar o servidor
+
 ## 🛠️ Como Usar
 
-### 🎯 **Sistema de Demonstrações (NOVO!)**
+### 🌐 **Servidor Web de Interativos (NOVO!)**
+```bash
+# Iniciar servidor web com interativos educacionais
+cargo run -- web --host 127.0.0.1 --port 8080 --dir interativos
+
+# Acesse no navegador
+# http://127.0.0.1:8080
+
+# Opções disponíveis:
+# --host: Endereço IP do servidor (padrão: 127.0.0.1)
+# --port: Porta do servidor (padrão: 8080)
+# --dir: Diretório dos arquivos interativos (padrão: interativos)
+```
+
+### 📱 **Interativos Disponíveis**
+- **Tokenização** (`/tokenization`): Visualize como texto é convertido em tokens
+- **Atenção** (`/attention`): Explore o mecanismo de self-attention
+- **Embeddings** (`/embeddings`): Entenda representações vetoriais
+- **Transformer** (`/transformer`): Arquitetura completa interativa
+- **Treinamento** (`/training`): Processo de treinamento com métricas
+- **Inferência** (`/inference`): Motor de inferência em tempo real
+- **Text Chunking** (`/chunking`): Estratégias de divisão de texto
+
+### 🎯 **Sistema de Demonstrações**
 ```bash
 # Execute todas as demonstrações
 cargo run -- demo
@@ -284,14 +322,18 @@ Cada exemplo inclui exercícios interativos que demonstram:
 - ✅ Comando `demo` integrado ao CLI
 - ✅ Benchmarks e visualizações em tempo real
 - ✅ Modo interativo para aprendizado
+- ✅ **Servidor Web com Axum**: Interface web completa
+- ✅ **7 Interativos Educacionais**: Tokenização, Atenção, Embeddings, Transformer, Treinamento, Inferência e Text Chunking
+- ✅ **Design Responsivo**: Interface moderna com Tailwind CSS
+- ✅ **CLI Web**: Comando `web` para servidor local
 
 ### 🎯 **Em Desenvolvimento**
 
-1. **🖥️ Interface Web Interativa**
-   - Dashboard para visualização de demonstrações
-   - Editor de parâmetros em tempo real
-   - Comparação visual de arquiteturas
-   - Integração com sistema de demos
+1. **🔗 Integração Web-Demo**
+   - Conectar interativos web com sistema de demos
+   - Parâmetros dinâmicos em tempo real
+   - Visualizações avançadas no navegador
+   - Sincronização entre CLI e interface web
 
 2. **⚡ GPU Computing & Aceleração**
    - Integração com CUDA/ROCm

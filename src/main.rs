@@ -33,6 +33,7 @@ mod educational_logger;
 mod kernels;
 mod chunking;
 mod benchmarks;
+mod web_server;
 
 use model::{MiniGPT, CheckpointMetadata};
 use training::Trainer;
@@ -354,6 +355,25 @@ enum Commands {
         #[arg(long, help = "Modo interativo com pausas educacionais")]
         interactive: bool,
     },
+    
+    /// 🌐 **WEB: Servidor web para interativos educacionais**
+    /// 
+    /// Inicia um servidor web local que hospeda interativos educacionais
+    /// acessíveis através do navegador. Inclui visualizações interativas
+    /// de todos os conceitos fundamentais do GPT e Transformers.
+    Web {
+        /// 🌍 Endereço IP para bind do servidor
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+        
+        /// 🔌 Porta do servidor web
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+        
+        /// 📁 Diretório dos arquivos interativos
+        #[arg(long, default_value = "interativos")]
+        dir: PathBuf,
+    },
 }
 
 /// 🚀 **FUNÇÃO PRINCIPAL: PONTO DE ENTRADA DA APLICAÇÃO**
@@ -395,6 +415,26 @@ fn main() -> Result<()> {
     // Pattern matching para executar a função apropriada
     // baseada no comando escolhido pelo usuário
     match cli.command {
+        // 🌐 **MODO SERVIDOR WEB**
+        // Inicia servidor web para interativos educacionais
+        Commands::Web { host, port, dir } => {
+            println!("🌐 Iniciando servidor web para interativos educacionais...");
+            println!("📍 Host: {}", host);
+            println!("🔌 Porta: {}", port);
+            println!("📁 Diretório: {:?}", dir);
+            
+            let config = web_server::WebServerConfig {
+                host,
+                port,
+                interativos_dir: dir,
+            };
+            
+            let rt = tokio::runtime::Runtime::new()?;
+            rt.block_on(async {
+                web_server::start_web_server(Some(config)).await
+            })?;
+        }
+        
         // 🎓 **MODO TREINAMENTO**
         // Treina o modelo do zero usando dados fornecidos
         Commands::Train { data, epochs } => {

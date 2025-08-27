@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demonstração Interativa do Treinamento de GPT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .training-step {
+            position: relative;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .training-step:hover {
+            border-color: #60a5fa;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        .training-step.active {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        .training-step.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+        }
+        .gradient-flow {
+            position: relative;
+            height: 40px;
+            background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+            border-radius: 20px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            overflow: hidden;
+        }
+        .gradient-flow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: backprop 3s infinite;
+        }
+        .gradient-flow.active::before {
+            animation: backprop 1.5s infinite;
+        }
+        @keyframes backprop {
+            0% { left: 100%; }
+            100% { left: -100%; }
+        }
+        .loss-visualization {
+            background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+        .loss-visualization::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .parameter-update {
+            background: linear-gradient(135deg, #059669, #10b981);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 4px 0;
+            color: white;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+        .parameter-update::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: update 1s infinite;
+        }
+        @keyframes update {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .batch-item {
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 4px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .batch-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+        }
+        .batch-item.processing {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            animation: process 1s infinite;
+        }
+        @keyframes process {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        .progress-bar {
+            background: #374151;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progress-shine 2s infinite;
+        }
+        @keyframes progress-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .optimizer-visualization {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border: 2px solid #3b82f6;
+            border-radius: 50%;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.3));
+        }
+        .optimizer-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #fbbf24;
+            border-radius: 50%;
+            transition: all 0.5s ease;
+        }
+        .learning-curve {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            height: 300px;
+        }
+        .step-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .equation {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 8px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .hyperparameter {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 4px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">Treinamento de Modelos GPT</h1>
+            <p class="text-xl opacity-90">Explore o processo completo de treinamento de um modelo de linguagem</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Painel de Controle -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Configurações de Treinamento</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Dados de Treinamento</label>
+                            <textarea id="trainingData" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite o texto de treinamento...">
+O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Tamanho do Batch</label>
+                            <input type="range" id="batchSize" min="1" max="8" value="4" class="w-full">
+                            <span id="batchSizeValue" class="text-sm opacity-75">4 sequências</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Taxa de Aprendizado</label>
+                            <input type="range" id="learningRate" min="1" max="100" value="30" class="w-full">
+                            <span id="learningRateValue" class="text-sm opacity-75">3e-4</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Épocas</label>
+                            <input type="range" id="epochs" min="1" max="10" value="3" class="w-full">
+                            <span id="epochsValue" class="text-sm opacity-75">3 épocas</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Otimizador</label>
+                            <select id="optimizer" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                                <option value="adam">Adam</option>
+                                <option value="sgd">SGD</option>
+                                <option value="adamw">AdamW</option>
+                                <option value="rmsprop">RMSprop</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Função de Loss</label>
+                            <select id="lossFunction" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                                <option value="cross-entropy">Cross-Entropy</option>
+                                <option value="mse">Mean Squared Error</option>
+                                <option value="focal">Focal Loss</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="useScheduler" class="mr-2" checked>
+                                <span class="text-sm font-medium">Learning Rate Scheduler</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showGradients" class="mr-2">
+                                <span class="text-sm font-medium">Mostrar Gradientes</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button id="startTraining" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        Iniciar Treinamento
+                    </button>
+                    
+                    <button id="stopTraining" class="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105" disabled>
+                        Parar Treinamento
+                    </button>
+                </div>
+                
+                <!-- Etapas do Treinamento -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Etapas</h2>
+                    <div class="space-y-2">
+                        <div class="training-step step-item" data-step="forward">
+                            <div class="step-indicator">1</div>
+                            <h3 class="font-semibold">Forward Pass</h3>
+                            <p class="text-sm opacity-75">Propagação para frente</p>
+                        </div>
+                        <div class="training-step step-item" data-step="loss">
+                            <div class="step-indicator">2</div>
+                            <h3 class="font-semibold">Cálculo do Loss</h3>
+                            <p class="text-sm opacity-75">Medir erro das predições</p>
+                        </div>
+                        <div class="training-step step-item" data-step="backward">
+                            <div class="step-indicator">3</div>
+                            <h3 class="font-semibold">Backward Pass</h3>
+                            <p class="text-sm opacity-75">Calcular gradientes</p>
+                        </div>
+                        <div class="training-step step-item" data-step="optimize">
+                            <div class="step-indicator">4</div>
+                            <h3 class="font-semibold">Otimização</h3>
+                            <p class="text-sm opacity-75">Atualizar parâmetros</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualização Principal -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Status do Treinamento -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Status do Treinamento</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Época Atual</h3>
+                            <div id="currentEpoch" class="text-3xl font-bold text-blue-400">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Batch Atual</h3>
+                            <div id="currentBatch" class="text-3xl font-bold text-green-400">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Loss Atual</h3>
+                            <div id="currentLoss" class="text-3xl font-bold text-red-400">0.000</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Acurácia</h3>
+                            <div id="currentAccuracy" class="text-3xl font-bold text-purple-400">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium">Progresso da Época</span>
+                            <span id="epochProgress" class="text-sm opacity-75">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="epochProgressBar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Batch Atual -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Batch Atual</h2>
+                    <div id="currentBatchData" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Sequências de Entrada</h3>
+                            <div id="batchSequences" class="space-y-2">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Targets Esperados</h3>
+                            <div id="batchTargets" class="space-y-2">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualização do Loss -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Função de Loss</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Equação</h3>
+                            <div id="lossEquation" class="equation">
+                                L = -∑ y_true * log(y_pred)
+                            </div>
+                            <div class="loss-visualization mt-4">
+                                <div id="lossValue" class="text-2xl font-bold">Loss: 0.000</div>
+                                <div class="text-sm opacity-75 mt-2">Cross-Entropy Loss</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Curva de Aprendizado</h3>
+                            <div class="learning-curve">
+                                <canvas id="lossChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gradientes e Otimização -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Gradientes e Otimização</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Backpropagation</h3>
+                            <div class="space-y-2">
+                                <div class="gradient-flow">
+                                    ∂L/∂W_output
+                                </div>
+                                <div class="gradient-flow">
+                                    ∂L/∂W_hidden
+                                </div>
+                                <div class="gradient-flow">
+                                    ∂L/∂W_embedding
+                                </div>
+                            </div>
+                            
+                            <div id="gradientInfo" class="mt-4 p-4 bg-white/10 rounded-lg">
+                                <h4 class="font-semibold mb-2">Informações dos Gradientes</h4>
+                                <div class="text-sm space-y-1">
+                                    <div>Norma do Gradiente: <span id="gradNorm" class="font-mono">0.000</span></div>
+                                    <div>Gradiente Máximo: <span id="gradMax" class="font-mono">0.000</span></div>
+                                    <div>Gradiente Mínimo: <span id="gradMin" class="font-mono">0.000</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Otimizador</h3>
+                            <div class="optimizer-visualization">
+                                <div class="optimizer-point" id="optimizerPoint"></div>
+                                <div class="text-center">
+                                    <div class="text-lg font-semibold">Convergência</div>
+                                    <div class="text-sm opacity-75">Direção do gradiente</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h4 class="font-semibold mb-2">Hiperparâmetros</h4>
+                                <div class="flex flex-wrap">
+                                    <div class="hyperparameter">LR: <span id="currentLR">3e-4</span></div>
+                                    <div class="hyperparameter">β₁: 0.9</div>
+                                    <div class="hyperparameter">β₂: 0.999</div>
+                                    <div class="hyperparameter">ε: 1e-8</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Atualizações de Parâmetros -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Atualizações de Parâmetros</h2>
+                    <div id="parameterUpdates" class="space-y-2">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Log de Treinamento -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Log de Treinamento</h2>
+                    <div id="trainingLog" class="bg-black/30 p-4 rounded-lg h-40 overflow-y-auto font-mono text-sm">
+                        <div class="text-green-400">[INFO] Sistema de treinamento inicializado</div>
+                        <div class="text-blue-400">[INFO] Aguardando início do treinamento...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DO DOM ---
+        const trainingData = document.getElementById('trainingData');
+        const batchSize = document.getElementById('batchSize');
+        const batchSizeValue = document.getElementById('batchSizeValue');
+        const learningRate = document.getElementById('learningRate');
+        const learningRateValue = document.getElementById('learningRateValue');
+        const epochs = document.getElementById('epochs');
+        const epochsValue = document.getElementById('epochsValue');
+        const optimizer = document.getElementById('optimizer');
+        const lossFunction = document.getElementById('lossFunction');
+        const useScheduler = document.getElementById('useScheduler');
+        const showGradients = document.getElementById('showGradients');
+        const startTraining = document.getElementById('startTraining');
+        const stopTraining = document.getElementById('stopTraining');
+        
+        const currentEpoch = document.getElementById('currentEpoch');
+        const currentBatch = document.getElementById('currentBatch');
+        const currentLoss = document.getElementById('currentLoss');
+        const currentAccuracy = document.getElementById('currentAccuracy');
+        const epochProgress = document.getElementById('epochProgress');
+        const epochProgressBar = document.getElementById('epochProgressBar');
+        
+        const batchSequences = document.getElementById('batchSequences');
+        const batchTargets = document.getElementById('batchTargets');
+        const lossEquation = document.getElementById('lossEquation');
+        const lossValue = document.getElementById('lossValue');
+        const gradNorm = document.getElementById('gradNorm');
+        const gradMax = document.getElementById('gradMax');
+        const gradMin = document.getElementById('gradMin');
+        const currentLR = document.getElementById('currentLR');
+        const parameterUpdates = document.getElementById('parameterUpdates');
+        const trainingLog = document.getElementById('trainingLog');
+        const stepItems = document.querySelectorAll('.step-item');
+        
+        // --- ESTADO DA APLICAÇÃO ---
+        let isTraining = false;
+        let trainingInterval;
+        let currentEpochNum = 0;
+        let currentBatchNum = 0;
+        let lossHistory = [];
+        let accuracyHistory = [];
+        let lossChart;
+        let sequences = [];
+        let totalBatches = 0;
+        
+        // --- FUNÇÕES UTILITÁRIAS ---
+        
+        /**
+         * Prepara os dados de treinamento
+         */
+        function prepareTrainingData() {
+            const text = trainingData.value.trim();
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            
+            sequences = sentences.map(sentence => {
+                const tokens = sentence.trim().split(/\s+/);
+                return {
+                    input: tokens.slice(0, -1),
+                    target: tokens.slice(1)
+                };
+            }).filter(seq => seq.input.length > 0);
+            
+            totalBatches = Math.ceil(sequences.length / parseInt(batchSize.value));
+            
+            logMessage(`[INFO] Preparados ${sequences.length} sequências em ${totalBatches} batches`, 'blue');
+        }
+        
+        /**
+         * Simula forward pass
+         */
+        function simulateForwardPass(batch) {
+            return batch.map(seq => {
+                // Simula predições do modelo
+                return seq.target.map(() => Math.random());
+            });
+        }
+        
+        /**
+         * Calcula loss simulado
+         */
+        function calculateLoss(predictions, targets, lossType) {
+            let totalLoss = 0;
+            let totalSamples = 0;
+            
+            predictions.forEach((pred, i) => {
+                const target = targets[i];
+                pred.forEach((p, j) => {
+                    if (j < target.length) {
+                        switch (lossType) {
+                            case 'cross-entropy':
+                                totalLoss += -Math.log(Math.max(p, 1e-7));
+                                break;
+                            case 'mse':
+                                totalLoss += Math.pow(p - 1, 2);
+                                break;
+                            case 'focal':
+                                const alpha = 0.25;
+                                const gamma = 2;
+                                totalLoss += -alpha * Math.pow(1 - p, gamma) * Math.log(Math.max(p, 1e-7));
+                                break;
+                        }
+                        totalSamples++;
+                    }
+                });
+            });
+            
+            return totalSamples > 0 ? totalLoss / totalSamples : 0;
+        }
+        
+        /**
+         * Simula gradientes
+         */
+        function simulateGradients() {
+            const gradients = [];
+            for (let i = 0; i < 100; i++) {
+                gradients.push((Math.random() - 0.5) * 2);
+            }
+            
+            const norm = Math.sqrt(gradients.reduce((sum, g) => sum + g * g, 0));
+            const max = Math.max(...gradients);
+            const min = Math.min(...gradients);
+            
+            return { gradients, norm, max, min };
+        }
+        
+        /**
+         * Atualiza learning rate com scheduler
+         */
+        function updateLearningRate(epoch, batch) {
+            if (!useScheduler.checked) return;
+            
+            const baseLR = parseFloat(learningRateValue.textContent.replace('e-', 'e-'));
+            const decayRate = 0.95;
+            const newLR = baseLR * Math.pow(decayRate, epoch);
+            
+            currentLR.textContent = newLR.toExponential(1);
+        }
+        
+        /**
+         * Adiciona mensagem ao log
+         */
+        function logMessage(message, color = 'white') {
+            const logDiv = document.createElement('div');
+            logDiv.className = `text-${color}-400`;
+            logDiv.textContent = message;
+            trainingLog.appendChild(logDiv);
+            trainingLog.scrollTop = trainingLog.scrollHeight;
+        }
+        
+        // --- FUNÇÕES DE VISUALIZAÇÃO ---
+        
+        /**
+         * Atualiza valores dos sliders
+         */
+        function updateSliderValues() {
+            batchSizeValue.textContent = `${batchSize.value} sequências`;
+            
+            const lr = parseInt(learningRate.value);
+            const lrValue = (lr / 10000).toExponential(0);
+            learningRateValue.textContent = lrValue;
+            currentLR.textContent = lrValue;
+            
+            epochsValue.textContent = `${epochs.value} épocas`;
+        }
+        
+        /**
+         * Atualiza equação do loss
+         */
+        function updateLossEquation() {
+            const lossType = lossFunction.value;
+            let equation = '';
+            
+            switch (lossType) {
+                case 'cross-entropy':
+                    equation = 'L = -∑ y_true * log(y_pred)';
+                    break;
+                case 'mse':
+                    equation = 'L = (1/n) * ∑(y_true - y_pred)²';
+                    break;
+                case 'focal':
+                    equation = 'L = -α(1-p)^γ * log(p)';
+                    break;
+            }
+            
+            lossEquation.textContent = equation;
+        }
+        
+        /**
+         * Inicializa gráfico de loss
+         */
+        function initializeLossChart() {
+            const ctx = document.getElementById('lossChart').getContext('2d');
+            
+            lossChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Loss',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Acurácia',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { color: 'white' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Exibe batch atual
+         */
+        function displayCurrentBatch(batchData) {
+            batchSequences.innerHTML = '';
+            batchTargets.innerHTML = '';
+            
+            batchData.forEach((seq, index) => {
+                // Sequência de entrada
+                const seqDiv = document.createElement('div');
+                seqDiv.className = 'batch-item';
+                seqDiv.textContent = seq.input.join(' ');
+                batchSequences.appendChild(seqDiv);
+                
+                // Target esperado
+                const targetDiv = document.createElement('div');
+                targetDiv.className = 'batch-item';
+                targetDiv.textContent = seq.target.join(' ');
+                batchTargets.appendChild(targetDiv);
+            });
+        }
+        
+        /**
+         * Destaca etapa atual
+         */
+        function highlightStep(stepName) {
+            stepItems.forEach(item => {
+                item.classList.remove('active', 'completed');
+                if (item.dataset.step === stepName) {
+                    item.classList.add('active');
+                } else {
+                    const steps = ['forward', 'loss', 'backward', 'optimize'];
+                    const currentIndex = steps.indexOf(stepName);
+                    const itemIndex = steps.indexOf(item.dataset.step);
+                    if (itemIndex < currentIndex) {
+                        item.classList.add('completed');
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Atualiza visualização de parâmetros
+         */
+        function updateParameterVisualization(gradientInfo) {
+            parameterUpdates.innerHTML = '';
+            
+            const layers = ['Embedding', 'Attention', 'Feed-Forward', 'Output'];
+            
+            layers.forEach((layer, index) => {
+                const updateDiv = document.createElement('div');
+                updateDiv.className = 'parameter-update';
+                
+                const change = (Math.random() - 0.5) * 0.01;
+                const changeStr = change >= 0 ? `+${change.toFixed(6)}` : change.toFixed(6);
+                
+                updateDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">${layer} Layer</span>
+                        <span class="font-mono text-sm">${changeStr}</span>
+                    </div>
+                `;
+                
+                parameterUpdates.appendChild(updateDiv);
+            });
+        }
+        
+        /**
+         * Atualiza posição do otimizador
+         */
+        function updateOptimizerVisualization(step) {
+            const point = document.getElementById('optimizerPoint');
+            const angle = (step * 0.1) % (2 * Math.PI);
+            const radius = 80 - (step * 0.5) % 60; // Converge para o centro
+            
+            const x = 100 + radius * Math.cos(angle);
+            const y = 100 + radius * Math.sin(angle);
+            
+            point.style.left = `${x}px`;
+            point.style.top = `${y}px`;
+        }
+        
+        // --- FUNÇÕES DE TREINAMENTO ---
+        
+        /**
+         * Inicia o treinamento
+         */
+        function startTrainingProcess() {
+            if (isTraining) return;
+            
+            isTraining = true;
+            startTraining.disabled = true;
+            stopTraining.disabled = false;
+            
+            // Prepara dados
+            prepareTrainingData();
+            
+            if (sequences.length === 0) {
+                logMessage('[ERROR] Nenhuma sequência válida encontrada', 'red');
+                stopTrainingProcess();
+                return;
+            }
+            
+            // Reset estado
+            currentEpochNum = 0;
+            currentBatchNum = 0;
+            lossHistory = [];
+            accuracyHistory = [];
+            
+            logMessage('[INFO] Iniciando treinamento...', 'green');
+            
+            // Inicia loop de treinamento
+            trainingInterval = setInterval(trainStep, 2000);
+        }
+        
+        /**
+         * Para o treinamento
+         */
+        function stopTrainingProcess() {
+            isTraining = false;
+            startTraining.disabled = false;
+            stopTraining.disabled = true;
+            
+            if (trainingInterval) {
+                clearInterval(trainingInterval);
+            }
+            
+            stepItems.forEach(item => item.classList.remove('active', 'completed'));
+            
+            logMessage('[INFO] Treinamento interrompido', 'yellow');
+        }
+        
+        /**
+         * Executa um passo de treinamento
+         */
+        function trainStep() {
+            const totalEpochs = parseInt(epochs.value);
+            const batchSizeNum = parseInt(batchSize.value);
+            
+            if (currentEpochNum >= totalEpochs) {
+                logMessage('[INFO] Treinamento concluído!', 'green');
+                stopTrainingProcess();
+                return;
+            }
+            
+            // Pega batch atual
+            const startIdx = currentBatchNum * batchSizeNum;
+            const endIdx = Math.min(startIdx + batchSizeNum, sequences.length);
+            const currentBatchData = sequences.slice(startIdx, endIdx);
+            
+            // Atualiza display
+            currentEpoch.textContent = currentEpochNum + 1;
+            currentBatch.textContent = currentBatchNum + 1;
+            
+            // Calcula progresso
+            const progress = ((currentBatchNum + 1) / totalBatches) * 100;
+            epochProgress.textContent = `${Math.round(progress)}%`;
+            epochProgressBar.style.width = `${progress}%`;
+            
+            displayCurrentBatch(currentBatchData);
+            
+            // Simula etapas de treinamento
+            setTimeout(() => {
+                highlightStep('forward');
+                logMessage(`[TRAIN] Forward pass - Batch ${currentBatchNum + 1}/${totalBatches}`, 'blue');
+                
+                setTimeout(() => {
+                    highlightStep('loss');
+                    const predictions = simulateForwardPass(currentBatchData);
+                    const targets = currentBatchData.map(seq => seq.target);
+                    const loss = calculateLoss(predictions, targets, lossFunction.value);
+                    
+                    currentLoss.textContent = loss.toFixed(3);
+                    lossValue.textContent = `Loss: ${loss.toFixed(3)}`;
+                    
+                    // Simula acurácia
+                    const accuracy = Math.max(0, 100 - loss * 20 + Math.random() * 10);
+                    currentAccuracy.textContent = `${Math.round(accuracy)}%`;
+                    
+                    logMessage(`[TRAIN] Loss calculado: ${loss.toFixed(3)}`, 'purple');
+                    
+                    setTimeout(() => {
+                        highlightStep('backward');
+                        const gradientInfo = simulateGradients();
+                        
+                        gradNorm.textContent = gradientInfo.norm.toFixed(3);
+                        gradMax.textContent = gradientInfo.max.toFixed(3);
+                        gradMin.textContent = gradientInfo.min.toFixed(3);
+                        
+                        logMessage(`[TRAIN] Gradientes calculados - Norma: ${gradientInfo.norm.toFixed(3)}`, 'orange');
+                        
+                        setTimeout(() => {
+                            highlightStep('optimize');
+                            updateParameterVisualization(gradientInfo);
+                            updateOptimizerVisualization(currentBatchNum);
+                            updateLearningRate(currentEpochNum, currentBatchNum);
+                            
+                            logMessage(`[TRAIN] Parâmetros atualizados - LR: ${currentLR.textContent}`, 'green');
+                            
+                            // Atualiza gráfico
+                            const step = currentEpochNum * totalBatches + currentBatchNum;
+                            lossHistory.push(loss);
+                            accuracyHistory.push(accuracy);
+                            
+                            lossChart.data.labels.push(step + 1);
+                            lossChart.data.datasets[0].data.push(loss);
+                            lossChart.data.datasets[1].data.push(accuracy);
+                            lossChart.update('none');
+                            
+                            // Próximo batch
+                            currentBatchNum++;
+                            if (currentBatchNum >= totalBatches) {
+                                currentBatchNum = 0;
+                                currentEpochNum++;
+                                logMessage(`[INFO] Época ${currentEpochNum} concluída`, 'cyan');
+                            }
+                        }, 500);
+                    }, 500);
+                }, 500);
+            }, 500);
+        }
+        
+        // --- EVENT LISTENERS ---
+        
+        // Sliders
+        batchSize.addEventListener('input', updateSliderValues);
+        learningRate.addEventListener('input', updateSliderValues);
+        epochs.addEventListener('input', updateSliderValues);
+        
+        // Seletores
+        lossFunction.addEventListener('change', updateLossEquation);
+        
+        // Botões
+        startTraining.addEventListener('click', startTrainingProcess);
+        stopTraining.addEventListener('click', stopTrainingProcess);
+        
+        // Etapas clicáveis
+        stepItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const step = item.dataset.step;
+                highlightStep(step);
+                
+                let message = '';
+                switch (step) {
+                    case 'forward':
+                        message = 'Forward Pass: Os dados passam pela rede neural, camada por camada, gerando predições.';
+                        break;
+                    case 'loss':
+                        message = 'Cálculo do Loss: Compara as predições com os valores esperados usando a função de loss.';
+                        break;
+                    case 'backward':
+                        message = 'Backward Pass: Calcula os gradientes usando backpropagation para cada parâmetro.';
+                        break;
+                    case 'optimize':
+                        message = 'Otimização: Atualiza os parâmetros do modelo usando os gradientes e o otimizador.';
+                        break;
+                }
+                
+                logMessage(`[INFO] ${message}`, 'cyan');
+            });
+        });
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSliderValues();
+            updateLossEquation();
+            initializeLossChart();
+        });
+    </script>
+</body>
+</html>

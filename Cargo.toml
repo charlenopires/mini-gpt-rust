@@ -30,6 +30,13 @@ chrono = { version = "0.4", features = ["serde"] } # Timestamps para checkpoints
 # Otimização e treinamento
 candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
 
+# Servidor web para interativos
+axum = "0.7"                 # Framework web async
+tokio = { version = "1.0", features = ["full"] } # Runtime async
+tower = "0.4"                # Middleware
+tower-http = { version = "0.5", features = ["fs", "cors"] } # Servir arquivos estáticos
+mime_guess = "2.0"           # Detecção de MIME types
+
 # Suporte condicional para Metal (macOS)
 [target.'cfg(target_os = "macos")'.dependencies]
 candle-metal-kernels = "0.8"  # Kernels Metal para ARM Apple

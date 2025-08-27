@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demonstração Interativa da Inferência GPT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .token {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .token.input {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: 2px solid #60a5fa;
+        }
+        .token.generated {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: 2px solid #34d399;
+            animation: tokenAppear 0.5s ease-out;
+        }
+        .token.current {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: 2px solid #fbbf24;
+            animation: pulse 1s infinite;
+        }
+        .token:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes tokenAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+            }
+        }
+        .probability-bar {
+            height: 20px;
+            background: #374151;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin: 4px 0;
+        }
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .probability-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .beam {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.2));
+            border: 2px solid #8b5cf6;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .beam:hover {
+            border-color: #a78bfa;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        .beam.selected {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        .beam-score {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(139, 92, 246, 0.9);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .attention-head {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 4px;
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .attention-head:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .attention-head.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            animation: glow 1s infinite alternate;
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+        }
+        .generation-step {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .generation-step.active {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        .step-number {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .temperature-slider {
+            background: linear-gradient(90deg, #3b82f6, #ef4444);
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .temperature-thumb {
+            position: absolute;
+            top: -6px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 3px solid #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .temperature-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .sampling-method {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sampling-method:hover {
+            border-color: #60a5fa;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+            transform: translateY(-2px);
+        }
+        .sampling-method.active {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        .logit-bar {
+            background: #374151;
+            height: 30px;
+            border-radius: 15px;
+            margin: 4px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .logit-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #ef4444, #f97316, #eab308, #22c55e);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dasharray 0.5s ease;
+        }
+        .inference-visualization {
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.3));
+            border: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+        .inference-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #fbbf24;
+            border-radius: 50%;
+            animation: orbit 3s linear infinite;
+        }
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">Inferência com Modelos GPT</h1>
+            <p class="text-xl opacity-90">Explore como modelos treinados geram texto de forma interativa</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Painel de Controle -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Configurações de Inferência</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Prompt Inicial</label>
+                            <textarea id="promptInput" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite o prompt inicial...">Era uma vez uma</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Máximo de Tokens</label>
+                            <input type="range" id="maxTokens" min="5" max="50" value="20" class="w-full">
+                            <span id="maxTokensValue" class="text-sm opacity-75">20 tokens</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Temperatura</label>
+                            <input type="range" id="temperature" min="1" max="200" value="70" class="w-full">
+                            <span id="temperatureValue" class="text-sm opacity-75">0.7</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Top-p (Nucleus)</label>
+                            <input type="range" id="topP" min="10" max="100" value="90" class="w-full">
+                            <span id="topPValue" class="text-sm opacity-75">0.9</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Top-k</label>
+                            <input type="range" id="topK" min="1" max="100" value="50" class="w-full">
+                            <span id="topKValue" class="text-sm opacity-75">50</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Beam Width</label>
+                            <input type="range" id="beamWidth" min="1" max="8" value="3" class="w-full">
+                            <span id="beamWidthValue" class="text-sm opacity-75">3 beams</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Método de Sampling</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="sampling-method active" data-method="greedy">
+                                    <div class="font-semibold">Greedy</div>
+                                    <div class="text-xs opacity-75">Sempre o melhor</div>
+                                </div>
+                                <div class="sampling-method" data-method="random">
+                                    <div class="font-semibold">Random</div>
+                                    <div class="text-xs opacity-75">Amostragem</div>
+                                </div>
+                                <div class="sampling-method" data-method="nucleus">
+                                    <div class="font-semibold">Nucleus</div>
+                                    <div class="text-xs opacity-75">Top-p</div>
+                                </div>
+                                <div class="sampling-method" data-method="beam">
+                                    <div class="font-semibold">Beam</div>
+                                    <div class="text-xs opacity-75">Busca em feixe</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showProbabilities" class="mr-2" checked>
+                                <span class="text-sm font-medium">Mostrar Probabilidades</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showAttention" class="mr-2">
+                                <span class="text-sm font-medium">Visualizar Atenção</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button id="generateText" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        Gerar Texto
+                    </button>
+                    
+                    <button id="stepGenerate" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        Gerar Passo a Passo
+                    </button>
+                    
+                    <button id="resetGeneration" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                        Resetar
+                    </button>
+                </div>
+                
+                <!-- Etapas da Inferência -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Etapas</h2>
+                    <div class="space-y-2">
+                        <div class="generation-step step-item" data-step="tokenize">
+                            <div class="step-number">1</div>
+                            <h3 class="font-semibold">Tokenização</h3>
+                            <p class="text-sm opacity-75">Converter texto em tokens</p>
+                        </div>
+                        <div class="generation-step step-item" data-step="embed">
+                            <div class="step-number">2</div>
+                            <h3 class="font-semibold">Embeddings</h3>
+                            <p class="text-sm opacity-75">Converter tokens em vetores</p>
+                        </div>
+                        <div class="generation-step step-item" data-step="forward">
+                            <div class="step-number">3</div>
+                            <h3 class="font-semibold">Forward Pass</h3>
+                            <p class="text-sm opacity-75">Processar através do modelo</p>
+                        </div>
+                        <div class="generation-step step-item" data-step="sample">
+                            <div class="step-number">4</div>
+                            <h3 class="font-semibold">Sampling</h3>
+                            <p class="text-sm opacity-75">Escolher próximo token</p>
+                        </div>
+                        <div class="generation-step step-item" data-step="decode">
+                            <div class="step-number">5</div>
+                            <h3 class="font-semibold">Decodificação</h3>
+                            <p class="text-sm opacity-75">Converter token em texto</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualização Principal -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Texto Gerado -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Texto Gerado</h2>
+                    <div id="generatedText" class="min-h-20 p-4 bg-black/30 rounded-lg text-lg leading-relaxed">
+                        <span class="text-gray-400">O texto gerado aparecerá aqui...</span>
+                    </div>
+                    
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Tokens Gerados</h3>
+                            <div id="tokensGenerated" class="text-3xl font-bold text-blue-400">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Velocidade</h3>
+                            <div id="generationSpeed" class="text-3xl font-bold text-green-400">0</div>
+                            <div class="text-sm opacity-75">tokens/s</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3 class="text-lg font-semibold mb-2">Perplexidade</h3>
+                            <div id="perplexity" class="text-3xl font-bold text-purple-400">0.0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Probabilidades dos Tokens -->
+                <div class="glass-effect p-6 rounded-2xl" id="probabilitiesSection">
+                    <h2 class="text-2xl font-semibold mb-4">Probabilidades dos Próximos Tokens</h2>
+                    <div id="tokenProbabilities" class="space-y-2">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Beam Search -->
+                <div class="glass-effect p-6 rounded-2xl" id="beamSearchSection" style="display: none;">
+                    <h2 class="text-2xl font-semibold mb-4">Beam Search</h2>
+                    <div id="beamCandidates" class="space-y-2">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+                
+                <!-- Visualização de Atenção -->
+                <div class="glass-effect p-6 rounded-2xl" id="attentionSection" style="display: none;">
+                    <h2 class="text-2xl font-semibold mb-4">Mapa de Atenção</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Cabeças de Atenção</h3>
+                            <div id="attentionHeads" class="grid grid-cols-4 gap-2">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Matriz de Atenção</h3>
+                            <div id="attentionMatrix" class="bg-black/30 p-4 rounded-lg">
+                                <canvas id="attentionCanvas" width="300" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Logits e Softmax -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Logits e Softmax</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Logits Brutos</h3>
+                            <div id="rawLogits" class="space-y-2">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Após Softmax</h3>
+                            <div id="softmaxProbs" class="space-y-2">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold mb-2">Efeito da Temperatura</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-sm font-medium mb-2">Baixa (0.1)</div>
+                                <div class="inference-visualization">
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold">Determinístico</div>
+                                        <div class="text-sm opacity-75">Sempre o mesmo</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-medium mb-2">Média (1.0)</div>
+                                <div class="inference-visualization">
+                                    <div class="inference-point"></div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold">Balanceado</div>
+                                        <div class="text-sm opacity-75">Criativo e coerente</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-medium mb-2">Alta (2.0)</div>
+                                <div class="inference-visualization">
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold">Criativo</div>
+                                        <div class="text-sm opacity-75">Mais aleatório</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Log de Geração -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Log de Geração</h2>
+                    <div id="generationLog" class="bg-black/30 p-4 rounded-lg h-40 overflow-y-auto font-mono text-sm">
+                        <div class="text-green-400">[INFO] Sistema de inferência inicializado</div>
+                        <div class="text-blue-400">[INFO] Aguardando prompt para geração...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DO DOM ---
+        const promptInput = document.getElementById('promptInput');
+        const maxTokens = document.getElementById('maxTokens');
+        const maxTokensValue = document.getElementById('maxTokensValue');
+        const temperature = document.getElementById('temperature');
+        const temperatureValue = document.getElementById('temperatureValue');
+        const topP = document.getElementById('topP');
+        const topPValue = document.getElementById('topPValue');
+        const topK = document.getElementById('topK');
+        const topKValue = document.getElementById('topKValue');
+        const beamWidth = document.getElementById('beamWidth');
+        const beamWidthValue = document.getElementById('beamWidthValue');
+        const showProbabilities = document.getElementById('showProbabilities');
+        const showAttention = document.getElementById('showAttention');
+        const generateText = document.getElementById('generateText');
+        const stepGenerate = document.getElementById('stepGenerate');
+        const resetGeneration = document.getElementById('resetGeneration');
+        
+        const generatedText = document.getElementById('generatedText');
+        const tokensGenerated = document.getElementById('tokensGenerated');
+        const generationSpeed = document.getElementById('generationSpeed');
+        const perplexity = document.getElementById('perplexity');
+        const tokenProbabilities = document.getElementById('tokenProbabilities');
+        const beamCandidates = document.getElementById('beamCandidates');
+        const attentionHeads = document.getElementById('attentionHeads');
+        const rawLogits = document.getElementById('rawLogits');
+        const softmaxProbs = document.getElementById('softmaxProbs');
+        const generationLog = document.getElementById('generationLog');
+        const stepItems = document.querySelectorAll('.step-item');
+        const samplingMethods = document.querySelectorAll('.sampling-method');
+        
+        const probabilitiesSection = document.getElementById('probabilitiesSection');
+        const beamSearchSection = document.getElementById('beamSearchSection');
+        const attentionSection = document.getElementById('attentionSection');
+        
+        // --- ESTADO DA APLICAÇÃO ---
+        let currentTokens = [];
+        let isGenerating = false;
+        let generationStartTime = 0;
+        let currentSamplingMethod = 'greedy';
+        let stepByStep = false;
+        let currentStep = 0;
+        let beams = [];
+        
+        // Vocabulário simulado
+        const vocabulary = [
+            'princesa', 'castelo', 'floresta', 'dragão', 'cavaleiro', 'reino', 'magia',
+            'aventura', 'tesouro', 'espada', 'coroa', 'torre', 'ponte', 'rio',
+            'montanha', 'vale', 'cidade', 'aldeia', 'caminho', 'jornada', 'destino',
+            'amigo', 'inimigo', 'batalha', 'vitória', 'derrota', 'coragem', 'medo',
+            'amor', 'ódio', 'esperança', 'sonho', 'realidade', 'fantasia', 'lenda',
+            'história', 'conto', 'fábula', 'mito', 'verdade', 'mentira', 'segredo',
+            'mistério', 'enigma', 'resposta', 'pergunta', 'busca', 'encontro',
+            'partida', 'chegada', 'início', 'fim', 'meio', 'antes', 'depois',
+            'sempre', 'nunca', 'talvez', 'certamente', 'possivelmente', 'realmente',
+            'muito', 'pouco', 'grande', 'pequeno', 'alto', 'baixo', 'forte', 'fraco',
+            'rápido', 'lento', 'novo', 'velho', 'jovem', 'antigo', 'moderno',
+            'belo', 'feio', 'bom', 'mau', 'certo', 'errado', 'fácil', 'difícil',
+            'simples', 'complexo', 'claro', 'escuro', 'luz', 'sombra', 'dia', 'noite',
+            'sol', 'lua', 'estrela', 'céu', 'terra', 'mar', 'fogo', 'água', 'ar',
+            'árvore', 'flor', 'pássaro', 'peixe', 'animal', 'pessoa', 'criança',
+            'adulto', 'homem', 'mulher', 'menino', 'menina', 'pai', 'mãe', 'filho',
+            'filha', 'irmão', 'irmã', 'avô', 'avó', 'tio', 'tia', 'primo', 'prima',
+            'e', 'ou', 'mas', 'porque', 'quando', 'onde', 'como', 'que', 'quem',
+            'o', 'a', 'um', 'uma', 'os', 'as', 'uns', 'umas', 'de', 'do', 'da',
+            'em', 'no', 'na', 'por', 'para', 'com', 'sem', 'sobre', 'sob', 'entre'
+        ];
+        
+        // --- FUNÇÕES UTILITÁRIAS ---
+        
+        /**
+         * Simula logits para o vocabulário
+         */
+        function generateLogits(context) {
+            const logits = {};
+            
+            // Gera logits baseados no contexto
+            vocabulary.forEach(word => {
+                let score = Math.random() * 10 - 5; // Base aleatória
+                
+                // Ajusta baseado no contexto
+                if (context.includes('princesa')) {
+                    if (['castelo', 'reino', 'coroa', 'belo'].includes(word)) {
+                        score += 3;
+                    }
+                }
+                if (context.includes('dragão')) {
+                    if (['fogo', 'cavaleiro', 'batalha', 'medo'].includes(word)) {
+                        score += 3;
+                    }
+                }
+                if (context.includes('floresta')) {
+                    if (['árvore', 'animal', 'mistério', 'escuro'].includes(word)) {
+                        score += 3;
+                    }
+                }
+                
+                logits[word] = score;
+            });
+            
+            return logits;
+        }
+        
+        /**
+         * Aplica softmax aos logits
+         */
+        function softmax(logits, temp = 1.0) {
+            const words = Object.keys(logits);
+            const values = words.map(w => logits[w] / temp);
+            
+            // Subtrai o máximo para estabilidade numérica
+            const maxVal = Math.max(...values);
+            const expValues = values.map(v => Math.exp(v - maxVal));
+            const sumExp = expValues.reduce((a, b) => a + b, 0);
+            
+            const probs = {};
+            words.forEach((word, i) => {
+                probs[word] = expValues[i] / sumExp;
+            });
+            
+            return probs;
+        }
+        
+        /**
+         * Sampling greedy
+         */
+        function greedySample(probs) {
+            let maxProb = 0;
+            let bestWord = '';
+            
+            Object.entries(probs).forEach(([word, prob]) => {
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    bestWord = word;
+                }
+            });
+            
+            return bestWord;
+        }
+        
+        /**
+         * Sampling aleatório
+         */
+        function randomSample(probs) {
+            const words = Object.keys(probs);
+            const probValues = Object.values(probs);
+            
+            let cumSum = 0;
+            const random = Math.random();
+            
+            for (let i = 0; i < words.length; i++) {
+                cumSum += probValues[i];
+                if (random <= cumSum) {
+                    return words[i];
+                }
+            }
+            
+            return words[words.length - 1];
+        }
+        
+        /**
+         * Nucleus sampling (top-p)
+         */
+        function nucleusSample(probs, p = 0.9) {
+            const sorted = Object.entries(probs)
+                .sort(([,a], [,b]) => b - a);
+            
+            let cumSum = 0;
+            const nucleus = [];
+            
+            for (const [word, prob] of sorted) {
+                cumSum += prob;
+                nucleus.push([word, prob]);
+                if (cumSum >= p) break;
+            }
+            
+            // Renormaliza
+            const nucleusSum = nucleus.reduce((sum, [,prob]) => sum + prob, 0);
+            const nucleusProbs = {};
+            nucleus.forEach(([word, prob]) => {
+                nucleusProbs[word] = prob / nucleusSum;
+            });
+            
+            return randomSample(nucleusProbs);
+        }
+        
+        /**
+         * Top-k sampling
+         */
+        function topKSample(probs, k = 50) {
+            const sorted = Object.entries(probs)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, k);
+            
+            const topKProbs = {};
+            const sum = sorted.reduce((s, [,prob]) => s + prob, 0);
+            
+            sorted.forEach(([word, prob]) => {
+                topKProbs[word] = prob / sum;
+            });
+            
+            return randomSample(topKProbs);
+        }
+        
+        /**
+         * Beam search
+         */
+        function beamSearch(context, beamSize = 3) {
+            if (beams.length === 0) {
+                // Inicializa beams
+                const logits = generateLogits(context);
+                const temp = parseFloat(temperatureValue.textContent);
+                const probs = softmax(logits, temp);
+                
+                const sorted = Object.entries(probs)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, beamSize);
+                
+                beams = sorted.map(([word, prob]) => ({
+                    sequence: [word],
+                    score: Math.log(prob),
+                    prob: prob
+                }));
+            } else {
+                // Expande beams existentes
+                const newBeams = [];
+                
+                beams.forEach(beam => {
+                    const beamContext = context.concat(beam.sequence);
+                    const logits = generateLogits(beamContext);
+                    const temp = parseFloat(temperatureValue.textContent);
+                    const probs = softmax(logits, temp);
+                    
+                    const sorted = Object.entries(probs)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 5); // Top 5 para cada beam
+                    
+                    sorted.forEach(([word, prob]) => {
+                        newBeams.push({
+                            sequence: beam.sequence.concat([word]),
+                            score: beam.score + Math.log(prob),
+                            prob: beam.prob * prob
+                        });
+                    });
+                });
+                
+                // Mantém apenas os melhores beams
+                beams = newBeams
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, beamSize);
+            }
+            
+            return beams[0].sequence[beams[0].sequence.length - 1];
+        }
+        
+        /**
+         * Adiciona mensagem ao log
+         */
+        function logMessage(message, color = 'white') {
+            const logDiv = document.createElement('div');
+            logDiv.className = `text-${color}-400`;
+            logDiv.textContent = message;
+            generationLog.appendChild(logDiv);
+            generationLog.scrollTop = generationLog.scrollHeight;
+        }
+        
+        // --- FUNÇÕES DE VISUALIZAÇÃO ---
+        
+        /**
+         * Atualiza valores dos sliders
+         */
+        function updateSliderValues() {
+            maxTokensValue.textContent = `${maxTokens.value} tokens`;
+            temperatureValue.textContent = (parseInt(temperature.value) / 100).toFixed(1);
+            topPValue.textContent = (parseInt(topP.value) / 100).toFixed(1);
+            topKValue.textContent = topK.value;
+            beamWidthValue.textContent = `${beamWidth.value} beams`;
+        }
+        
+        /**
+         * Atualiza texto gerado
+         */
+        function updateGeneratedText() {
+            if (currentTokens.length === 0) {
+                generatedText.innerHTML = '<span class="text-gray-400">O texto gerado aparecerá aqui...</span>';
+                return;
+            }
+            
+            const prompt = promptInput.value.trim().split(/\s+/);
+            const html = [];
+            
+            // Tokens do prompt
+            prompt.forEach(token => {
+                html.push(`<span class="token input">${token}</span>`);
+            });
+            
+            // Tokens gerados
+            currentTokens.forEach((token, index) => {
+                const isLast = index === currentTokens.length - 1;
+                const className = isLast && isGenerating ? 'token current' : 'token generated';
+                html.push(`<span class="${className}">${token}</span>`);
+            });
+            
+            generatedText.innerHTML = html.join(' ');
+        }
+        
+        /**
+         * Exibe probabilidades dos tokens
+         */
+        function displayTokenProbabilities(probs) {
+            if (!showProbabilities.checked) {
+                probabilitiesSection.style.display = 'none';
+                return;
+            }
+            
+            probabilitiesSection.style.display = 'block';
+            
+            const sorted = Object.entries(probs)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+            
+            tokenProbabilities.innerHTML = '';
+            
+            sorted.forEach(([word, prob]) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 bg-white/10 rounded-lg';
+                
+                div.innerHTML = `
+                    <span class="font-semibold">${word}</span>
+                    <div class="flex items-center space-x-2 flex-1 ml-4">
+                        <div class="probability-bar flex-1">
+                            <div class="probability-fill" style="width: ${prob * 100}%"></div>
+                        </div>
+                        <span class="text-sm font-mono">${(prob * 100).toFixed(1)}%</span>
+                    </div>
+                `;
+                
+                tokenProbabilities.appendChild(div);
+            });
+        }
+        
+        /**
+         * Exibe logits e softmax
+         */
+        function displayLogitsAndSoftmax(logits, probs) {
+            const sorted = Object.entries(logits)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 8);
+            
+            // Logits brutos
+            rawLogits.innerHTML = '';
+            sorted.forEach(([word, logit]) => {
+                const div = document.createElement('div');
+                div.className = 'logit-bar';
+                
+                const normalizedLogit = Math.max(0, (logit + 5) / 10); // Normaliza para 0-1
+                
+                div.innerHTML = `
+                    <div class="logit-fill" style="width: ${normalizedLogit * 100}%">
+                        ${word}: ${logit.toFixed(2)}
+                    </div>
+                `;
+                
+                rawLogits.appendChild(div);
+            });
+            
+            // Probabilidades após softmax
+            softmaxProbs.innerHTML = '';
+            sorted.forEach(([word]) => {
+                const prob = probs[word];
+                const div = document.createElement('div');
+                div.className = 'logit-bar';
+                
+                div.innerHTML = `
+                    <div class="logit-fill" style="width: ${prob * 100}%">
+                        ${word}: ${(prob * 100).toFixed(1)}%
+                    </div>
+                `;
+                
+                softmaxProbs.appendChild(div);
+            });
+        }
+        
+        /**
+         * Exibe beam search
+         */
+        function displayBeamSearch() {
+            if (currentSamplingMethod !== 'beam') {
+                beamSearchSection.style.display = 'none';
+                return;
+            }
+            
+            beamSearchSection.style.display = 'block';
+            beamCandidates.innerHTML = '';
+            
+            beams.forEach((beam, index) => {
+                const div = document.createElement('div');
+                div.className = index === 0 ? 'beam selected' : 'beam';
+                
+                div.innerHTML = `
+                    <div class="beam-score">${beam.score.toFixed(2)}</div>
+                    <div class="font-semibold mb-2">Beam ${index + 1}</div>
+                    <div class="text-sm">${beam.sequence.join(' ')}</div>
+                    <div class="text-xs opacity-75 mt-1">Prob: ${(beam.prob * 100).toFixed(2)}%</div>
+                `;
+                
+                beamCandidates.appendChild(div);
+            });
+        }
+        
+        /**
+         * Simula visualização de atenção
+         */
+        function displayAttention() {
+            if (!showAttention.checked) {
+                attentionSection.style.display = 'none';
+                return;
+            }
+            
+            attentionSection.style.display = 'block';
+            
+            // Cabeças de atenção
+            attentionHeads.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const head = document.createElement('div');
+                head.className = i < 3 ? 'attention-head active' : 'attention-head';
+                head.textContent = `H${i + 1}`;
+                attentionHeads.appendChild(head);
+            }
+            
+            // Matriz de atenção (simulada)
+            const canvas = document.getElementById('attentionCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const tokens = promptInput.value.trim().split(/\s+/).concat(currentTokens);
+            const size = Math.min(tokens.length, 10);
+            const cellSize = canvas.width / size;
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const attention = Math.random();
+                    const alpha = attention * 0.8 + 0.1;
+                    
+                    ctx.fillStyle = `rgba(59, 130, 246, ${alpha})`;
+                    ctx.fillRect(j * cellSize, i * cellSize, cellSize - 1, cellSize - 1);
+                }
+            }
+        }
+        
+        /**
+         * Destaca etapa atual
+         */
+        function highlightStep(stepName) {
+            stepItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.step === stepName) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        /**
+         * Atualiza métricas
+         */
+        function updateMetrics() {
+            tokensGenerated.textContent = currentTokens.length;
+            
+            if (generationStartTime > 0) {
+                const elapsed = (Date.now() - generationStartTime) / 1000;
+                const speed = currentTokens.length / elapsed;
+                generationSpeed.textContent = speed.toFixed(1);
+            }
+            
+            // Simula perplexidade
+            const perp = Math.exp(Math.random() * 2 + 1);
+            perplexity.textContent = perp.toFixed(1);
+        }
+        
+        // --- FUNÇÕES DE GERAÇÃO ---
+        
+        /**
+         * Gera próximo token
+         */
+        function generateNextToken() {
+            const context = promptInput.value.trim().split(/\s+/).concat(currentTokens);
+            const logits = generateLogits(context);
+            const temp = parseFloat(temperatureValue.textContent);
+            const probs = softmax(logits, temp);
+            
+            let nextToken;
+            
+            switch (currentSamplingMethod) {
+                case 'greedy':
+                    nextToken = greedySample(probs);
+                    break;
+                case 'random':
+                    nextToken = randomSample(probs);
+                    break;
+                case 'nucleus':
+                    const p = parseFloat(topPValue.textContent);
+                    nextToken = nucleusSample(probs, p);
+                    break;
+                case 'beam':
+                    const beamSize = parseInt(beamWidth.value);
+                    nextToken = beamSearch(context, beamSize);
+                    break;
+                default:
+                    nextToken = greedySample(probs);
+            }
+            
+            currentTokens.push(nextToken);
+            
+            // Atualiza visualizações
+            displayTokenProbabilities(probs);
+            displayLogitsAndSoftmax(logits, probs);
+            displayBeamSearch();
+            displayAttention();
+            updateGeneratedText();
+            updateMetrics();
+            
+            logMessage(`[GEN] Token gerado: "${nextToken}" (método: ${currentSamplingMethod})`, 'green');
+            
+            return nextToken;
+        }
+        
+        /**
+         * Inicia geração automática
+         */
+        function startGeneration() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            generationStartTime = Date.now();
+            generateText.disabled = true;
+            stepGenerate.disabled = true;
+            
+            const maxTokensNum = parseInt(maxTokens.value);
+            
+            logMessage('[INFO] Iniciando geração automática...', 'blue');
+            
+            const generateInterval = setInterval(() => {
+                if (currentTokens.length >= maxTokensNum) {
+                    clearInterval(generateInterval);
+                    isGenerating = false;
+                    generateText.disabled = false;
+                    stepGenerate.disabled = false;
+                    logMessage('[INFO] Geração concluída!', 'green');
+                    return;
+                }
+                
+                // Simula etapas
+                highlightStep('tokenize');
+                setTimeout(() => {
+                    highlightStep('embed');
+                    setTimeout(() => {
+                        highlightStep('forward');
+                        setTimeout(() => {
+                            highlightStep('sample');
+                            setTimeout(() => {
+                                highlightStep('decode');
+                                generateNextToken();
+                            }, 200);
+                        }, 200);
+                    }, 200);
+                }, 200);
+            }, 1500);
+        }
+        
+        /**
+         * Geração passo a passo
+         */
+        function stepGeneration() {
+            if (isGenerating) return;
+            
+            const maxTokensNum = parseInt(maxTokens.value);
+            
+            if (currentTokens.length >= maxTokensNum) {
+                logMessage('[INFO] Máximo de tokens atingido!', 'yellow');
+                return;
+            }
+            
+            if (!stepByStep) {
+                stepByStep = true;
+                generationStartTime = Date.now();
+                logMessage('[INFO] Iniciando geração passo a passo...', 'blue');
+            }
+            
+            const steps = ['tokenize', 'embed', 'forward', 'sample', 'decode'];
+            
+            if (currentStep < steps.length) {
+                highlightStep(steps[currentStep]);
+                
+                let message = '';
+                switch (steps[currentStep]) {
+                    case 'tokenize':
+                        message = 'Tokenizando entrada...';
+                        break;
+                    case 'embed':
+                        message = 'Convertendo tokens em embeddings...';
+                        break;
+                    case 'forward':
+                        message = 'Processando através do modelo...';
+                        break;
+                    case 'sample':
+                        message = 'Amostrando próximo token...';
+                        break;
+                    case 'decode':
+                        message = 'Decodificando token...';
+                        break;
+                }
+                
+                logMessage(`[STEP] ${message}`, 'cyan');
+                
+                currentStep++;
+                
+                if (currentStep >= steps.length) {
+                    generateNextToken();
+                    currentStep = 0;
+                }
+            }
+        }
+        
+        /**
+         * Reseta geração
+         */
+        function resetGeneration() {
+            currentTokens = [];
+            isGenerating = false;
+            stepByStep = false;
+            currentStep = 0;
+            beams = [];
+            generationStartTime = 0;
+            
+            generateText.disabled = false;
+            stepGenerate.disabled = false;
+            
+            updateGeneratedText();
+            updateMetrics();
+            
+            tokenProbabilities.innerHTML = '';
+            beamCandidates.innerHTML = '';
+            rawLogits.innerHTML = '';
+            softmaxProbs.innerHTML = '';
+            
+            stepItems.forEach(item => item.classList.remove('active'));
+            
+            logMessage('[INFO] Geração resetada', 'yellow');
+        }
+        
+        // --- EVENT LISTENERS ---
+        
+        // Sliders
+        maxTokens.addEventListener('input', updateSliderValues);
+        temperature.addEventListener('input', updateSliderValues);
+        topP.addEventListener('input', updateSliderValues);
+        topK.addEventListener('input', updateSliderValues);
+        beamWidth.addEventListener('input', updateSliderValues);
+        
+        // Checkboxes
+        showProbabilities.addEventListener('change', () => {
+            if (currentTokens.length > 0) {
+                const context = promptInput.value.trim().split(/\s+/).concat(currentTokens);
+                const logits = generateLogits(context);
+                const temp = parseFloat(temperatureValue.textContent);
+                const probs = softmax(logits, temp);
+                displayTokenProbabilities(probs);
+            }
+        });
+        
+        showAttention.addEventListener('change', displayAttention);
+        
+        // Métodos de sampling
+        samplingMethods.forEach(method => {
+            method.addEventListener('click', () => {
+                samplingMethods.forEach(m => m.classList.remove('active'));
+                method.classList.add('active');
+                currentSamplingMethod = method.dataset.method;
+                
+                logMessage(`[INFO] Método de sampling alterado para: ${currentSamplingMethod}`, 'blue');
+                
+                // Atualiza visualizações específicas
+                if (currentSamplingMethod === 'beam') {
+                    beams = []; // Reset beams
+                    displayBeamSearch();
+                } else {
+                    beamSearchSection.style.display = 'none';
+                }
+            });
+        });
+        
+        // Botões
+        generateText.addEventListener('click', startGeneration);
+        stepGenerate.addEventListener('click', stepGeneration);
+        resetGeneration.addEventListener('click', resetGeneration);
+        
+        // Etapas clicáveis
+        stepItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const step = item.dataset.step;
+                highlightStep(step);
+                
+                let message = '';
+                switch (step) {
+                    case 'tokenize':
+                        message = 'Tokenização: Converte o texto de entrada em tokens que o modelo pode processar.';
+                        break;
+                    case 'embed':
+                        message = 'Embeddings: Transforma tokens em representações vetoriais densas.';
+                        break;
+                    case 'forward':
+                        message = 'Forward Pass: Processa os embeddings através das camadas do modelo.';
+                        break;
+                    case 'sample':
+                        message = 'Sampling: Escolhe o próximo token baseado nas probabilidades calculadas.';
+                        break;
+                    case 'decode':
+                        message = 'Decodificação: Converte o token escolhido de volta para texto legível.';
+                        break;
+                }
+                
+                logMessage(`[INFO] ${message}`, 'cyan');
+            });
+        });
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSliderValues();
+            updateGeneratedText();
+            updateMetrics();
+        });
+    </script>
+</body>
+</html>

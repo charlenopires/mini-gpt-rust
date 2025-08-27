@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-GPT Rust - Interativos Educacionais</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .interactive-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .interactive-card:hover {
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .difficulty-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+        .difficulty-beginner {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .difficulty-intermediate {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .difficulty-advanced {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .category-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                    🦀 Mini-GPT Rust
+                </h1>
+                <p class="text-xl md:text-2xl font-light mb-6">
+                    Interativos Educacionais para Entender GPT
+                </p>
+                <p class="text-lg opacity-90 max-w-3xl mx-auto">
+                    Explore os conceitos fundamentais por trás dos modelos de linguagem através de demonstrações interativas e visualizações em tempo real.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <!-- Introduction -->
+        <section class="mb-12">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">🎓 Sobre os Interativos</h2>
+                <p class="text-gray-600 leading-relaxed mb-4">
+                    Esta coleção de interativos foi desenvolvida para tornar os conceitos complexos de modelos de linguagem 
+                    acessíveis e compreensíveis. Cada demonstração combina teoria com prática, permitindo que você explore 
+                    como funcionam os componentes internos de um GPT.
+                </p>
+                <div class="grid md:grid-cols-3 gap-6 mt-6">
+                    <div class="text-center">
+                        <div class="text-3xl mb-2">🧠</div>
+                        <h3 class="font-semibold text-gray-800">Conceitos Fundamentais</h3>
+                        <p class="text-sm text-gray-600">Atenção, embeddings, transformers</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl mb-2">⚡</div>
+                        <h3 class="font-semibold text-gray-800">Visualizações Interativas</h3>
+                        <p class="text-sm text-gray-600">Veja os algoritmos em ação</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl mb-2">🔬</div>
+                        <h3 class="font-semibold text-gray-800">Experimentação</h3>
+                        <p class="text-sm text-gray-600">Ajuste parâmetros e observe resultados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Grid -->
+        <section>
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">🚀 Explore os Interativos</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="interactives-grid">
+                <!-- Interativos serão carregados dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Getting Started -->
+        <section class="mt-16">
+            <div class="bg-blue-50 rounded-lg p-8">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">🚀 Como Começar</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold text-blue-700 mb-2">1. Escolha um Interativo</h3>
+                        <p class="text-blue-600 text-sm">Comece com os conceitos básicos como Tokenização ou Embeddings</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-700 mb-2">2. Experimente</h3>
+                        <p class="text-blue-600 text-sm">Ajuste parâmetros e observe como afetam os resultados</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-700 mb-2">3. Aprenda</h3>
+                        <p class="text-blue-600 text-sm">Leia as explicações detalhadas e entenda a teoria</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-700 mb-2">4. Avance</h3>
+                        <p class="text-blue-600 text-sm">Progrida para conceitos mais avançados como Atenção e Transformers</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-gray-300">
+                Desenvolvido com ❤️ em Rust | Mini-GPT Educational Project
+            </p>
+            <p class="text-gray-400 text-sm mt-2">
+                Explore, aprenda e contribua para o futuro da IA educacional
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Dados dos interativos disponíveis
+        const interactives = [
+            {
+                id: 'chunking',
+                title: 'Chunking de Texto',
+                description: 'Aprenda como dividir texto em pedaços menores para processamento eficiente',
+                difficulty: 'beginner',
+                category: 'Pré-processamento',
+                available: true
+            },
+            {
+                id: 'tokenization',
+                title: 'Tokenização',
+                description: 'Entenda como o texto é convertido em tokens que o modelo pode processar',
+                difficulty: 'beginner',
+                category: 'Pré-processamento',
+                available: false
+            },
+            {
+                id: 'embeddings',
+                title: 'Embeddings',
+                description: 'Explore como palavras são representadas como vetores em espaços multidimensionais',
+                difficulty: 'intermediate',
+                category: 'Representação',
+                available: false
+            },
+            {
+                id: 'attention',
+                title: 'Mecanismo de Atenção',
+                description: 'Visualize como o modelo "presta atenção" a diferentes partes do texto',
+                difficulty: 'intermediate',
+                category: 'Arquitetura',
+                available: false
+            },
+            {
+                id: 'transformer',
+                title: 'Arquitetura Transformer',
+                description: 'Compreenda a estrutura completa de um modelo Transformer',
+                difficulty: 'advanced',
+                category: 'Arquitetura',
+                available: false
+            },
+            {
+                id: 'training',
+                title: 'Processo de Treinamento',
+                description: 'Acompanhe como o modelo aprende através do processo de treinamento',
+                difficulty: 'advanced',
+                category: 'Treinamento',
+                available: false
+            },
+            {
+                id: 'inference',
+                title: 'Inferência e Geração',
+                description: 'Veja como o modelo gera texto novo a partir de um prompt',
+                difficulty: 'intermediate',
+                category: 'Inferência',
+                available: false
+            }
+        ];
+
+        // Função para renderizar os cards dos interativos
+        function renderInteractives() {
+            const grid = document.getElementById('interactives-grid');
+            
+            interactives.forEach(interactive => {
+                const card = document.createElement('div');
+                card.className = `interactive-card bg-white rounded-lg shadow-lg p-6 ${interactive.available ? 'cursor-pointer' : 'opacity-60'}`;
+                
+                const difficultyClass = `difficulty-${interactive.difficulty}`;
+                const statusBadge = interactive.available 
+                    ? '<span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Disponível</span>'
+                    : '<span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Em Desenvolvimento</span>';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="category-badge">${interactive.category}</span>
+                        <span class="difficulty-badge ${difficultyClass}">${interactive.difficulty}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">${interactive.title}</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-4">${interactive.description}</p>
+                    <div class="flex justify-between items-center">
+                        ${statusBadge}
+                        ${interactive.available 
+                            ? '<button class="text-blue-600 hover:text-blue-800 font-medium text-sm">Explorar →</button>'
+                            : '<span class="text-gray-400 text-sm">Em breve</span>'
+                        }
+                    </div>
+                `;
+                
+                if (interactive.available) {
+                    card.addEventListener('click', () => {
+                        window.location.href = `/${interactive.id}`;
+                    });
+                }
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Renderizar interativos quando a página carregar
+        document.addEventListener('DOMContentLoaded', renderInteractives);
+    </script>
+</body>
+</html>

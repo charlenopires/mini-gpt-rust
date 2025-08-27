@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demonstração Interativa do Mecanismo de Atenção</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .attention-matrix {
+            display: grid;
+            gap: 2px;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        .attention-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+        }
+        .attention-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .token-item {
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .token-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .token-selected {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .vector-visualization {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .vector-component {
+            height: 20px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .attention-flow {
+            position: relative;
+            overflow: hidden;
+        }
+        .attention-arrow {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+            transform-origin: top;
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+        .attention-arrow.active {
+            opacity: 1;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">Mecanismo de Atenção</h1>
+            <p class="text-xl opacity-90">Descubra como os modelos "prestam atenção" a diferentes partes do texto</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Painel de Controle -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">1. Configure a Sequência</h2>
+                    <textarea id="inputSequence" class="w-full h-32 p-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:ring-2 focus:ring-blue-400 transition" placeholder="Digite uma frase para analisar...">O gato subiu no telhado</textarea>
+
+                    <h2 class="text-2xl font-semibold mt-6 mb-4">2. Tipo de Atenção</h2>
+                    <div id="attentionTypeSelector" class="space-y-2">
+                        <div>
+                            <input type="radio" id="self_attention" name="attention_type" value="self" class="hidden peer" checked>
+                            <label for="self_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
+                                Self-Attention
+                                <span class="tooltiptext">Cada token presta atenção a todos os outros tokens na sequência</span>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" id="masked_attention" name="attention_type" value="masked" class="hidden peer">
+                            <label for="masked_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
+                                Masked Attention
+                                <span class="tooltiptext">Cada token só pode prestar atenção aos tokens anteriores (usado em GPT)</span>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" id="cross_attention" name="attention_type" value="cross" class="hidden peer">
+                            <label for="cross_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
+                                Cross-Attention
+                                <span class="tooltiptext">Tokens de uma sequência prestam atenção a tokens de outra sequência</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold mt-6 mb-4">3. Parâmetros</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Número de Cabeças de Atenção</label>
+                            <input type="range" id="numHeads" min="1" max="8" value="4" class="w-full">
+                            <span id="numHeadsValue" class="text-sm opacity-75">4 cabeças</span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Dimensão do Modelo</label>
+                            <input type="range" id="modelDim" min="64" max="512" step="64" value="256" class="w-full">
+                            <span id="modelDimValue" class="text-sm opacity-75">256 dimensões</span>
+                        </div>
+                        <div>
+                            <label class="flex items-center mt-4">
+                                <input type="checkbox" id="showMath" class="mr-2">
+                                <span class="text-sm font-medium">Mostrar Cálculos Matemáticos</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button id="computeAttention" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105 active:scale-100">
+                        Calcular Atenção
+                    </button>
+                </div>
+            </div>
+
+            <!-- Área de Visualização -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Tokens da Sequência -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Tokens da Sequência</h2>
+                    <div id="tokensDisplay" class="flex flex-wrap gap-2">
+                        <p class="text-white/70">Os tokens aparecerão aqui após o processamento.</p>
+                    </div>
+                </div>
+
+                <!-- Matriz de Atenção -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Matriz de Atenção</h2>
+                    <div class="flex items-center justify-center">
+                        <div id="attentionMatrix" class="attention-matrix">
+                            <p class="text-gray-600 col-span-full text-center">A matriz de atenção aparecerá aqui.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-white/70">
+                        <p><strong>Como ler:</strong> Cada linha mostra quanto um token presta atenção aos outros tokens.</p>
+                        <p><strong>Cores:</strong> <span class="inline-block w-4 h-4 bg-blue-200 rounded mr-1"></span>Baixa atenção → <span class="inline-block w-4 h-4 bg-blue-800 rounded mr-1"></span>Alta atenção</p>
+                    </div>
+                </div>
+
+                <!-- Visualização de Vetores Q, K, V -->
+                <div class="glass-effect p-6 rounded-2xl" id="vectorsSection" style="display: none;">
+                    <h2 class="text-2xl font-semibold mb-4">Vetores Query, Key e Value</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2 text-blue-300">Query (Q)</h3>
+                            <div id="queryVectors" class="vector-visualization">
+                                <p class="text-white/70 text-sm">Vetores de consulta</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2 text-green-300">Key (K)</h3>
+                            <div id="keyVectors" class="vector-visualization">
+                                <p class="text-white/70 text-sm">Vetores de chave</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2 text-purple-300">Value (V)</h3>
+                            <div id="valueVectors" class="vector-visualization">
+                                <p class="text-white/70 text-sm">Vetores de valor</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fluxo de Atenção -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4">Fluxo de Atenção</h2>
+                    <div id="attentionFlow" class="attention-flow h-64 bg-white/10 rounded-lg relative">
+                        <p class="text-white/70 text-center pt-24">Clique em um token para ver o fluxo de atenção.</p>
+                    </div>
+                </div>
+
+                <!-- Múltiplas Cabeças de Atenção -->
+                <div class="glass-effect p-6 rounded-2xl" id="multiHeadSection">
+                    <h2 class="text-2xl font-semibold mb-4">Múltiplas Cabeças de Atenção</h2>
+                    <div id="multiHeadDisplay" class="grid gap-4">
+                        <p class="text-white/70">As diferentes cabeças de atenção aparecerão aqui.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DO DOM ---
+        const inputSequence = document.getElementById('inputSequence');
+        const attentionTypeSelector = document.getElementById('attentionTypeSelector');
+        const numHeads = document.getElementById('numHeads');
+        const numHeadsValue = document.getElementById('numHeadsValue');
+        const modelDim = document.getElementById('modelDim');
+        const modelDimValue = document.getElementById('modelDimValue');
+        const showMath = document.getElementById('showMath');
+        const computeAttention = document.getElementById('computeAttention');
+        const tokensDisplay = document.getElementById('tokensDisplay');
+        const attentionMatrix = document.getElementById('attentionMatrix');
+        const vectorsSection = document.getElementById('vectorsSection');
+        const queryVectors = document.getElementById('queryVectors');
+        const keyVectors = document.getElementById('keyVectors');
+        const valueVectors = document.getElementById('valueVectors');
+        const attentionFlow = document.getElementById('attentionFlow');
+        const multiHeadDisplay = document.getElementById('multiHeadDisplay');
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let currentTokens = [];
+        let currentAttentionType = 'self';
+        let attentionWeights = [];
+        let selectedTokenIndex = -1;
+        let qkvVectors = { Q: [], K: [], V: [] };
+
+        // --- FUNÇÕES UTILITÁRIAS ---
+
+        /**
+         * Tokeniza o texto de entrada
+         */
+        function tokenizeText(text) {
+            if (!text.trim()) return [];
+            return text.trim().split(/\s+/).map((token, index) => ({
+                text: token,
+                id: index,
+                position: index
+            }));
+        }
+
+        /**
+         * Gera vetores aleatórios para Q, K, V
+         */
+        function generateQKVVectors(tokens, dim) {
+            const numTokens = tokens.length;
+            const Q = [], K = [], V = [];
+            
+            for (let i = 0; i < numTokens; i++) {
+                const q = Array.from({ length: dim }, () => Math.random() * 2 - 1);
+                const k = Array.from({ length: dim }, () => Math.random() * 2 - 1);
+                const v = Array.from({ length: dim }, () => Math.random() * 2 - 1);
+                
+                Q.push(q);
+                K.push(k);
+                V.push(v);
+            }
+            
+            return { Q, K, V };
+        }
+
+        /**
+         * Calcula produto escalar entre dois vetores
+         */
+        function dotProduct(a, b) {
+            return a.reduce((sum, val, i) => sum + val * b[i], 0);
+        }
+
+        /**
+         * Aplica softmax a um array
+         */
+        function softmax(arr) {
+            const max = Math.max(...arr);
+            const exp = arr.map(x => Math.exp(x - max));
+            const sum = exp.reduce((a, b) => a + b, 0);
+            return exp.map(x => x / sum);
+        }
+
+        /**
+         * Calcula a matriz de atenção
+         */
+        function computeAttentionMatrix(Q, K, attentionType) {
+            const numTokens = Q.length;
+            const dim = Q[0].length;
+            const scale = 1 / Math.sqrt(dim);
+            
+            const scores = [];
+            
+            for (let i = 0; i < numTokens; i++) {
+                const row = [];
+                for (let j = 0; j < numTokens; j++) {
+                    if (attentionType === 'masked' && j > i) {
+                        row.push(-Infinity); // Máscara para atenção causal
+                    } else {
+                        const score = dotProduct(Q[i], K[j]) * scale;
+                        row.push(score);
+                    }
+                }
+                scores.push(softmax(row));
+            }
+            
+            return scores;
+        }
+
+        /**
+         * Gera cor baseada na intensidade da atenção
+         */
+        function getAttentionColor(weight) {
+            const intensity = Math.floor(weight * 255);
+            return `rgb(${59 + intensity}, ${130 + intensity/2}, ${246})`;
+        }
+
+        // --- FUNÇÕES DE VISUALIZAÇÃO ---
+
+        /**
+         * Exibe os tokens
+         */
+        function displayTokens(tokens) {
+            tokensDisplay.innerHTML = '';
+            
+            if (tokens.length === 0) {
+                tokensDisplay.innerHTML = '<p class="text-white/70">Nenhum token para exibir.</p>';
+                return;
+            }
+            
+            tokens.forEach((token, index) => {
+                const tokenEl = document.createElement('div');
+                tokenEl.className = 'token-item bg-white/20 text-white cursor-pointer';
+                tokenEl.textContent = token.text;
+                tokenEl.dataset.index = index;
+                
+                tokenEl.addEventListener('click', () => {
+                    selectToken(index);
+                });
+                
+                tokensDisplay.appendChild(tokenEl);
+            });
+        }
+
+        /**
+         * Exibe a matriz de atenção
+         */
+        function displayAttentionMatrix(weights, tokens) {
+            attentionMatrix.innerHTML = '';
+            
+            if (weights.length === 0) {
+                attentionMatrix.innerHTML = '<p class="text-gray-600 col-span-full text-center">Nenhuma matriz de atenção para exibir.</p>';
+                return;
+            }
+            
+            const numTokens = tokens.length;
+            attentionMatrix.style.gridTemplateColumns = `repeat(${numTokens + 1}, 1fr)`;
+            
+            // Cabeçalho das colunas
+            attentionMatrix.appendChild(document.createElement('div')); // Célula vazia
+            tokens.forEach(token => {
+                const headerEl = document.createElement('div');
+                headerEl.className = 'text-xs font-bold text-gray-700 text-center p-1';
+                headerEl.textContent = token.text;
+                attentionMatrix.appendChild(headerEl);
+            });
+            
+            // Linhas da matriz
+            weights.forEach((row, i) => {
+                // Cabeçalho da linha
+                const rowHeaderEl = document.createElement('div');
+                rowHeaderEl.className = 'text-xs font-bold text-gray-700 text-center p-1';
+                rowHeaderEl.textContent = tokens[i].text;
+                attentionMatrix.appendChild(rowHeaderEl);
+                
+                // Células da matriz
+                row.forEach((weight, j) => {
+                    const cellEl = document.createElement('div');
+                    cellEl.className = 'attention-cell';
+                    cellEl.style.backgroundColor = getAttentionColor(weight);
+                    cellEl.style.color = weight > 0.5 ? 'white' : 'black';
+                    cellEl.textContent = weight.toFixed(2);
+                    cellEl.title = `${tokens[i].text} → ${tokens[j].text}: ${weight.toFixed(3)}`;
+                    
+                    cellEl.addEventListener('click', () => {
+                        highlightAttentionPath(i, j, weight);
+                    });
+                    
+                    attentionMatrix.appendChild(cellEl);
+                });
+            });
+        }
+
+        /**
+         * Exibe os vetores Q, K, V
+         */
+        function displayQKVVectors(vectors, tokens) {
+            if (!showMath.checked) {
+                vectorsSection.style.display = 'none';
+                return;
+            }
+            
+            vectorsSection.style.display = 'block';
+            
+            ['Q', 'K', 'V'].forEach(type => {
+                const container = type === 'Q' ? queryVectors : 
+                                 type === 'K' ? keyVectors : valueVectors;
+                container.innerHTML = '';
+                
+                vectors[type].forEach((vector, tokenIndex) => {
+                    const tokenDiv = document.createElement('div');
+                    tokenDiv.className = 'mb-2';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'text-xs font-bold mb-1';
+                    label.textContent = `${tokens[tokenIndex].text}`;
+                    tokenDiv.appendChild(label);
+                    
+                    const vectorDiv = document.createElement('div');
+                    vectorDiv.className = 'vector-visualization';
+                    
+                    // Mostra apenas os primeiros 8 componentes para economizar espaço
+                    vector.slice(0, 8).forEach((component, i) => {
+                        const componentDiv = document.createElement('div');
+                        componentDiv.className = 'vector-component';
+                        
+                        const intensity = Math.abs(component);
+                        const hue = type === 'Q' ? 200 : type === 'K' ? 120 : 280;
+                        componentDiv.style.backgroundColor = `hsl(${hue}, 70%, ${30 + intensity * 40}%)`;
+                        componentDiv.textContent = component.toFixed(2);
+                        
+                        vectorDiv.appendChild(componentDiv);
+                    });
+                    
+                    if (vector.length > 8) {
+                        const moreDiv = document.createElement('div');
+                        moreDiv.className = 'text-xs text-white/50 text-center mt-1';
+                        moreDiv.textContent = `... +${vector.length - 8} mais`;
+                        vectorDiv.appendChild(moreDiv);
+                    }
+                    
+                    tokenDiv.appendChild(vectorDiv);
+                    container.appendChild(tokenDiv);
+                });
+            });
+        }
+
+        /**
+         * Seleciona um token e mostra sua atenção
+         */
+        function selectToken(index) {
+            selectedTokenIndex = index;
+            
+            // Remove seleção anterior
+            document.querySelectorAll('.token-selected').forEach(el => {
+                el.classList.remove('token-selected');
+            });
+            
+            // Adiciona nova seleção
+            const tokenEl = document.querySelector(`[data-index="${index}"]`);
+            if (tokenEl) {
+                tokenEl.classList.add('token-selected');
+            }
+            
+            // Mostra fluxo de atenção
+            showAttentionFlow(index);
+        }
+
+        /**
+         * Mostra o fluxo de atenção para um token
+         */
+        function showAttentionFlow(tokenIndex) {
+            attentionFlow.innerHTML = '';
+            
+            if (attentionWeights.length === 0 || tokenIndex < 0) {
+                attentionFlow.innerHTML = '<p class="text-white/70 text-center pt-24">Selecione um token para ver o fluxo de atenção.</p>';
+                return;
+            }
+            
+            const weights = attentionWeights[tokenIndex];
+            const maxWeight = Math.max(...weights);
+            
+            // Cria visualização de barras
+            const barsContainer = document.createElement('div');
+            barsContainer.className = 'flex items-end justify-center h-full p-4 gap-2';
+            
+            weights.forEach((weight, i) => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'flex flex-col items-center';
+                
+                const bar = document.createElement('div');
+                bar.className = 'bg-blue-500 rounded-t transition-all duration-500';
+                bar.style.width = '20px';
+                bar.style.height = `${(weight / maxWeight) * 200}px`;
+                bar.style.opacity = weight.toString();
+                
+                const label = document.createElement('div');
+                label.className = 'text-xs text-white/70 mt-1 text-center';
+                label.textContent = currentTokens[i].text;
+                
+                const value = document.createElement('div');
+                value.className = 'text-xs text-white font-bold';
+                value.textContent = weight.toFixed(2);
+                
+                barContainer.appendChild(bar);
+                barContainer.appendChild(label);
+                barContainer.appendChild(value);
+                barsContainer.appendChild(barContainer);
+            });
+            
+            attentionFlow.appendChild(barsContainer);
+        }
+
+        /**
+         * Exibe múltiplas cabeças de atenção
+         */
+        function displayMultiHeadAttention(numHeadsValue) {
+            multiHeadDisplay.innerHTML = '';
+            
+            if (attentionWeights.length === 0) {
+                multiHeadDisplay.innerHTML = '<p class="text-white/70">Calcule a atenção primeiro para ver as múltiplas cabeças.</p>';
+                return;
+            }
+            
+            multiHeadDisplay.style.gridTemplateColumns = `repeat(${Math.min(numHeadsValue, 4)}, 1fr)`;
+            
+            for (let head = 0; head < numHeadsValue; head++) {
+                const headDiv = document.createElement('div');
+                headDiv.className = 'glass-effect p-4 rounded-lg';
+                
+                const title = document.createElement('h3');
+                title.className = 'text-lg font-semibold mb-2 text-center';
+                title.textContent = `Cabeça ${head + 1}`;
+                headDiv.appendChild(title);
+                
+                // Gera uma variação da matriz de atenção para esta cabeça
+                const headMatrix = document.createElement('div');
+                headMatrix.className = 'attention-matrix';
+                headMatrix.style.gridTemplateColumns = `repeat(${currentTokens.length}, 1fr)`;
+                
+                attentionWeights.forEach((row, i) => {
+                    row.forEach((weight, j) => {
+                        // Adiciona variação aleatória para simular diferentes cabeças
+                        const variation = 0.8 + Math.random() * 0.4;
+                        const headWeight = Math.max(0, Math.min(1, weight * variation));
+                        
+                        const cell = document.createElement('div');
+                        cell.className = 'attention-cell';
+                        cell.style.backgroundColor = getAttentionColor(headWeight);
+                        cell.style.color = headWeight > 0.5 ? 'white' : 'black';
+                        cell.style.width = '25px';
+                        cell.style.height = '25px';
+                        cell.style.fontSize = '10px';
+                        cell.textContent = headWeight.toFixed(1);
+                        cell.title = `Cabeça ${head + 1}: ${currentTokens[i].text} → ${currentTokens[j].text}`;
+                        
+                        headMatrix.appendChild(cell);
+                    });
+                });
+                
+                headDiv.appendChild(headMatrix);
+                multiHeadDisplay.appendChild(headDiv);
+            }
+        }
+
+        /**
+         * Destaca um caminho de atenção específico
+         */
+        function highlightAttentionPath(fromIndex, toIndex, weight) {
+            // Remove destaques anteriores
+            document.querySelectorAll('.attention-cell').forEach(cell => {
+                cell.style.transform = '';
+                cell.style.zIndex = '';
+            });
+            
+            // Destaca a célula clicada
+            const cells = document.querySelectorAll('.attention-cell');
+            const cellIndex = (fromIndex * currentTokens.length) + toIndex + currentTokens.length + 1;
+            if (cells[cellIndex]) {
+                cells[cellIndex].style.transform = 'scale(1.2)';
+                cells[cellIndex].style.zIndex = '100';
+            }
+            
+            // Mostra informações detalhadas
+            console.log(`Atenção: ${currentTokens[fromIndex].text} → ${currentTokens[toIndex].text} = ${weight.toFixed(3)}`);
+        }
+
+        // --- EVENT LISTENERS ---
+
+        // Atualização dos sliders
+        numHeads.addEventListener('input', (e) => {
+            numHeadsValue.textContent = `${e.target.value} cabeças`;
+        });
+
+        modelDim.addEventListener('input', (e) => {
+            modelDimValue.textContent = `${e.target.value} dimensões`;
+        });
+
+        // Seleção do tipo de atenção
+        attentionTypeSelector.addEventListener('change', (e) => {
+            if (e.target.name === 'attention_type') {
+                currentAttentionType = e.target.value;
+            }
+        });
+
+        // Botão principal
+        computeAttention.addEventListener('click', () => {
+            const text = inputSequence.value.trim();
+            if (!text) {
+                alert('Por favor, insira um texto para analisar.');
+                return;
+            }
+            
+            // Tokeniza o texto
+            currentTokens = tokenizeText(text);
+            
+            // Gera vetores Q, K, V
+            const dim = parseInt(modelDim.value);
+            qkvVectors = generateQKVVectors(currentTokens, dim);
+            
+            // Calcula matriz de atenção
+            attentionWeights = computeAttentionMatrix(qkvVectors.Q, qkvVectors.K, currentAttentionType);
+            
+            // Atualiza visualizações
+            displayTokens(currentTokens);
+            displayAttentionMatrix(attentionWeights, currentTokens);
+            displayQKVVectors(qkvVectors, currentTokens);
+            displayMultiHeadAttention(parseInt(numHeads.value));
+            
+            // Reset seleção
+            selectedTokenIndex = -1;
+            showAttentionFlow(-1);
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            // Processa o texto inicial
+            computeAttention.click();
+        });
+    </script>
+</body>
+</html>
