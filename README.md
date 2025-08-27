@@ -18,7 +18,7 @@ Este projeto foi criado para ensinar os componentes essenciais de um LLM moderno
 ```
 mini-gpt-rust/
 ├── src/
-│   ├── main.rs               # CLI principal com comando demo
+│   ├── main.rs               # CLI principal com comandos demo e web
 │   ├── attention.rs          # Mecanismo de atenção multi-head
 │   ├── tokenizer.rs          # Sistema de tokenização BPE
 │   ├── model.rs              # Arquitetura do Mini-GPT
@@ -27,7 +27,10 @@ mini-gpt-rust/
 │   ├── educational_logger.rs # Logging educacional avançado
 │   ├── kernels.rs            # Otimizações de baixo nível
 │   ├── benchmarks.rs         # Sistema de benchmarks
-│   └── chunking.rs           # Processamento de chunks
+│   ├── chunking.rs           # Processamento de chunks
+│   ├── web_server.rs         # Servidor web completo com Axum
+│   ├── demo_bridge.rs        # Ponte entre CLI e interface web
+│   └── web_demo_integration.rs # Integração WebSocket/API REST
 ├── examples/
 │   ├── attention_demo.rs     # 🧠 Demo do mecanismo de atenção
 │   ├── tokenizer_demo.rs     # 🔤 Demo do sistema de tokenização
@@ -116,10 +119,19 @@ mini-gpt-rust/
 - **Treinamento**: Sistema completo com otimizadores
 - **Transformer**: Arquitetura detalhada com visualizações
 
-### 🌐 **Servidor Web de Interativos** (`src/web_server.rs`)
+### 🌐 **Sistema Web Completo** (`src/web_server.rs`) - **NOVO!**
 - **Framework Axum**: Servidor web assíncrono de alta performance
-- **Interface Responsiva**: Design moderno com Tailwind CSS
-- **Interativos Visuais**: 6 demonstrações educacionais interativas
+- **Interface Responsiva**: Design moderno com Tailwind CSS e tema escuro
+- **WebSocket Server**: Comunicação em tempo real entre CLI e interface web
+- **API REST**: Endpoints para controle de parâmetros dinâmicos
+- **Sistema de Estado**: StateManager centralizado com middleware reativo
+- **Sincronização Bidirecional**: CLI ↔ Web em tempo real
+- **Controles Dinâmicos**: Ajuste de parâmetros do modelo em tempo real
+- **Sistema de Presets**: Salvamento e carregamento de configurações
+- **Monitoramento de Performance**: Métricas em tempo real (CPU, Memória, Latência)
+- **Visualizações Avançadas**: Chart.js para gráficos interativos
+- **Sistema de Demonstração**: Execução de demos diretamente pela interface
+- **Interativos Educacionais**: 7 demonstrações visuais interativas
   - **Tokenização**: Visualização do processo de tokenização de texto
   - **Atenção**: Demonstração do mecanismo de self-attention
   - **Embeddings**: Exploração de representações vetoriais
@@ -127,23 +139,45 @@ mini-gpt-rust/
   - **Treinamento**: Processo de treinamento com métricas
   - **Inferência**: Motor de inferência em tempo real
   - **Text Chunking**: Estratégias de divisão de texto
-- **Servir Arquivos**: Sistema de roteamento para arquivos estáticos
-- **CLI Integrado**: Comando `web` para iniciar o servidor
+- **Integração Completa**: Ponte entre sistema demo CLI e interface web
+- **CLI Integrado**: Comando `web` com modo de integração avançada
 
 ## 🛠️ Como Usar
 
-### 🌐 **Servidor Web de Interativos (NOVO!)**
+### 🌐 **Sistema Web Completo (NOVO!)**
 ```bash
-# Iniciar servidor web com interativos educacionais
+# Modo básico - Servidor web com interativos educacionais
 cargo run -- web --host 127.0.0.1 --port 8080 --dir interativos
 
+# Modo integração - Sistema completo com WebSocket e API REST
+cargo run -- web --integration --port 3001
+
 # Acesse no navegador
-# http://127.0.0.1:8080
+# Modo básico: http://127.0.0.1:8080
+# Modo integração: http://127.0.0.1:3001
 
 # Opções disponíveis:
 # --host: Endereço IP do servidor (padrão: 127.0.0.1)
-# --port: Porta do servidor (padrão: 8080)
+# --port: Porta do servidor (padrão: 8080 básico, 3001 integração)
 # --dir: Diretório dos arquivos interativos (padrão: interativos)
+# --integration: Ativa modo integração com WebSocket/API REST
+```
+
+### 🚀 **Funcionalidades do Modo Integração**
+```bash
+# Sistema completo com todas as funcionalidades avançadas
+cargo run -- web --integration --port 3001
+
+# Funcionalidades disponíveis:
+# ✅ WebSocket para comunicação em tempo real
+# ✅ API REST para controle de parâmetros
+# ✅ Sincronização bidirecional CLI ↔ Web
+# ✅ Controles dinâmicos de parâmetros
+# ✅ Sistema de presets e configurações
+# ✅ Monitoramento de performance em tempo real
+# ✅ Visualizações avançadas com Chart.js
+# ✅ Execução de demos pela interface web
+# ✅ Gerenciamento de estado centralizado
 ```
 
 ### 📱 **Interativos Disponíveis**
@@ -322,38 +356,42 @@ Cada exemplo inclui exercícios interativos que demonstram:
 - ✅ Comando `demo` integrado ao CLI
 - ✅ Benchmarks e visualizações em tempo real
 - ✅ Modo interativo para aprendizado
-- ✅ **Servidor Web com Axum**: Interface web completa
+- ✅ **Sistema Web Completo com Axum**: Interface web de produção
+- ✅ **WebSocket Server**: Comunicação em tempo real CLI ↔ Web
+- ✅ **API REST**: Endpoints para controle de parâmetros dinâmicos
+- ✅ **StateManager**: Gerenciamento de estado centralizado e reativo
+- ✅ **Sincronização Bidirecional**: Tempo real entre CLI e interface
+- ✅ **Controles Dinâmicos**: Ajuste de parâmetros do modelo em tempo real
+- ✅ **Sistema de Presets**: Salvamento/carregamento de configurações
+- ✅ **Monitoramento de Performance**: Métricas em tempo real (CPU, Memória, Latência, Throughput)
+- ✅ **Visualizações Avançadas**: Chart.js para gráficos interativos
+- ✅ **Sistema de Demonstração Web**: Execução de demos pela interface
+- ✅ **Ponte CLI-Web**: Integração completa entre sistemas
 - ✅ **7 Interativos Educacionais**: Tokenização, Atenção, Embeddings, Transformer, Treinamento, Inferência e Text Chunking
-- ✅ **Design Responsivo**: Interface moderna com Tailwind CSS
-- ✅ **CLI Web**: Comando `web` para servidor local
+- ✅ **Design Responsivo**: Interface moderna com Tailwind CSS e tema escuro
+- ✅ **CLI Web Avançado**: Comando `web` com modo de integração completa
 
 ### 🎯 **Em Desenvolvimento**
 
-1. **🔗 Integração Web-Demo**
-   - Conectar interativos web com sistema de demos
-   - Parâmetros dinâmicos em tempo real
-   - Visualizações avançadas no navegador
-   - Sincronização entre CLI e interface web
-
-2. **⚡ GPU Computing & Aceleração**
+1. **⚡ GPU Computing & Aceleração**
    - Integração com CUDA/ROCm
    - Kernels customizados para operações específicas
    - Memory management otimizado para GPU
    - Benchmarks GPU vs CPU
 
-3. **🤖 Modelos Pré-treinados**
+2. **🤖 Modelos Pré-treinados**
    - Sistema de download e cache de modelos
    - Compatibilidade com formatos populares (GGML, SafeTensors)
    - Fine-tuning de modelos existentes
    - Demonstrações com modelos reais
 
-4. **🔬 Otimizações Avançadas**
+3. **🔬 Otimizações Avançadas**
    - Flash Attention implementation
    - Gradient checkpointing
    - Mixed precision training
    - Quantização dinâmica
 
-5. **📊 Ferramentas de Análise Avançada**
+4. **📊 Ferramentas de Análise Avançada**
    - Profiler integrado com visualizações
    - Análise de bottlenecks automática
    - Comparação de estratégias de otimização

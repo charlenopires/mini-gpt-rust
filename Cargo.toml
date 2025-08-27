@@ -22,20 +22,28 @@ safetensors = "0.4"          # Formato eficiente para salvar modelos
 # Utilitários
 anyhow = "1.0"               # Tratamento de erros
 rand = "0.8"                 # Números aleatórios
+async-stream = "0.3"         # Streams assíncronos
 indicatif = "0.17"           # Barras de progresso
 clap = { version = "4.0", features = ["derive"] } # CLI
 thiserror = "1.0"            # Tratamento de erros estruturados
 chrono = { version = "0.4", features = ["serde"] } # Timestamps para checkpoints
+reqwest = { version = "0.11", features = ["json"] } # Cliente HTTP para sincronização
 
 # Otimização e treinamento
 candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
 
 # Servidor web para interativos
-axum = "0.7"                 # Framework web async
+axum = { version = "0.7", features = ["ws"] } # Framework web async com WebSockets
 tokio = { version = "1.0", features = ["full"] } # Runtime async
 tower = "0.4"                # Middleware
 tower-http = { version = "0.5", features = ["fs", "cors"] } # Servir arquivos estáticos
 mime_guess = "2.0"           # Detecção de MIME types
+axum-extra = { version = "0.9", features = ["typed-header"] } # Extensões Axum
+futures-util = "0.3"         # Utilitários para futures
+tokio-tungstenite = "0.21"   # WebSocket implementation
+uuid = { version = "1.0", features = ["v4", "serde"] } # IDs únicos
+dashmap = "5.5"              # HashMap thread-safe
+broadcast = "0.1"            # Canal de broadcast
 
 # Suporte condicional para Metal (macOS)
 [target.'cfg(target_os = "macos")'.dependencies]

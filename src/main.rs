@@ -34,6 +34,8 @@ mod kernels;
 mod chunking;
 mod benchmarks;
 mod web_server;
+mod web_demo_integration;
+mod demo_bridge;
 
 use model::{MiniGPT, CheckpointMetadata};
 use training::Trainer;
@@ -373,6 +375,10 @@ enum Commands {
         /// 📁 Diretório dos arquivos interativos
         #[arg(long, default_value = "interativos")]
         dir: PathBuf,
+        
+        /// 🔗 Habilita integração WebSocket e API REST para comunicação em tempo real
+        #[arg(long, help = "Ativa WebSocket e API REST para integração CLI-Web")]
+        integration: bool,
     },
 }
 
@@ -417,16 +423,20 @@ fn main() -> Result<()> {
     match cli.command {
         // 🌐 **MODO SERVIDOR WEB**
         // Inicia servidor web para interativos educacionais
-        Commands::Web { host, port, dir } => {
+        Commands::Web { host, port, dir, integration } => {
             println!("🌐 Iniciando servidor web para interativos educacionais...");
             println!("📍 Host: {}", host);
             println!("🔌 Porta: {}", port);
             println!("📁 Diretório: {:?}", dir);
+            if integration {
+                println!("🔗 Integração WebSocket/API REST: ATIVADA");
+            }
             
             let config = web_server::WebServerConfig {
                 host,
                 port,
                 interativos_dir: dir,
+                enable_integration: integration,
             };
             
             let rt = tokio::runtime::Runtime::new()?;
