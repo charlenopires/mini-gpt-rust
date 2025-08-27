@@ -48,6 +48,19 @@ mini-gpt-rust/
 │       ├── tokenization_process.rs
 │       ├── training_system.rs
 │       └── transformer_architecture.rs
+├── interativos/              # Interface web interativa
+│   ├── index.html            # Página principal do sistema web
+│   ├── attention.html        # Demo interativo de atenção
+│   ├── tokenization.html     # Demo interativo de tokenização
+│   ├── embeddings.html       # Demo interativo de embeddings
+│   ├── transformer.html      # Demo interativo de transformer
+│   ├── training.html         # Demo interativo de treinamento
+│   ├── inference.html        # Demo interativo de inferência
+│   ├── chunking.html         # Demo interativo de chunking
+│   ├── sample.html           # Página de exemplo
+│   └── js/                   # Scripts JavaScript avançados
+│       ├── integration.js    # Integração WebSocket/API
+│       └── advanced-visualizations.js # Visualizações avançadas
 ├── models/                   # Modelos treinados
 └── data/                     # Dados de treinamento
 ```
