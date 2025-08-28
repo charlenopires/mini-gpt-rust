@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demonstração Interativa da Inferência GPT</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/integration.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -1274,7 +1275,191 @@
             updateSliderValues();
             updateGeneratedText();
             updateMetrics();
+            initializeIntegration();
         });
+        
+        // --- INTEGRAÇÃO COM WEBSOCKET ---
+        
+        /**
+         * Inicializa integração com o sistema WebSocket
+         */
+        function initializeIntegration() {
+            // Aguarda a inicialização do WebDemoIntegration
+            if (typeof window.webDemoIntegration !== 'undefined') {
+                setupIntegrationListeners();
+                loadParametersFromAPI();
+            } else {
+                // Tenta novamente após um pequeno delay
+                setTimeout(initializeIntegration, 100);
+            }
+        }
+        
+        /**
+         * Configura listeners para integração
+         */
+        function setupIntegrationListeners() {
+            const integration = window.webDemoIntegration;
+            
+            // Listener para mudanças de parâmetros via WebSocket
+            if (integration.ws) {
+                const originalOnMessage = integration.ws.onmessage;
+                integration.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    
+                    if (message.type === 'ParameterUpdate' && message.data.module === 'inference') {
+                        updateParameterFromWebSocket(message.data.parameter, message.data.value);
+                    }
+                    
+                    // Chama o handler original
+                    if (originalOnMessage) {
+                        originalOnMessage(event);
+                    }
+                };
+            }
+        }
+        
+        /**
+         * Carrega parâmetros iniciais da API
+         */
+        async function loadParametersFromAPI() {
+            try {
+                const response = await fetch('/api/modules/inference/parameters');
+                const params = await response.json();
+                
+                if (params.parameters) {
+                    // Atualiza controles com valores da API
+                    if (params.parameters.temperature !== undefined) {
+                        temperature.value = Math.round(params.parameters.temperature * 100);
+                    }
+                    if (params.parameters.top_k !== undefined) {
+                        topK.value = params.parameters.top_k;
+                    }
+                    if (params.parameters.top_p !== undefined) {
+                        topP.value = Math.round(params.parameters.top_p * 100);
+                    }
+                    
+                    updateSliderValues();
+                    logMessage('[API] Parâmetros carregados da API', 'cyan');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar parâmetros da API:', error);
+            }
+        }
+        
+        /**
+         * Atualiza parâmetro recebido via WebSocket
+         */
+        function updateParameterFromWebSocket(parameter, value) {
+            switch (parameter) {
+                case 'temperature':
+                    temperature.value = Math.round(value * 100);
+                    break;
+                case 'top_k':
+                    topK.value = value;
+                    break;
+                case 'top_p':
+                    topP.value = Math.round(value * 100);
+                    break;
+                case 'max_tokens':
+                    maxTokens.value = value;
+                    break;
+            }
+            
+            updateSliderValues();
+            logMessage(`[WS] Parâmetro ${parameter} atualizado: ${value}`, 'blue');
+        }
+        
+        /**
+         * Sincroniza parâmetros com a API quando alterados localmente
+         */
+        function syncParameterToAPI(parameter, value) {
+            if (typeof window.webDemoIntegration !== 'undefined') {
+                const integration = window.webDemoIntegration;
+                
+                // Envia via WebSocket
+                integration.sendMessage({
+                    type: 'ParameterUpdate',
+                    data: {
+                        module: 'inference',
+                        parameter: parameter,
+                        value: value
+                    }
+                });
+                
+                // Atualiza via API
+                fetch('/api/modules/inference/parameters', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        [parameter]: value
+                    })
+                }).catch(error => {
+                    console.error('Erro ao sincronizar parâmetro:', error);
+                });
+            }
+        }
+        
+        /**
+         * Envia dados de demonstração via WebSocket
+         */
+        function sendDemoData(data) {
+            if (typeof window.webDemoIntegration !== 'undefined') {
+                const integration = window.webDemoIntegration;
+                
+                integration.sendMessage({
+                    type: 'DemoData',
+                    data: {
+                        module: 'inference',
+                        data: data,
+                        timestamp: Date.now()
+                    }
+                });
+            }
+        }
+        
+        // Adiciona listeners para sincronização de parâmetros
+        temperature.addEventListener('input', () => {
+            const value = parseFloat(temperature.value) / 100;
+            syncParameterToAPI('temperature', value);
+        });
+        
+        topK.addEventListener('input', () => {
+            const value = parseInt(topK.value);
+            syncParameterToAPI('top_k', value);
+        });
+        
+        topP.addEventListener('input', () => {
+            const value = parseFloat(topP.value) / 100;
+            syncParameterToAPI('top_p', value);
+        });
+        
+        maxTokens.addEventListener('input', () => {
+            const value = parseInt(maxTokens.value);
+            syncParameterToAPI('max_tokens', value);
+        });
+        
+        // Modifica a função generateNextToken para enviar dados via WebSocket
+        const originalGenerateNextToken = generateNextToken;
+        generateNextToken = function() {
+            const result = originalGenerateNextToken();
+            
+            // Envia dados da geração via WebSocket
+            sendDemoData({
+                currentTokens: currentTokens,
+                lastToken: result,
+                samplingMethod: currentSamplingMethod,
+                temperature: parseFloat(temperatureValue.textContent),
+                topK: parseInt(topK.value),
+                topP: parseFloat(topPValue.textContent),
+                tokensGenerated: currentTokens.length,
+                generationSpeed: parseFloat(generationSpeed.textContent),
+                perplexity: parseFloat(perplexity.textContent)
+            });
+            
+            return result;
+        };
     </script>
 </body>
 </html>

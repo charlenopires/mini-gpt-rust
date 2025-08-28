@@ -175,7 +175,7 @@ impl WebServer {
             // Servir arquivos estáticos do diretório interativos
             .nest_service("/static", ServeDir::new(&self.config.interativos_dir))
             // Servir arquivos JavaScript específicos
-            .nest_service("/js", ServeDir::new("js"));
+            .nest_service("/js", ServeDir::new(self.config.interativos_dir.join("js")));
         
         // Integrar WebSocket e API REST se habilitado
         if self.config.enable_integration {
