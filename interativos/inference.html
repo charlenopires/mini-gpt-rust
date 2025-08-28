@@ -6,6 +6,7 @@
     <title>Demonstração Interativa da Inferência GPT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/integration.js"></script>
+    <script src="/js/inference-ui.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -61,6 +62,282 @@
                 transform: scale(1) translateY(0);
             }
         }
+        
+        /* Estilos para tokens na visualização */
+        .token-item {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .token-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: rgba(59, 130, 246, 0.6);
+        }
+        
+        .token-item.active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3));
+            border-color: rgba(16, 185, 129, 0.6);
+            animation: tokenPulse 1s ease-in-out infinite;
+        }
+        
+        .token-item.flowing {
+            animation: tokenFlow 2s ease-in-out;
+        }
+        
+        @keyframes tokenPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes tokenFlow {
+            0% { transform: translateX(0) scale(1); }
+            25% { transform: translateX(10px) scale(1.1); }
+            75% { transform: translateX(-10px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        
+        .token-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 14px;
+            color: #e2e8f0;
+            margin-bottom: 2px;
+        }
+        
+        .token-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(148, 163, 184, 0.7);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        /* Animação da seta de tokenização */
+        .tokenization-arrow {
+            display: flex;
+            align-items: center;
+            animation: arrowBounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes arrowBounce {
+             0%, 100% { transform: translateY(0); }
+             50% { transform: translateY(-5px); }
+         }
+         
+         /* Fluxo de inferência */
+         .inference-flow {
+             position: relative;
+             padding: 20px 0;
+         }
+         
+         .flow-step {
+             display: flex;
+             align-items: center;
+             margin: 15px 0;
+             padding: 15px;
+             background: rgba(0, 0, 0, 0.2);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+             border-radius: 12px;
+             transition: all 0.3s ease;
+             opacity: 0.6;
+         }
+         
+         .flow-step.active {
+             background: rgba(59, 130, 246, 0.15);
+             border-color: rgba(59, 130, 246, 0.4);
+             transform: scale(1.02);
+             opacity: 1;
+             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+         }
+         
+         .flow-step.completed {
+             background: rgba(16, 185, 129, 0.15);
+             border-color: rgba(16, 185, 129, 0.4);
+             opacity: 1;
+         }
+         
+         .flow-step-icon {
+             width: 50px;
+             height: 50px;
+             border-radius: 50%;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             margin-right: 20px;
+             font-size: 20px;
+             background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+             border: 2px solid rgba(59, 130, 246, 0.4);
+             transition: all 0.3s ease;
+         }
+         
+         .flow-step.active .flow-step-icon {
+             background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(5, 150, 105, 0.4));
+             border-color: rgba(16, 185, 129, 0.6);
+             animation: iconPulse 2s ease-in-out infinite;
+         }
+         
+         @keyframes iconPulse {
+             0%, 100% { transform: scale(1); }
+             50% { transform: scale(1.1); }
+         }
+         
+         .flow-tokens {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 6px;
+             margin-top: 12px;
+             min-height: 40px;
+             align-items: center;
+         }
+         
+         .flow-token {
+             background: rgba(59, 130, 246, 0.2);
+             border: 1px solid rgba(59, 130, 246, 0.3);
+             border-radius: 8px;
+             padding: 6px 12px;
+             font-family: 'JetBrains Mono', monospace;
+             font-size: 13px;
+             color: #93c5fd;
+             transition: all 0.3s ease;
+             position: relative;
+             overflow: hidden;
+         }
+         
+         .flow-token.highlighted {
+             background: rgba(16, 185, 129, 0.3);
+             border-color: rgba(16, 185, 129, 0.5);
+             color: #6ee7b7;
+             animation: tokenHighlight 0.8s ease-out;
+             transform: scale(1.05);
+         }
+         
+         .flow-token.moving {
+             animation: tokenMove 1.5s ease-in-out;
+         }
+         
+         @keyframes tokenHighlight {
+             0% { transform: scale(1); box-shadow: none; }
+             50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+             100% { transform: scale(1.05); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+         }
+         
+         @keyframes tokenMove {
+             0% { transform: translateX(0); }
+             25% { transform: translateX(20px); }
+             75% { transform: translateX(-20px); }
+             100% { transform: translateX(0); }
+         }
+         
+         @keyframes tokenFlow {
+             0% {
+                 transform: translateY(0) scale(1);
+                 opacity: 0.7;
+             }
+             50% {
+                 transform: translateY(-10px) scale(1.1);
+                 opacity: 1;
+                 box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+             }
+             100% {
+                 transform: translateY(0) scale(1);
+                 opacity: 0.8;
+             }
+         }
+         
+         @keyframes tokenTransition {
+             0% {
+                 transform: translateX(0) rotate(0deg);
+                 background: rgba(59, 130, 246, 0.2);
+             }
+             25% {
+                 transform: translateX(30px) rotate(5deg);
+                 background: rgba(147, 51, 234, 0.3);
+             }
+             50% {
+                 transform: translateX(60px) rotate(0deg);
+                 background: rgba(16, 185, 129, 0.3);
+             }
+             75% {
+                 transform: translateX(30px) rotate(-5deg);
+                 background: rgba(245, 158, 11, 0.3);
+             }
+             100% {
+                 transform: translateX(0) rotate(0deg);
+                 background: rgba(239, 68, 68, 0.3);
+             }
+         }
+         
+         .flow-token.transitioning {
+             animation: tokenTransition 2s ease-in-out;
+         }
+         
+         .flow-token.flowing {
+             animation: tokenFlow 1.5s ease-in-out infinite;
+         }
+         
+         /* Efeito de conexão entre etapas */
+         .flow-connection {
+             position: absolute;
+             left: 50%;
+             bottom: -20px;
+             width: 4px;
+             height: 20px;
+             background: linear-gradient(to bottom, 
+                 rgba(59, 130, 246, 0.6), 
+                 rgba(16, 185, 129, 0.4));
+             border-radius: 2px;
+             transform: translateX(-50%);
+             opacity: 0;
+             transition: opacity 0.5s ease;
+         }
+         
+         .flow-step.active .flow-connection {
+             opacity: 1;
+             animation: connectionPulse 2s ease-in-out infinite;
+         }
+         
+         @keyframes connectionPulse {
+             0%, 100% { 
+                 transform: translateX(-50%) scaleY(1);
+                 opacity: 0.6;
+             }
+             50% { 
+                 transform: translateX(-50%) scaleY(1.2);
+                 opacity: 1;
+             }
+         }
+         
+         /* Conectores entre etapas */
+         .flow-step::after {
+             content: '';
+             position: absolute;
+             left: 25px;
+             bottom: -15px;
+             width: 2px;
+             height: 15px;
+             background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), transparent);
+             transition: all 0.3s ease;
+         }
+         
+         .flow-step:last-child::after {
+             display: none;
+         }
+         
+         .flow-step.active::after {
+             background: linear-gradient(to bottom, rgba(16, 185, 129, 0.6), rgba(59, 130, 246, 0.3));
+         }
         @keyframes pulse {
             0%, 100% {
                 transform: scale(1);
@@ -283,11 +560,781 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Estados dos Botões */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 12px 24px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-loading {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+            cursor: wait !important;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            animation: successPulse 0.6s ease-out;
+        }
+        
+        .btn-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            animation: errorShake 0.6s ease-out;
+        }
+        
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Spinner de Loading */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: progressShimmer 1.5s infinite;
+        }
+        
+        @keyframes progressShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .status-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+        
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+        
+        .status-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+        
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Typing Animation */
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* === Estilos Aprimorados para Interface de Inferência === */
+        
+        /* Botões com estados visuais aprimorados */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            min-height: 48px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5b6470, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+        }
+        
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+            border: 2px solid rgba(107, 114, 128, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-outline:hover:not(:disabled) {
+            background: rgba(107, 114, 128, 0.15);
+            border-color: #9ca3af;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn-loading {
+            opacity: 0.8;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            animation: successPulse 0.6s ease-out;
+        }
+        
+        .btn-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            animation: errorShake 0.6s ease-out;
+        }
+        
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Spinner de carregamento aprimorado */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mensagens de status aprimoradas */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            margin: 8px 0;
+            backdrop-filter: blur(10px);
+            animation: statusSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes statusSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .status-info {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+        
+        .status-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        
+        .status-warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        
+        /* Métricas de geração */
+        .metrics-grid {
+            animation: metricsSlideIn 0.5s ease-out;
+        }
+        
+        @keyframes metricsSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .metric-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            background: rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.3s ease;
+        }
+        
+        /* Responsividade aprimorada */
+        @media (max-width: 768px) {
+            .btn {
+                padding: 10px 20px;
+                font-size: 13px;
+                min-height: 44px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .metric-card {
+                padding: 12px !important;
+            }
+            
+            .progress-container {
+                padding: 12px;
+            }
+            
+            .status-message {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .btn {
+                padding: 8px 16px;
+                font-size: 12px;
+                min-height: 40px;
+            }
+            
+            .metric-value {
+                font-size: 16px !important;
+            }
+            
+            .metric-label {
+                font-size: 10px !important;
+            }
+        }
+        
+        /* Animações para etapas */
+        .step-item {
+            transition: all 0.3s ease;
+        }
+        
+        .step-item.active {
+            background: rgba(59, 130, 246, 0.2) !important;
+            border-color: #3b82f6 !important;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Melhorias para tokens gerados */
+        .token.generated {
+            animation: tokenAppear 0.5s ease-out, tokenGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes tokenGlow {
+            from {
+                box-shadow: 0 0 5px rgba(16, 185, 129, 0.3);
+            }
+            to {
+                box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+            }
+        }
+        
+        /* Sistema de Notificações Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateX(100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            pointer-events: auto;
+            min-width: 300px;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.hide {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: currentColor;
+            animation: toastProgress 4s linear;
+        }
+        
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        
+        .toast.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .toast-message {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .toast-description {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .toast-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
+        }
+        
+        /* Indicadores de Progresso Detalhados */
+        .detailed-progress {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .progress-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .progress-percentage {
+            font-weight: 600;
+            font-size: 14px;
+            color: #10b981;
+        }
+        
+        .progress-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progressShimmer 1.5s infinite;
+        }
+        
+        .progress-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        
+        .progress-eta {
+            font-weight: 500;
+        }
+        
+        /* Badges e Contadores */
+        .stats-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        
+        .stat-badge {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .stat-badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        
+        .stat-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+        }
+        
+        .stat-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        
+        .badge-icon {
+            font-size: 14px;
+        }
+        
+        /* Logs em Tempo Real */
+        .realtime-logs {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 4px;
+            padding: 2px 0;
+        }
+        
+        .log-timestamp {
+            color: #6b7280;
+            font-size: 11px;
+            min-width: 60px;
+        }
+        
+        .log-level {
+            font-weight: 600;
+            min-width: 50px;
+        }
+        
+        .log-level.info { color: #60a5fa; }
+        .log-level.success { color: #34d399; }
+        .log-level.warning { color: #fbbf24; }
+        .log-level.error { color: #f87171; }
+        
+        .log-message {
+            flex: 1;
+            color: #e5e7eb;
+        }
+        
+        /* Responsividade para Notificações */
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            
+            .toast {
+                min-width: auto;
+                padding: 12px 16px;
+            }
+            
+            .detailed-progress {
+                padding: 12px;
+            }
+            
+            .realtime-logs {
+                max-height: 150px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body class="text-white">
+    <!-- Container de Notificações Toast -->
+    <div id="toastContainer" class="toast-container"></div>
+    
     <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
+        <header class="text-center mb-8 relative">
+            <!-- Botão de Voltar -->
+            <div class="absolute left-0 top-0">
+                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Voltar
+                </a>
+            </div>
+            
             <h1 class="text-4xl font-bold mb-2">Inferência com Modelos GPT</h1>
             <p class="text-xl opacity-90">Explore como modelos treinados geram texto de forma interativa</p>
         </header>
@@ -302,6 +1349,49 @@
                         <div>
                             <label class="block text-sm font-medium mb-2">Prompt Inicial</label>
                             <textarea id="promptInput" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite o prompt inicial...">Era uma vez uma</textarea>
+                        </div>
+                        
+                        <!-- Visualização de Tokenização -->
+                        <div id="tokenizationVisualization" class="bg-black/20 border border-white/20 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3 flex items-center">
+                                <span class="mr-2">🔤</span>
+                                Tokenização do Prompt
+                            </h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-300 mb-1 block">Texto Original:</label>
+                                    <div id="originalText" class="bg-gray-800/50 p-3 rounded-lg text-white font-mono text-sm">
+                                        Era uma vez uma
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-center py-2">
+                                    <div class="tokenization-arrow">
+                                        <span class="text-2xl">⬇️</span>
+                                        <span class="text-xs text-gray-400 ml-2">Tokenização</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-300 mb-1 block">Tokens Gerados:</label>
+                                    <div id="tokenizedOutput" class="bg-gray-800/50 p-3 rounded-lg min-h-[60px] flex flex-wrap gap-2 items-start">
+                                        <div class="token-item" data-token-id="0">
+                                            <span class="token-text">Era</span>
+                                            <span class="token-id">[1234]</span>
+                                        </div>
+                                        <div class="token-item" data-token-id="1">
+                                            <span class="token-text">uma</span>
+                                            <span class="token-id">[5678]</span>
+                                        </div>
+                                        <div class="token-item" data-token-id="2">
+                                            <span class="token-text">vez</span>
+                                            <span class="token-id">[9012]</span>
+                                        </div>
+                                        <div class="token-item" data-token-id="3">
+                                            <span class="token-text">uma</span>
+                                            <span class="token-id">[5678]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div>
@@ -371,17 +1461,113 @@
                         </div>
                     </div>
                     
-                    <button id="generateText" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
-                        Gerar Texto
+                    <!-- Status e Progress Bar -->
+                    <div id="generationStatus" class="mt-4" style="display: none;">
+                        <div class="progress-container">
+                            <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
+                        </div>
+                        <div id="statusMessage" class="status-message status-info">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                            <span>Preparando geração...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra de Progresso -->
+                    <div id="generationStatus" class="progress-container mb-4" style="display: none;">
+                        <div class="progress-label text-sm font-medium mb-2">Progresso da Geração</div>
+                        <div class="progress-track bg-gray-700 rounded-full h-2 overflow-hidden">
+                            <div id="progressBar" class="progress-bar bg-gradient-to-r from-blue-500 to-green-500 h-full transition-all duration-300" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-percentage text-xs text-gray-400 mt-1">0%</div>
+                    </div>
+                    
+                    <!-- Área de Status -->
+                    <div id="statusMessage" class="status-message status-info mb-4" style="display: none;">
+                        <div class="status-icon mr-2">ℹ️</div>
+                        <span class="flex-1">Status da geração...</span>
+                    </div>
+                    
+                    <button id="generateText" class="btn btn-primary w-full mt-6">
+                        <span id="generateTextLabel">🚀 Gerar Texto</span>
+                        <div id="generateSpinner" class="spinner" style="display: none;"></div>
                     </button>
                     
-                    <button id="stepGenerate" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
-                        Gerar Passo a Passo
+                    <button id="stepGenerate" class="btn btn-secondary w-full mt-2">
+                        <span id="stepGenerateLabel">👣 Gerar Passo a Passo</span>
+                        <div id="stepSpinner" class="spinner" style="display: none;"></div>
                     </button>
                     
-                    <button id="resetGeneration" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
-                        Resetar
+                    <button id="resetGeneration" class="btn btn-outline w-full mt-2">
+                        <span id="resetGenerationLabel">🔄 Resetar</span>
                     </button>
+                    
+                    <button id="testNotifications" class="btn btn-secondary w-full mt-2">
+                        <span id="testNotificationsLabel">🔔 Testar Notificações</span>
+                    </button>
+                    
+                    <button id="toggleSound" class="btn btn-outline w-full mt-2">
+                        <span id="toggleSoundLabel">🔇 Som Desativado</span>
+                    </button>
+                    
+                    <!-- Progresso Detalhado -->
+                    <div id="detailedProgress" class="detailed-progress" style="display: none;">
+                        <div class="progress-header">
+                            <div class="progress-title">Gerando Texto</div>
+                            <div class="progress-percentage" id="detailedPercentage">0%</div>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="detailedProgressFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-details">
+                            <span id="progressTokens">0/20 tokens</span>
+                            <span class="progress-eta" id="progressETA">ETA: --</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Badges de Estatísticas -->
+                    <div class="stats-badges" id="statsBadges" style="display: none;">
+                        <div class="stat-badge success">
+                            <span class="badge-icon">✓</span>
+                            <span id="successTokens">0 tokens</span>
+                        </div>
+                        <div class="stat-badge" id="speedBadge">
+                            <span class="badge-icon">⚡</span>
+                            <span id="speedValue">0 t/s</span>
+                        </div>
+                        <div class="stat-badge" id="qualityBadge">
+                            <span class="badge-icon">🎯</span>
+                            <span id="qualityValue">--</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Logs em Tempo Real -->
+                    <div id="realtimeLogs" class="realtime-logs" style="display: none;">
+                        <div class="log-entry">
+                            <span class="log-timestamp">00:00</span>
+                            <span class="log-level info">INFO</span>
+                            <span class="log-message">Sistema pronto para geração</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Métricas de Geração -->
+                    <div class="metrics-grid grid grid-cols-3 gap-2 mt-4">
+                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
+                            <div class="metric-label text-xs text-gray-400 mb-1">Tokens</div>
+                            <div class="metric-value text-lg font-bold text-blue-400" id="tokensGenerated">0</div>
+                        </div>
+                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
+                            <div class="metric-label text-xs text-gray-400 mb-1">Velocidade</div>
+                            <div class="metric-value text-lg font-bold text-green-400" id="generationSpeed">0.0</div>
+                        </div>
+                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
+                            <div class="metric-label text-xs text-gray-400 mb-1">Perplexidade</div>
+                            <div class="metric-value text-lg font-bold text-purple-400" id="perplexity">0.0</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Etapas da Inferência -->
@@ -439,6 +1625,92 @@
                         <div class="metric-card">
                             <h3 class="text-lg font-semibold mb-2">Perplexidade</h3>
                             <div id="perplexity" class="text-3xl font-bold text-purple-400">0.0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualização do Fluxo de Inferência -->
+                <div class="glass-effect p-6 rounded-2xl">
+                    <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                        <span class="mr-2">🔄</span>
+                        Fluxo de Inferência
+                    </h2>
+                    <div id="inferenceFlow" class="inference-flow space-y-4">
+                        <!-- Etapa 1: Tokenização -->
+                        <div class="flow-step" data-step="tokenize">
+                            <div class="flow-step-icon">🔤</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">1. Tokenização</h3>
+                                <p class="text-sm text-gray-400 mb-2">Convertendo texto em tokens...</p>
+                                <div class="flow-tokens" id="tokenizeTokens">
+                                    <!-- Tokens serão adicionados dinamicamente -->
+                                </div>
+                            </div>
+                            <div class="flow-connection"></div>
+                        </div>
+                        
+                        <!-- Etapa 2: Embeddings -->
+                        <div class="flow-step" data-step="embed">
+                            <div class="flow-step-icon">📊</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">2. Embeddings</h3>
+                                <p class="text-sm text-gray-400 mb-2">Convertendo tokens em vetores...</p>
+                                <div class="flow-tokens" id="embedTokens">
+                                    <!-- Vetores serão representados aqui -->
+                                </div>
+                            </div>
+                            <div class="flow-connection"></div>
+                        </div>
+                        
+                        <!-- Etapa 3: Attention -->
+                        <div class="flow-step" data-step="attention">
+                            <div class="flow-step-icon">👁️</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">3. Mecanismo de Atenção</h3>
+                                <p class="text-sm text-gray-400 mb-2">Calculando relações entre tokens...</p>
+                                <div class="flow-tokens" id="attentionTokens">
+                                    <!-- Pesos de atenção serão mostrados aqui -->
+                                </div>
+                            </div>
+                            <div class="flow-connection"></div>
+                        </div>
+                        
+                        <!-- Etapa 4: Forward Pass -->
+                        <div class="flow-step" data-step="forward">
+                            <div class="flow-step-icon">⚡</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">4. Forward Pass</h3>
+                                <p class="text-sm text-gray-400 mb-2">Processando através das camadas...</p>
+                                <div class="flow-tokens" id="forwardTokens">
+                                    <!-- Representação do processamento -->
+                                </div>
+                            </div>
+                            <div class="flow-connection"></div>
+                        </div>
+                        
+                        <!-- Etapa 5: Sampling -->
+                        <div class="flow-step" data-step="sample">
+                            <div class="flow-step-icon">🎲</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">5. Sampling</h3>
+                                <p class="text-sm text-gray-400 mb-2">Escolhendo o próximo token...</p>
+                                <div class="flow-tokens" id="sampleTokens">
+                                    <!-- Candidatos e probabilidades -->
+                                </div>
+                            </div>
+                            <div class="flow-connection"></div>
+                        </div>
+                        
+                        <!-- Etapa 6: Decodificação -->
+                        <div class="flow-step" data-step="decode">
+                            <div class="flow-step-icon">📝</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">6. Decodificação</h3>
+                                <p class="text-sm text-gray-400 mb-2">Convertendo token em texto...</p>
+                                <div class="flow-tokens" id="decodeTokens">
+                                    <!-- Texto final -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -832,15 +2104,9 @@
                 return;
             }
             
-            const prompt = promptInput.value.trim().split(/\s+/);
             const html = [];
             
-            // Tokens do prompt
-            prompt.forEach(token => {
-                html.push(`<span class="token input">${token}</span>`);
-            });
-            
-            // Tokens gerados
+            // Apenas tokens gerados (sem incluir o prompt)
             currentTokens.forEach((token, index) => {
                 const isLast = index === currentTokens.length - 1;
                 const className = isLast && isGenerating ? 'token current' : 'token generated';
@@ -1168,32 +2434,7 @@
             }
         }
         
-        /**
-         * Reseta geração
-         */
-        function resetGeneration() {
-            currentTokens = [];
-            isGenerating = false;
-            stepByStep = false;
-            currentStep = 0;
-            beams = [];
-            generationStartTime = 0;
-            
-            generateText.disabled = false;
-            stepGenerate.disabled = false;
-            
-            updateGeneratedText();
-            updateMetrics();
-            
-            tokenProbabilities.innerHTML = '';
-            beamCandidates.innerHTML = '';
-            rawLogits.innerHTML = '';
-            softmaxProbs.innerHTML = '';
-            
-            stepItems.forEach(item => item.classList.remove('active'));
-            
-            logMessage('[INFO] Geração resetada', 'yellow');
-        }
+        // Função resetGeneration removida - agora gerenciada pelo InferenceUI
         
         // --- EVENT LISTENERS ---
         
@@ -1239,7 +2480,7 @@
         // Botões
         generateText.addEventListener('click', startGeneration);
         stepGenerate.addEventListener('click', stepGeneration);
-        resetGeneration.addEventListener('click', resetGeneration);
+        // Event listener removido - agora gerenciado pelo InferenceUI
         
         // Etapas clicáveis
         stepItems.forEach(item => {
@@ -1323,26 +2564,30 @@
          */
         async function loadParametersFromAPI() {
             try {
-                const response = await fetch('/api/modules/inference/parameters');
-                const params = await response.json();
+                // Usar valores padrão para demonstração
+                const defaultParams = {
+                    parameters: {
+                        temperature: 0.7,
+                        top_k: 50,
+                        top_p: 0.9
+                    }
+                };
                 
-                if (params.parameters) {
-                    // Atualiza controles com valores da API
-                    if (params.parameters.temperature !== undefined) {
-                        temperature.value = Math.round(params.parameters.temperature * 100);
-                    }
-                    if (params.parameters.top_k !== undefined) {
-                        topK.value = params.parameters.top_k;
-                    }
-                    if (params.parameters.top_p !== undefined) {
-                        topP.value = Math.round(params.parameters.top_p * 100);
-                    }
-                    
-                    updateSliderValues();
-                    logMessage('[API] Parâmetros carregados da API', 'cyan');
+                // Atualiza controles com valores padrão
+                if (defaultParams.parameters.temperature !== undefined) {
+                    temperature.value = Math.round(defaultParams.parameters.temperature * 100);
                 }
+                if (defaultParams.parameters.top_k !== undefined) {
+                    topK.value = defaultParams.parameters.top_k;
+                }
+                if (defaultParams.parameters.top_p !== undefined) {
+                    topP.value = Math.round(defaultParams.parameters.top_p * 100);
+                }
+                
+                updateSliderValues();
+                logMessage('[DEMO] Parâmetros padrão carregados', 'cyan');
             } catch (error) {
-                console.error('Erro ao carregar parâmetros da API:', error);
+                console.error('Erro ao carregar parâmetros:', error);
             }
         }
         
@@ -1386,18 +2631,8 @@
                     }
                 });
                 
-                // Atualiza via API
-                fetch('/api/modules/inference/parameters', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        [parameter]: value
-                    })
-                }).catch(error => {
-                    console.error('Erro ao sincronizar parâmetro:', error);
-                });
+                // Log da atualização do parâmetro (modo demo)
+                console.log(`Parâmetro ${parameter} atualizado para:`, value);
             }
         }
         
@@ -1463,3 +2698,22 @@
     </script>
 </body>
 </html>
+
+<!-- Integração com JS refatorado -->
+<script>
+    // WebDemoIntegration já inicializado pelo integration.js
+    if (window.webDemoIntegration) {
+        window.webDemoIntegration.connectWebSocket();
+        
+        // Exibir notificações educacionais
+        setTimeout(() => {
+            window.webDemoIntegration.showToast('info', 'Conceitos de Inferência em GPT', 
+                'Inferência é o processo de gerar texto baseado no modelo treinado.', 5000);
+        }, 1000);
+        
+        setTimeout(() => {
+            window.webDemoIntegration.showToast('info', 'Dicas Educacionais', 
+                'Explore os controles para entender como funciona a geração de texto.', 4000);
+        }, 3000);
+    }
+</script>

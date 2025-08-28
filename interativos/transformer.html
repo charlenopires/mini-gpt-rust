@@ -242,7 +242,17 @@
 </head>
 <body class="text-white">
     <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
+        <header class="text-center mb-8 relative">
+            <!-- Botão de Voltar -->
+            <div class="absolute left-0 top-0">
+                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Voltar
+                </a>
+            </div>
+            
             <h1 class="text-4xl font-bold mb-2">Arquitetura Transformer</h1>
             <p class="text-xl opacity-90">Explore a arquitetura que revolucionou o processamento de linguagem natural</p>
         </header>

@@ -33,7 +33,7 @@ reqwest = { version = "0.11", features = ["json"] } # Cliente HTTP para sincroni
 candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
 
 # Servidor web para interativos
-axum = { version = "0.7", features = ["ws"] } # Framework web async com WebSockets
+axum = { version = "0.7", features = ["ws", "macros"] } # Framework web async com WebSockets
 tokio = { version = "1.0", features = ["full"] } # Runtime async
 tower = "0.4"                # Middleware
 tower-http = { version = "0.5", features = ["fs", "cors"] } # Servir arquivos estáticos

@@ -1,4 +1,4 @@
-OUT_DIR = Some(/Users/fazapp/training/ai/mini-gpt-rust/target/debug/build/objc_exception-6841f4e7dc7ac4ba/out)
+OUT_DIR = Some(/Users/fazapp/projects/opensource/mini-gpt-rust/target/debug/build/objc_exception-6841f4e7dc7ac4ba/out)
 OPT_LEVEL = Some(0)
 TARGET = Some(aarch64-apple-darwin)
 HOST = Some(aarch64-apple-darwin)
@@ -43,4 +43,4 @@ ARFLAGS_aarch64_apple_darwin = None
 cargo:rerun-if-env-changed=ARFLAGS_aarch64-apple-darwin
 ARFLAGS_aarch64-apple-darwin = None
 cargo:rustc-link-lib=static=exception
-cargo:rustc-link-search=native=/Users/fazapp/training/ai/mini-gpt-rust/target/debug/build/objc_exception-6841f4e7dc7ac4ba/out
+cargo:rustc-link-search=native=/Users/fazapp/projects/opensource/mini-gpt-rust/target/debug/build/objc_exception-6841f4e7dc7ac4ba/out

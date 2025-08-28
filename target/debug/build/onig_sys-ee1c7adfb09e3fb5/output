@@ -1,7 +1,7 @@
 cargo:rerun-if-env-changed=RUSTONIG_DYNAMIC_LIBONIG
 cargo:rerun-if-env-changed=RUSTONIG_STATIC_LIBONIG
 cargo:rerun-if-env-changed=RUSTONIG_SYSTEM_LIBONIG
-OUT_DIR = Some(/Users/fazapp/training/ai/mini-gpt-rust/target/debug/build/onig_sys-ee1c7adfb09e3fb5/out)
+OUT_DIR = Some(/Users/fazapp/projects/opensource/mini-gpt-rust/target/debug/build/onig_sys-ee1c7adfb09e3fb5/out)
 OPT_LEVEL = Some(0)
 TARGET = Some(aarch64-apple-darwin)
 HOST = Some(aarch64-apple-darwin)
@@ -46,4 +46,4 @@ ARFLAGS_aarch64_apple_darwin = None
 cargo:rerun-if-env-changed=ARFLAGS_aarch64-apple-darwin
 ARFLAGS_aarch64-apple-darwin = None
 cargo:rustc-link-lib=static=onig
-cargo:rustc-link-search=native=/Users/fazapp/training/ai/mini-gpt-rust/target/debug/build/onig_sys-ee1c7adfb09e3fb5/out
+cargo:rustc-link-search=native=/Users/fazapp/projects/opensource/mini-gpt-rust/target/debug/build/onig_sys-ee1c7adfb09e3fb5/out
