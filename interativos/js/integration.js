@@ -122,11 +122,16 @@ class WebDemoIntegration {
      */
     async loadModules() {
         try {
-            const response = await fetch('/api/modules');
+            const response = await fetch('/api/v1/modules');
             const modules = await response.json();
             
-            modules.forEach(module => {
-                this.modules.set(module.name, module);
+            // A API retorna um array de strings com os nomes dos módulos
+            modules.forEach(moduleName => {
+                this.modules.set(moduleName, {
+                    name: moduleName,
+                    status: 'idle',
+                    parameters: {}
+                });
             });
             
             console.log('📚 Módulos carregados:', this.modules.size);
