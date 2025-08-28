@@ -1,0 +1,33 @@
+# Rust build artifacts
+/target/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Backup files
+*.bak
+*.tmp
+
+# Model files (large)
+*.bin
+*.ggml
+*.gguf
+
+# Benchmark outputs
+benchmark_results.txt
+chunks_output.txt
