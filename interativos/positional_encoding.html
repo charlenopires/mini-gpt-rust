@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codificação Posicional - Mini GPT Rust</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .matrix-cell {
+            border: 1px solid #e5e7eb;
+            padding: 4px;
+            text-align: center;
+            font-size: 10px;
+            min-width: 30px;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .matrix-cell:hover {
+            background-color: #ddd6fe;
+            transform: scale(1.1);
+            z-index: 10;
+            position: relative;
+        }
+        .encoding-visualization {
+            display: grid;
+            gap: 2px;
+            justify-content: center;
+        }
+        .position-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            padding: 8px 4px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .dimension-label {
+            padding: 4px 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            text-align: center;
+        }
+        .formula-box {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+        }
+        .interactive-slider {
+            width: 100%;
+            margin: 8px 0;
+        }
+        .wave-container {
+            height: 200px;
+            margin: 16px 0;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                        📐 Codificação Posicional
+                    </h1>
+                    <p class="text-lg opacity-90">
+                        Como os Transformers entendem a ordem das palavras
+                    </p>
+                </div>
+                <button onclick="window.history.back()" 
+                        class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    ← Voltar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Introdução -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎯 O que é Codificação Posicional?</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-gray-600 leading-relaxed mb-4">
+                        Diferente de RNNs que processam sequências palavra por palavra, os Transformers processam 
+                        todas as palavras simultaneamente. Isso é mais eficiente, mas cria um problema: 
+                        <strong>como o modelo sabe a ordem das palavras?</strong>
+                    </p>
+                    <p class="text-gray-600 leading-relaxed">
+                        A solução é a <strong>Codificação Posicional</strong>: vetores especiais que são somados 
+                        aos embeddings das palavras para indicar sua posição na sequência.
+                    </p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-2">💡 Analogia</h3>
+                    <p class="text-blue-700 text-sm">
+                        Imagine que você tem cartas numeradas, mas as embaralhou. Para manter a ordem original, 
+                        você cola um adesivo especial em cada carta indicando sua posição. A codificação posicional 
+                        é como esse adesivo para as palavras!
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controles Interativos -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎛️ Controles Interativos</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comprimento da Sequência</label>
+                    <input type="range" id="seqLength" min="4" max="20" value="8" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">Posições: <span id="seqLengthValue">8</span></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Dimensão do Modelo (d_model)</label>
+                    <input type="range" id="dModel" min="8" max="64" step="8" value="16" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">Dimensões: <span id="dModelValue">16</span></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Posição Destacada</label>
+                    <input type="range" id="highlightPos" min="0" max="7" value="0" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">Posição: <span id="highlightPosValue">0</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fórmula Matemática -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📐 Fórmula Matemática</h2>
+            <div class="formula-box mb-4">
+                <div class="text-center mb-4">
+                    <div class="text-lg font-bold mb-2">Codificação Posicional Sinusoidal:</div>
+                    <div class="mb-2">PE(pos, 2i) = sin(pos / 10000^(2i/d_model))</div>
+                    <div>PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))</div>
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Onde:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><code>pos</code> = posição na sequência (0, 1, 2, ...)</li>
+                        <li><code>i</code> = índice da dimensão (0, 1, 2, ...)</li>
+                        <li><code>d_model</code> = dimensão do modelo</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Características:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li>Dimensões pares usam <strong>seno</strong></li>
+                        <li>Dimensões ímpares usam <strong>cosseno</strong></li>
+                        <li>Frequências diferentes para cada dimensão</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualização da Matriz -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔢 Matriz de Codificação Posicional</h2>
+            <div class="mb-4">
+                <p class="text-gray-600 text-sm mb-2">
+                    Cada linha representa uma posição, cada coluna uma dimensão. 
+                    <span class="tooltip">
+                        Passe o mouse sobre as células para ver os valores.
+                        <span class="tooltiptext">Os valores variam entre -1 e 1, criando padrões únicos para cada posição</span>
+                    </span>
+                </p>
+            </div>
+            <div class="overflow-x-auto">
+                <div id="positionMatrix" class="encoding-visualization"></div>
+            </div>
+        </section>
+
+        <!-- Visualização das Ondas -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🌊 Ondas Sinusoidais</h2>
+            <div class="mb-4">
+                <p class="text-gray-600 text-sm">
+                    Visualização das funções seno e cosseno para diferentes dimensões. 
+                    Cada dimensão tem uma frequência diferente.
+                </p>
+            </div>
+            <div id="waveVisualization" class="wave-container"></div>
+        </section>
+
+        <!-- Comparação de Posições -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Comparação de Posições</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Similaridade entre Posições</h3>
+                    <div id="similarityHeatmap" style="height: 300px;"></div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Distância Euclidiana</h3>
+                    <div id="distanceMatrix" style="height: 300px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Explicação Conceitual -->
+        <section class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🧠 Por que Funciona?</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-green-800 mb-2">🔄 Padrões Únicos</h3>
+                    <p class="text-green-700 text-sm">
+                        Cada posição tem um padrão único de valores seno/cosseno, 
+                        permitindo ao modelo distinguir diferentes posições.
+                    </p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-2">📏 Distâncias Relativas</h3>
+                    <p class="text-blue-700 text-sm">
+                        A fórmula permite que o modelo aprenda sobre distâncias relativas 
+                        entre posições, não apenas posições absolutas.
+                    </p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-purple-800 mb-2">♾️ Extrapolação</h3>
+                    <p class="text-purple-700 text-sm">
+                        O modelo pode lidar com sequências mais longas do que viu no treinamento, 
+                        pois a fórmula funciona para qualquer posição.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Variáveis globais
+        let currentSeqLength = 8;
+        let currentDModel = 16;
+        let currentHighlightPos = 0;
+
+        // Elementos DOM
+        const seqLengthSlider = document.getElementById('seqLength');
+        const dModelSlider = document.getElementById('dModel');
+        const highlightPosSlider = document.getElementById('highlightPos');
+        const seqLengthValue = document.getElementById('seqLengthValue');
+        const dModelValue = document.getElementById('dModelValue');
+        const highlightPosValue = document.getElementById('highlightPosValue');
+
+        // Função para calcular codificação posicional
+        function calculatePositionalEncoding(pos, i, dModel) {
+            const angle = pos / Math.pow(10000, (2 * Math.floor(i / 2)) / dModel);
+            return i % 2 === 0 ? Math.sin(angle) : Math.cos(angle);
+        }
+
+        // Função para gerar matriz de codificação posicional
+        function generatePositionalEncodingMatrix(seqLength, dModel) {
+            const matrix = [];
+            for (let pos = 0; pos < seqLength; pos++) {
+                const row = [];
+                for (let i = 0; i < dModel; i++) {
+                    row.push(calculatePositionalEncoding(pos, i, dModel));
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        // Função para renderizar matriz
+        function renderMatrix() {
+            const matrix = generatePositionalEncodingMatrix(currentSeqLength, currentDModel);
+            const container = document.getElementById('positionMatrix');
+            
+            // Configurar grid
+            container.style.gridTemplateColumns = `60px repeat(${currentDModel}, 1fr)`;
+            container.innerHTML = '';
+
+            // Header vazio
+            const emptyCell = document.createElement('div');
+            container.appendChild(emptyCell);
+
+            // Headers das dimensões
+            for (let i = 0; i < currentDModel; i++) {
+                const header = document.createElement('div');
+                header.className = 'dimension-label';
+                header.textContent = `d${i}`;
+                container.appendChild(header);
+            }
+
+            // Linhas da matriz
+            for (let pos = 0; pos < currentSeqLength; pos++) {
+                // Label da posição
+                const posLabel = document.createElement('div');
+                posLabel.className = 'position-label';
+                posLabel.textContent = `pos${pos}`;
+                container.appendChild(posLabel);
+
+                // Células da matriz
+                for (let i = 0; i < currentDModel; i++) {
+                    const cell = document.createElement('div');
+                    const value = matrix[pos][i];
+                    cell.className = 'matrix-cell';
+                    cell.textContent = value.toFixed(2);
+                    
+                    // Colorir baseado no valor
+                    const intensity = Math.abs(value);
+                    const hue = value >= 0 ? 120 : 0; // Verde para positivo, vermelho para negativo
+                    cell.style.backgroundColor = `hsla(${hue}, 70%, 85%, ${intensity})`;
+                    
+                    // Destacar posição selecionada
+                    if (pos === currentHighlightPos) {
+                        cell.style.border = '2px solid #7c3aed';
+                        cell.style.fontWeight = 'bold';
+                    }
+                    
+                    // Tooltip
+                    cell.title = `Posição ${pos}, Dimensão ${i}: ${value.toFixed(4)}`;
+                    
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        // Função para renderizar ondas
+        function renderWaves() {
+            const positions = Array.from({length: currentSeqLength}, (_, i) => i);
+            const traces = [];
+
+            // Mostrar apenas algumas dimensões para clareza
+            const dimensionsToShow = [0, 1, 2, 3, Math.floor(currentDModel/2), Math.floor(currentDModel/2) + 1];
+            
+            dimensionsToShow.forEach(dim => {
+                if (dim < currentDModel) {
+                    const values = positions.map(pos => 
+                        calculatePositionalEncoding(pos, dim, currentDModel)
+                    );
+                    
+                    traces.push({
+                        x: positions,
+                        y: values,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: `Dimensão ${dim} (${dim % 2 === 0 ? 'sin' : 'cos'})`,
+                        line: { width: 2 }
+                    });
+                }
+            });
+
+            const layout = {
+                title: 'Ondas Sinusoidais por Dimensão',
+                xaxis: { title: 'Posição' },
+                yaxis: { title: 'Valor da Codificação', range: [-1.1, 1.1] },
+                showlegend: true,
+                height: 200,
+                margin: { t: 40, b: 40, l: 60, r: 20 }
+            };
+
+            Plotly.newPlot('waveVisualization', traces, layout, {responsive: true});
+        }
+
+        // Função para calcular similaridade cosseno
+        function cosineSimilarity(vec1, vec2) {
+            const dotProduct = vec1.reduce((sum, a, i) => sum + a * vec2[i], 0);
+            const magnitude1 = Math.sqrt(vec1.reduce((sum, a) => sum + a * a, 0));
+            const magnitude2 = Math.sqrt(vec2.reduce((sum, a) => sum + a * a, 0));
+            return dotProduct / (magnitude1 * magnitude2);
+        }
+
+        // Função para renderizar heatmap de similaridade
+        function renderSimilarityHeatmap() {
+            const matrix = generatePositionalEncodingMatrix(currentSeqLength, currentDModel);
+            const similarities = [];
+            
+            for (let i = 0; i < currentSeqLength; i++) {
+                const row = [];
+                for (let j = 0; j < currentSeqLength; j++) {
+                    row.push(cosineSimilarity(matrix[i], matrix[j]));
+                }
+                similarities.push(row);
+            }
+
+            const trace = {
+                z: similarities,
+                type: 'heatmap',
+                colorscale: 'Viridis',
+                showscale: true
+            };
+
+            const layout = {
+                title: 'Similaridade Cosseno entre Posições',
+                xaxis: { title: 'Posição' },
+                yaxis: { title: 'Posição' },
+                height: 300,
+                margin: { t: 40, b: 40, l: 60, r: 60 }
+            };
+
+            Plotly.newPlot('similarityHeatmap', [trace], layout, {responsive: true});
+        }
+
+        // Função para calcular distância euclidiana
+        function euclideanDistance(vec1, vec2) {
+            return Math.sqrt(vec1.reduce((sum, a, i) => sum + Math.pow(a - vec2[i], 2), 0));
+        }
+
+        // Função para renderizar matriz de distâncias
+        function renderDistanceMatrix() {
+            const matrix = generatePositionalEncodingMatrix(currentSeqLength, currentDModel);
+            const distances = [];
+            
+            for (let i = 0; i < currentSeqLength; i++) {
+                const row = [];
+                for (let j = 0; j < currentSeqLength; j++) {
+                    row.push(euclideanDistance(matrix[i], matrix[j]));
+                }
+                distances.push(row);
+            }
+
+            const trace = {
+                z: distances,
+                type: 'heatmap',
+                colorscale: 'Hot',
+                showscale: true
+            };
+
+            const layout = {
+                title: 'Distância Euclidiana entre Posições',
+                xaxis: { title: 'Posição' },
+                yaxis: { title: 'Posição' },
+                height: 300,
+                margin: { t: 40, b: 40, l: 60, r: 60 }
+            };
+
+            Plotly.newPlot('distanceMatrix', [trace], layout, {responsive: true});
+        }
+
+        // Função para atualizar todas as visualizações
+        function updateVisualization() {
+            renderMatrix();
+            renderWaves();
+            renderSimilarityHeatmap();
+            renderDistanceMatrix();
+        }
+
+        // Event listeners
+        seqLengthSlider.addEventListener('input', (e) => {
+            currentSeqLength = parseInt(e.target.value);
+            seqLengthValue.textContent = currentSeqLength;
+            highlightPosSlider.max = currentSeqLength - 1;
+            if (currentHighlightPos >= currentSeqLength) {
+                currentHighlightPos = currentSeqLength - 1;
+                highlightPosSlider.value = currentHighlightPos;
+                highlightPosValue.textContent = currentHighlightPos;
+            }
+            updateVisualization();
+        });
+
+        dModelSlider.addEventListener('input', (e) => {
+            currentDModel = parseInt(e.target.value);
+            dModelValue.textContent = currentDModel;
+            updateVisualization();
+        });
+
+        highlightPosSlider.addEventListener('input', (e) => {
+            currentHighlightPos = parseInt(e.target.value);
+            highlightPosValue.textContent = currentHighlightPos;
+            renderMatrix(); // Só precisa atualizar a matriz
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateVisualization();
+        });
+    </script>
+</body>
+</html>

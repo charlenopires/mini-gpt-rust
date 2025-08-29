@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed-Forward Networks Avançadas</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <style>
+        .advanced-ffn-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .ffn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .ffn-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ffn-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .network-visualization {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .layer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+        }
+        
+        .layer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+        
+        .layer-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .neuron {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .neuron:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .neuron.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), transparent);
+            transform-origin: left center;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        
+        .connection.active {
+            background: linear-gradient(90deg, #ff5722, #ff9800);
+            height: 4px;
+            animation: flow 2s infinite;
+        }
+        
+        @keyframes flow {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        
+        .activation-function {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .activation-selector {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .activation-button {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .activation-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .activation-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        
+        .chart-canvas {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 20px 0;
+            width: 100%;
+        }
+        
+        .control-panel {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .control-group {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .value-display {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: var(--surface-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .data-flow {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .flow-step {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .flow-step:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .flow-step.active {
+            background: #e8f5e8;
+            border-color: #4caf50;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .step-description {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        
+        .step-arrow {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .metrics-dashboard {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2.2em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .action-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .action-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .action-button.secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.secondary:hover {
+            background: #ccc;
+        }
+        
+        .mathematical-details {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .math-title {
+            color: #388e3c;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+        }
+        
+        .formula-box {
+            background: white;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .comparison-section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .comparison-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .weight-matrix {
+            display: grid;
+            gap: 2px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .weight-cell {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .weight-cell:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .gradient-visualization {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .gradient-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .gradient-arrow {
+            width: 0;
+            height: 0;
+            border-left: 15px solid var(--primary-color);
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            animation: gradient-pulse 2s infinite;
+        }
+        
+        @keyframes gradient-pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .ffn-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .layer-container {
+                flex-direction: column;
+                gap: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="advanced-ffn-container">
+        <header class="hero-section">
+            <h1>🧠 Feed-Forward Networks Avançadas</h1>
+            <p class="hero-description">
+                Explore a arquitetura e funcionamento das redes feed-forward no Transformer, 
+                com visualizações interativas de neurônios, ativações e fluxo de gradientes.
+            </p>
+        </header>
+
+        <section class="control-panel">
+            <h2>🎛️ Configuração da Rede</h2>
+            
+            <div class="control-grid">
+                <div class="control-group">
+                    <label>Dimensão de Entrada: <span id="input-dim-value">512</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="input-dim-slider" class="slider" min="128" max="1024" step="128" value="512">
+                        <div class="value-display" id="input-dim-display">512</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Dimensão Oculta: <span id="hidden-dim-value">2048</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="hidden-dim-slider" class="slider" min="512" max="4096" step="512" value="2048">
+                        <div class="value-display" id="hidden-dim-display">2048</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Taxa de Dropout: <span id="dropout-value">0.1</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="dropout-slider" class="slider" min="0.0" max="0.5" step="0.05" value="0.1">
+                        <div class="value-display" id="dropout-display">0.1</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Learning Rate: <span id="lr-value">0.001</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="lr-slider" class="slider" min="0.0001" max="0.01" step="0.0001" value="0.001">
+                        <div class="value-display" id="lr-display">0.001</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="action-button" onclick="runForwardPass()">▶️ Forward Pass</button>
+            <button class="action-button" onclick="runBackwardPass()">◀️ Backward Pass</button>
+            <button class="action-button" onclick="animateTraining()">🎯 Treinar</button>
+            <button class="action-button secondary" onclick="resetNetwork()">↩️ Reset</button>
+        </section>
+
+        <section class="network-visualization">
+            <h2>🔗 Arquitetura da Rede</h2>
+            
+            <div class="layer-container" id="network-layers">
+                <!-- Será preenchido dinamicamente -->
+            </div>
+        </section>
+
+        <section class="activation-function">
+            <h2>⚡ Funções de Ativação</h2>
+            
+            <div class="activation-selector">
+                <button class="activation-button active" onclick="setActivation('relu')">ReLU</button>
+                <button class="activation-button" onclick="setActivation('gelu')">GELU</button>
+                <button class="activation-button" onclick="setActivation('swish')">Swish</button>
+                <button class="activation-button" onclick="setActivation('tanh')">Tanh</button>
+                <button class="activation-button" onclick="setActivation('sigmoid')">Sigmoid</button>
+            </div>
+            
+            <canvas id="activation-chart" class="chart-canvas" width="600" height="300"></canvas>
+        </section>
+
+        <section class="ffn-grid">
+            <div class="ffn-panel">
+                <div class="panel-title">
+                    📊 Distribuição de Pesos
+                </div>
+                
+                <canvas id="weights-chart" class="chart-canvas" width="500" height="300"></canvas>
+                
+                <div class="weight-matrix" id="weight-matrix">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+            </div>
+            
+            <div class="ffn-panel">
+                <div class="panel-title">
+                    🎯 Ativações por Camada
+                </div>
+                
+                <canvas id="activations-chart" class="chart-canvas" width="500" height="300"></canvas>
+                
+                <div id="activation-values" class="weight-matrix">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+            </div>
+        </section>
+
+        <section class="data-flow">
+            <h2>🌊 Fluxo de Dados</h2>
+            
+            <div class="flow-step active">
+                <div class="step-title">1. Entrada (Input)</div>
+                <div class="step-description">
+                    Recebe representações de tokens com dimensão d_model (512)
+                </div>
+                <div class="step-arrow">→</div>
+            </div>
+            
+            <div class="flow-step">
+                <div class="step-title">2. Primeira Transformação Linear</div>
+                <div class="step-description">
+                    W₁ × input + b₁ → Expande para dimensão oculta (2048)
+                </div>
+                <div class="step-arrow">→</div>
+            </div>
+            
+            <div class="flow-step">
+                <div class="step-title">3. Função de Ativação</div>
+                <div class="step-description">
+                    Aplica não-linearidade (ReLU, GELU, etc.)
+                </div>
+                <div class="step-arrow">→</div>
+            </div>
+            
+            <div class="flow-step">
+                <div class="step-title">4. Dropout (Treinamento)</div>
+                <div class="step-description">
+                    Regularização para prevenir overfitting
+                </div>
+                <div class="step-arrow">→</div>
+            </div>
+            
+            <div class="flow-step">
+                <div class="step-title">5. Segunda Transformação Linear</div>
+                <div class="step-description">
+                    W₂ × hidden + b₂ → Retorna para dimensão original (512)
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics-dashboard">
+            <h2>📊 Métricas da Rede</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="params-count">2.1M</div>
+                    <div class="metric-label">Parâmetros</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="flops-count">4.2G</div>
+                    <div class="metric-label">FLOPs</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="memory-usage">8.4MB</div>
+                    <div class="metric-label">Memória</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="sparsity-level">15%</div>
+                    <div class="metric-label">Esparsidade</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="gradient-norm">0.85</div>
+                    <div class="metric-label">Norma Gradiente</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="activation-mean">0.42</div>
+                    <div class="metric-label">Ativação Média</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="gradient-visualization">
+            <h2>🔄 Visualização de Gradientes</h2>
+            
+            <div class="gradient-flow">
+                <div>Saída</div>
+                <div class="gradient-arrow"></div>
+                <div>Camada 2</div>
+                <div class="gradient-arrow"></div>
+                <div>Ativação</div>
+                <div class="gradient-arrow"></div>
+                <div>Camada 1</div>
+                <div class="gradient-arrow"></div>
+                <div>Entrada</div>
+            </div>
+            
+            <canvas id="gradient-chart" class="chart-canvas" width="800" height="300"></canvas>
+        </section>
+
+        <section class="comparison-section">
+            <h2>⚖️ Comparação de Ativações</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-title">⚡ ReLU</div>
+                    <ul>
+                        <li><strong>Fórmula:</strong> f(x) = max(0, x)</li>
+                        <li><strong>Vantagens:</strong> Simples, rápida, evita vanishing gradient</li>
+                        <li><strong>Desvantagens:</strong> Neurônios mortos, não diferenciável em 0</li>
+                        <li><strong>Uso:</strong> Padrão em muitas arquiteturas</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🌊 GELU</div>
+                    <ul>
+                        <li><strong>Fórmula:</strong> f(x) = x × Φ(x)</li>
+                        <li><strong>Vantagens:</strong> Suave, probabilística, melhor performance</li>
+                        <li><strong>Desvantagens:</strong> Mais computacionalmente cara</li>
+                        <li><strong>Uso:</strong> Transformers modernos (BERT, GPT)</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🔄 Swish</div>
+                    <ul>
+                        <li><strong>Fórmula:</strong> f(x) = x × sigmoid(x)</li>
+                        <li><strong>Vantagens:</strong> Auto-gating, suave, unbounded above</li>
+                        <li><strong>Desvantagens:</strong> Mais complexa que ReLU</li>
+                        <li><strong>Uso:</strong> Redes profundas, EfficientNet</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">📈 Tanh</div>
+                    <ul>
+                        <li><strong>Fórmula:</strong> f(x) = (e^x - e^(-x))/(e^x + e^(-x))</li>
+                        <li><strong>Vantagens:</strong> Zero-centered, bounded</li>
+                        <li><strong>Desvantagens:</strong> Vanishing gradient, saturação</li>
+                        <li><strong>Uso:</strong> RNNs, redes menores</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="mathematical-details">
+            <div class="math-title">
+                🧮 Detalhes Matemáticos
+            </div>
+            
+            <h3>Transformação Feed-Forward</h3>
+            <div class="formula-box">
+                FFN(x) = max(0, xW₁ + b₁)W₂ + b₂<br>
+                onde W₁ ∈ ℝ^(d_model × d_ff), W₂ ∈ ℝ^(d_ff × d_model)
+            </div>
+            
+            <h3>Funções de Ativação</h3>
+            <div class="formula-box">
+                <strong>ReLU:</strong> f(x) = max(0, x)<br>
+                <strong>GELU:</strong> f(x) = x × Φ(x) = x × ½[1 + erf(x/√2)]<br>
+                <strong>Swish:</strong> f(x) = x × σ(x) = x/(1 + e^(-x))
+            </div>
+            
+            <h3>Backpropagation</h3>
+            <div class="formula-box">
+                ∂L/∂W₂ = (∂L/∂output) × activation^T<br>
+                ∂L/∂W₁ = input^T × (∂L/∂activation × f'(z₁))<br>
+                onde z₁ = xW₁ + b₁
+            </div>
+            
+            <h3>Complexidade Computacional</h3>
+            <div class="formula-box">
+                <strong>Parâmetros:</strong> 2 × d_model × d_ff + d_model + d_ff<br>
+                <strong>FLOPs (Forward):</strong> 2 × d_model × d_ff × seq_len<br>
+                <strong>Memória:</strong> O(d_model × d_ff + seq_len × d_ff)
+            </div>
+        </section>
+
+        <section class="implementation-details">
+            <h2>💻 Implementação em Rust</h2>
+            
+            <div class="mathematical-details">
+                <div class="math-title">
+                    🦀 Código Rust
+                </div>
+                
+                <div class="formula-box" style="text-align: left; font-family: 'Courier New', monospace;">
+                    <strong>pub struct FeedForward {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;linear1: Linear,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;linear2: Linear,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;activation: ActivationFunction,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;dropout: Dropout,<br>
+                    <strong>}</strong><br><br>
+                    
+                    <strong>impl FeedForward {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;pub fn forward(&self, x: &Tensor) -> Tensor {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let hidden = self.linear1.forward(x);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let activated = self.activation.apply(&hidden);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let dropped = self.dropout.apply(&activated);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.linear2.forward(&dropped)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    <strong>}</strong><br><br>
+                    
+                    <strong>#[derive(Clone)]</strong><br>
+                    <strong>pub enum ActivationFunction {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;ReLU,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;GELU,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Swish,<br>
+                    <strong>}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentActivation = 'relu';
+        let networkConfig = {
+            inputDim: 512,
+            hiddenDim: 2048,
+            dropout: 0.1,
+            learningRate: 0.001
+        };
+        
+        // Elementos DOM
+        const inputDimSlider = document.getElementById('input-dim-slider');
+        const hiddenDimSlider = document.getElementById('hidden-dim-slider');
+        const dropoutSlider = document.getElementById('dropout-slider');
+        const lrSlider = document.getElementById('lr-slider');
+        const activationCanvas = document.getElementById('activation-chart');
+        const weightsCanvas = document.getElementById('weights-chart');
+        const activationsCanvas = document.getElementById('activations-chart');
+        const gradientCanvas = document.getElementById('gradient-chart');
+        const activationCtx = activationCanvas.getContext('2d');
+        const weightsCtx = weightsCanvas.getContext('2d');
+        const activationsCtx = activationsCanvas.getContext('2d');
+        const gradientCtx = gradientCanvas.getContext('2d');
+        
+        // Event listeners
+        inputDimSlider.addEventListener('input', (e) => {
+            networkConfig.inputDim = parseInt(e.target.value);
+            document.getElementById('input-dim-display').textContent = networkConfig.inputDim;
+            updateNetworkVisualization();
+            updateMetrics();
+        });
+        
+        hiddenDimSlider.addEventListener('input', (e) => {
+            networkConfig.hiddenDim = parseInt(e.target.value);
+            document.getElementById('hidden-dim-display').textContent = networkConfig.hiddenDim;
+            updateNetworkVisualization();
+            updateMetrics();
+        });
+        
+        dropoutSlider.addEventListener('input', (e) => {
+            networkConfig.dropout = parseFloat(e.target.value);
+            document.getElementById('dropout-display').textContent = networkConfig.dropout.toFixed(2);
+        });
+        
+        lrSlider.addEventListener('input', (e) => {
+            networkConfig.learningRate = parseFloat(e.target.value);
+            document.getElementById('lr-display').textContent = networkConfig.learningRate.toFixed(4);
+        });
+        
+        function setActivation(activation) {
+            currentActivation = activation;
+            
+            // Atualizar botões
+            document.querySelectorAll('.activation-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateActivationChart();
+        }
+        
+        function updateNetworkVisualization() {
+            const container = document.getElementById('network-layers');
+            container.innerHTML = '';
+            
+            // Criar camadas
+            const layers = [
+                { name: 'Entrada', size: Math.min(8, networkConfig.inputDim / 64), color: '#e3f2fd' },
+                { name: 'Oculta', size: Math.min(12, networkConfig.hiddenDim / 170), color: '#bbdefb' },
+                { name: 'Saída', size: Math.min(8, networkConfig.inputDim / 64), color: '#90caf9' }
+            ];
+            
+            layers.forEach((layer, layerIndex) => {
+                const layerDiv = document.createElement('div');
+                layerDiv.className = 'layer';
+                
+                const title = document.createElement('div');
+                title.className = 'layer-title';
+                title.textContent = `${layer.name}\n(${layerIndex === 1 ? networkConfig.hiddenDim : networkConfig.inputDim})`;
+                layerDiv.appendChild(title);
+                
+                for (let i = 0; i < layer.size; i++) {
+                    const neuron = document.createElement('div');
+                    neuron.className = 'neuron';
+                    neuron.style.background = layer.color;
+                    neuron.textContent = i + 1;
+                    neuron.addEventListener('click', () => activateNeuron(neuron));
+                    layerDiv.appendChild(neuron);
+                }
+                
+                container.appendChild(layerDiv);
+                
+                // Adicionar conexões
+                if (layerIndex < layers.length - 1) {
+                    createConnections(layerDiv, container.children[layerIndex + 1]);
+                }
+            });
+        }
+        
+        function createConnections(fromLayer, toLayer) {
+            // Simplificado - apenas algumas conexões visuais
+            const connections = 3;
+            for (let i = 0; i < connections; i++) {
+                const connection = document.createElement('div');
+                connection.className = 'connection';
+                // Posicionamento seria calculado dinamicamente
+                fromLayer.appendChild(connection);
+            }
+        }
+        
+        function activateNeuron(neuron) {
+            // Remove ativação anterior
+            document.querySelectorAll('.neuron').forEach(n => n.classList.remove('active'));
+            
+            // Ativa neurônio atual
+            neuron.classList.add('active');
+            
+            // Ativa conexões
+            document.querySelectorAll('.connection').forEach(c => c.classList.add('active'));
+            
+            setTimeout(() => {
+                document.querySelectorAll('.connection').forEach(c => c.classList.remove('active'));
+            }, 2000);
+        }
+        
+        function updateActivationChart() {
+            activationCtx.clearRect(0, 0, activationCanvas.width, activationCanvas.height);
+            
+            const width = activationCanvas.width;
+            const height = activationCanvas.height;
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Eixos
+            activationCtx.strokeStyle = '#333';
+            activationCtx.lineWidth = 2;
+            activationCtx.beginPath();
+            activationCtx.moveTo(margin, margin + chartHeight);
+            activationCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            activationCtx.moveTo(margin, margin);
+            activationCtx.lineTo(margin, margin + chartHeight);
+            activationCtx.stroke();
+            
+            // Função de ativação
+            activationCtx.strokeStyle = '#2196f3';
+            activationCtx.lineWidth = 3;
+            activationCtx.beginPath();
+            
+            const xRange = 6; // -3 a 3
+            const yRange = 3;
+            
+            for (let i = 0; i <= chartWidth; i++) {
+                const x = (i / chartWidth) * xRange - xRange/2;
+                let y;
+                
+                switch (currentActivation) {
+                    case 'relu':
+                        y = Math.max(0, x);
+                        break;
+                    case 'gelu':
+                        y = x * 0.5 * (1 + Math.tanh(Math.sqrt(2/Math.PI) * (x + 0.044715 * Math.pow(x, 3))));
+                        break;
+                    case 'swish':
+                        y = x / (1 + Math.exp(-x));
+                        break;
+                    case 'tanh':
+                        y = Math.tanh(x);
+                        break;
+                    case 'sigmoid':
+                        y = 1 / (1 + Math.exp(-x));
+                        break;
+                    default:
+                        y = Math.max(0, x);
+                }
+                
+                const plotX = margin + i;
+                const plotY = margin + chartHeight - ((y + yRange/2) / yRange) * chartHeight;
+                
+                if (i === 0) {
+                    activationCtx.moveTo(plotX, plotY);
+                } else {
+                    activationCtx.lineTo(plotX, plotY);
+                }
+            }
+            
+            activationCtx.stroke();
+            
+            // Labels
+            activationCtx.fillStyle = '#333';
+            activationCtx.font = '14px Arial';
+            activationCtx.textAlign = 'center';
+            activationCtx.fillText(`Função ${currentActivation.toUpperCase()}`, width/2, 20);
+            activationCtx.fillText('x', width - 20, margin + chartHeight + 20);
+            
+            activationCtx.save();
+            activationCtx.translate(20, margin + chartHeight/2);
+            activationCtx.rotate(-Math.PI/2);
+            activationCtx.fillText('f(x)', 0, 0);
+            activationCtx.restore();
+        }
+        
+        function updateWeightsChart() {
+            weightsCtx.clearRect(0, 0, weightsCanvas.width, weightsCanvas.height);
+            
+            const width = weightsCanvas.width;
+            const height = weightsCanvas.height;
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Gerar distribuição de pesos simulada
+            const weights = [];
+            for (let i = 0; i < 100; i++) {
+                weights.push(Math.random() * 2 - 1); // -1 a 1
+            }
+            
+            // Histograma
+            const bins = 20;
+            const binWidth = chartWidth / bins;
+            const histogram = new Array(bins).fill(0);
+            
+            weights.forEach(weight => {
+                const binIndex = Math.floor(((weight + 1) / 2) * bins);
+                if (binIndex >= 0 && binIndex < bins) {
+                    histogram[binIndex]++;
+                }
+            });
+            
+            const maxCount = Math.max(...histogram);
+            
+            // Desenhar barras
+            weightsCtx.fillStyle = '#4caf50';
+            histogram.forEach((count, i) => {
+                const barHeight = (count / maxCount) * chartHeight * 0.8;
+                const x = margin + i * binWidth;
+                const y = margin + chartHeight - barHeight;
+                
+                weightsCtx.fillRect(x, y, binWidth - 2, barHeight);
+            });
+            
+            // Eixos
+            weightsCtx.strokeStyle = '#333';
+            weightsCtx.lineWidth = 2;
+            weightsCtx.beginPath();
+            weightsCtx.moveTo(margin, margin + chartHeight);
+            weightsCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            weightsCtx.stroke();
+            
+            // Título
+            weightsCtx.fillStyle = '#333';
+            weightsCtx.font = '14px Arial';
+            weightsCtx.textAlign = 'center';
+            weightsCtx.fillText('Distribuição de Pesos', width/2, 20);
+        }
+        
+        function updateActivationsChart() {
+            activationsCtx.clearRect(0, 0, activationsCanvas.width, activationsCanvas.height);
+            
+            const width = activationsCanvas.width;
+            const height = activationsCanvas.height;
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Simular ativações por camada
+            const layers = ['Entrada', 'Oculta', 'Saída'];
+            const activations = [0.6, 0.8, 0.4]; // Valores simulados
+            const colors = ['#e3f2fd', '#bbdefb', '#90caf9'];
+            
+            const barWidth = chartWidth / layers.length;
+            
+            layers.forEach((layer, i) => {
+                const barHeight = activations[i] * chartHeight * 0.8;
+                const x = margin + i * barWidth + barWidth * 0.1;
+                const y = margin + chartHeight - barHeight;
+                
+                activationsCtx.fillStyle = colors[i];
+                activationsCtx.fillRect(x, y, barWidth * 0.8, barHeight);
+                
+                // Labels
+                activationsCtx.fillStyle = '#333';
+                activationsCtx.font = '12px Arial';
+                activationsCtx.textAlign = 'center';
+                activationsCtx.fillText(layer, x + barWidth * 0.4, margin + chartHeight + 20);
+                activationsCtx.fillText(activations[i].toFixed(2), x + barWidth * 0.4, y - 10);
+            });
+            
+            // Eixos
+            activationsCtx.strokeStyle = '#333';
+            activationsCtx.lineWidth = 2;
+            activationsCtx.beginPath();
+            activationsCtx.moveTo(margin, margin + chartHeight);
+            activationsCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            activationsCtx.stroke();
+            
+            // Título
+            activationsCtx.fillStyle = '#333';
+            activationsCtx.font = '14px Arial';
+            activationsCtx.textAlign = 'center';
+            activationsCtx.fillText('Ativações Médias por Camada', width/2, 20);
+        }
+        
+        function updateGradientChart() {
+            gradientCtx.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+            
+            const width = gradientCanvas.width;
+            const height = gradientCanvas.height;
+            const margin = 60;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Simular gradientes ao longo do treinamento
+            const epochs = 50;
+            const gradientNorms = [];
+            
+            for (let i = 0; i < epochs; i++) {
+                const norm = Math.exp(-i * 0.05) + Math.random() * 0.1;
+                gradientNorms.push(norm);
+            }
+            
+            // Desenhar linha
+            gradientCtx.strokeStyle = '#ff5722';
+            gradientCtx.lineWidth = 3;
+            gradientCtx.beginPath();
+            
+            gradientNorms.forEach((norm, i) => {
+                const x = margin + (i / (epochs - 1)) * chartWidth;
+                const y = margin + chartHeight - (norm * chartHeight * 0.8);
+                
+                if (i === 0) {
+                    gradientCtx.moveTo(x, y);
+                } else {
+                    gradientCtx.lineTo(x, y);
+                }
+            });
+            
+            gradientCtx.stroke();
+            
+            // Eixos
+            gradientCtx.strokeStyle = '#333';
+            gradientCtx.lineWidth = 2;
+            gradientCtx.beginPath();
+            gradientCtx.moveTo(margin, margin + chartHeight);
+            gradientCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            gradientCtx.moveTo(margin, margin);
+            gradientCtx.lineTo(margin, margin + chartHeight);
+            gradientCtx.stroke();
+            
+            // Labels
+            gradientCtx.fillStyle = '#333';
+            gradientCtx.font = '14px Arial';
+            gradientCtx.textAlign = 'center';
+            gradientCtx.fillText('Norma do Gradiente vs Época', width/2, 20);
+            gradientCtx.fillText('Época', margin + chartWidth/2, height - 20);
+            
+            gradientCtx.save();
+            gradientCtx.translate(20, margin + chartHeight/2);
+            gradientCtx.rotate(-Math.PI/2);
+            gradientCtx.fillText('Norma', 0, 0);
+            gradientCtx.restore();
+        }
+        
+        function updateMetrics() {
+            // Calcular métricas baseadas na configuração
+            const params = 2 * networkConfig.inputDim * networkConfig.hiddenDim + networkConfig.inputDim + networkConfig.hiddenDim;
+            const flops = 2 * networkConfig.inputDim * networkConfig.hiddenDim * 512; // assumindo seq_len = 512
+            const memory = (params * 4) / (1024 * 1024); // 4 bytes por float, em MB
+            
+            document.getElementById('params-count').textContent = formatNumber(params);
+            document.getElementById('flops-count').textContent = formatNumber(flops, 'G');
+            document.getElementById('memory-usage').textContent = memory.toFixed(1) + 'MB';
+            
+            // Métricas simuladas
+            document.getElementById('sparsity-level').textContent = (Math.random() * 20 + 10).toFixed(0) + '%';
+            document.getElementById('gradient-norm').textContent = (Math.random() * 0.5 + 0.5).toFixed(2);
+            document.getElementById('activation-mean').textContent = (Math.random() * 0.3 + 0.3).toFixed(2);
+        }
+        
+        function formatNumber(num, suffix = '') {
+            if (num >= 1e9) {
+                return (num / 1e9).toFixed(1) + 'G' + suffix;
+            } else if (num >= 1e6) {
+                return (num / 1e6).toFixed(1) + 'M' + suffix;
+            } else if (num >= 1e3) {
+                return (num / 1e3).toFixed(1) + 'K' + suffix;
+            }
+            return num.toString() + suffix;
+        }
+        
+        function runForwardPass() {
+            // Animar forward pass
+            const steps = document.querySelectorAll('.flow-step');
+            steps.forEach((step, i) => {
+                setTimeout(() => {
+                    step.classList.add('active');
+                    setTimeout(() => step.classList.remove('active'), 1000);
+                }, i * 500);
+            });
+            
+            // Atualizar visualizações
+            setTimeout(() => {
+                updateWeightsChart();
+                updateActivationsChart();
+            }, 1000);
+        }
+        
+        function runBackwardPass() {
+            // Animar backward pass (reverso)
+            const steps = document.querySelectorAll('.flow-step');
+            for (let i = steps.length - 1; i >= 0; i--) {
+                setTimeout(() => {
+                    steps[i].classList.add('active');
+                    setTimeout(() => steps[i].classList.remove('active'), 1000);
+                }, (steps.length - 1 - i) * 500);
+            }
+            
+            updateGradientChart();
+        }
+        
+        function animateTraining() {
+            let epoch = 0;
+            const maxEpochs = 10;
+            
+            const trainingInterval = setInterval(() => {
+                runForwardPass();
+                setTimeout(() => runBackwardPass(), 2000);
+                
+                epoch++;
+                if (epoch >= maxEpochs) {
+                    clearInterval(trainingInterval);
+                }
+            }, 4000);
+        }
+        
+        function resetNetwork() {
+            // Reset configurações
+            networkConfig = {
+                inputDim: 512,
+                hiddenDim: 2048,
+                dropout: 0.1,
+                learningRate: 0.001
+            };
+            
+            // Reset sliders
+            inputDimSlider.value = 512;
+            hiddenDimSlider.value = 2048;
+            dropoutSlider.value = 0.1;
+            lrSlider.value = 0.001;
+            
+            // Reset displays
+            document.getElementById('input-dim-display').textContent = '512';
+            document.getElementById('hidden-dim-display').textContent = '2048';
+            document.getElementById('dropout-display').textContent = '0.10';
+            document.getElementById('lr-display').textContent = '0.0010';
+            
+            // Reset visualizações
+            updateNetworkVisualization();
+            updateActivationChart();
+            updateWeightsChart();
+            updateActivationsChart();
+            updateGradientChart();
+            updateMetrics();
+        }
+        
+        // Inicialização
+        updateNetworkVisualization();
+        updateActivationChart();
+        updateWeightsChart();
+        updateActivationsChart();
+        updateGradientChart();
+        updateMetrics();
+    </script>
+</body>
+</html>

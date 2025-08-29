@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/design-system.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -246,55 +247,76 @@
 </head>
 <body class="text-white">
     <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8 relative">
+        <header class="page-header">
             <!-- Botão de Voltar -->
-            <div class="absolute left-0 top-0">
-                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Voltar
-                </a>
-            </div>
+            <a href="index.html" class="back-button">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Voltar
+            </a>
             
-            <h1 class="text-4xl font-bold mb-2">Treinamento de Modelos GPT</h1>
-            <p class="text-xl opacity-90">Explore o processo completo de treinamento de um modelo de linguagem</p>
+            <h1 class="page-title">
+                <span class="page-icon">🎯</span>
+                Treinamento de Modelos GPT
+            </h1>
+            <p class="page-subtitle">Explore o processo completo de treinamento de um modelo de linguagem</p>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <main class="grid-layout">
             <!-- Painel de Controle -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Configurações de Treinamento</h2>
+            <div class="control-panel">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚙️</span>
+                            Configurações de Treinamento
+                        </h2>
+                    </div>
                     
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Dados de Treinamento</label>
-                            <textarea id="trainingData" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite o texto de treinamento...">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📝</span>
+                                Dados de Treinamento
+                            </label>
+                            <textarea id="trainingData" class="form-input h-20 resize-none" placeholder="Digite o texto de treinamento...">
 O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.</textarea>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Tamanho do Batch</label>
-                            <input type="range" id="batchSize" min="1" max="8" value="4" class="w-full">
-                            <span id="batchSizeValue" class="text-sm opacity-75">4 sequências</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📦</span>
+                                Tamanho do Batch
+                            </label>
+                            <input type="range" id="batchSize" min="1" max="8" value="4" class="form-range">
+                            <span id="batchSizeValue" class="range-value">4 sequências</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Taxa de Aprendizado</label>
-                            <input type="range" id="learningRate" min="1" max="100" value="30" class="w-full">
-                            <span id="learningRateValue" class="text-sm opacity-75">3e-4</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📈</span>
+                                Taxa de Aprendizado
+                            </label>
+                            <input type="range" id="learningRate" min="1" max="100" value="30" class="form-range">
+                            <span id="learningRateValue" class="range-value">3e-4</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Épocas</label>
-                            <input type="range" id="epochs" min="1" max="10" value="3" class="w-full">
-                            <span id="epochsValue" class="text-sm opacity-75">3 épocas</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🔄</span>
+                                Épocas
+                            </label>
+                            <input type="range" id="epochs" min="1" max="10" value="3" class="form-range">
+                            <span id="epochsValue" class="range-value">3 épocas</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Otimizador</label>
-                            <select id="optimizer" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">⚡</span>
+                                Otimizador
+                            </label>
+                            <select id="optimizer" class="form-input">
                                 <option value="adam">Adam</option>
                                 <option value="sgd">SGD</option>
                                 <option value="adamw">AdamW</option>
@@ -302,62 +324,80 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                             </select>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Função de Loss</label>
-                            <select id="lossFunction" class="w-full bg-white/20 border border-white/30 rounded-lg p-2 text-white">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📊</span>
+                                Função de Loss
+                            </label>
+                            <select id="lossFunction" class="form-input">
                                 <option value="cross-entropy">Cross-Entropy</option>
                                 <option value="mse">Mean Squared Error</option>
                                 <option value="focal">Focal Loss</option>
                             </select>
                         </div>
                         
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="useScheduler" class="mr-2" checked>
-                                <span class="text-sm font-medium">Learning Rate Scheduler</span>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="useScheduler" class="form-checkbox" checked>
+                                <span class="checkbox-text">Learning Rate Scheduler</span>
                             </label>
                         </div>
                         
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="showGradients" class="mr-2">
-                                <span class="text-sm font-medium">Mostrar Gradientes</span>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showGradients" class="form-checkbox">
+                                <span class="checkbox-text">Mostrar Gradientes</span>
                             </label>
                         </div>
                     </div>
                     
-                    <button id="startTraining" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                    <button id="startTraining" class="btn-full btn-icon">
+                        <span>🚀</span>
                         Iniciar Treinamento
                     </button>
                     
-                    <button id="stopTraining" class="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105" disabled>
+                    <button id="stopTraining" class="btn-full btn-outline btn-icon" disabled>
+                        <span>⏹️</span>
                         Parar Treinamento
                     </button>
                 </div>
                 
                 <!-- Etapas do Treinamento -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Etapas</h2>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📋</span>
+                            Etapas
+                        </h2>
+                    </div>
                     <div class="space-y-2">
-                        <div class="training-step step-item" data-step="forward">
-                            <div class="step-indicator">1</div>
-                            <h3 class="font-semibold">Forward Pass</h3>
-                            <p class="text-sm opacity-75">Propagação para frente</p>
+                        <div class="step-item" data-step="forward">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3 class="step-title">Forward Pass</h3>
+                                <p class="step-description">Propagação para frente</p>
+                            </div>
                         </div>
-                        <div class="training-step step-item" data-step="loss">
-                            <div class="step-indicator">2</div>
-                            <h3 class="font-semibold">Cálculo do Loss</h3>
-                            <p class="text-sm opacity-75">Medir erro das predições</p>
+                        <div class="step-item" data-step="loss">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3 class="step-title">Cálculo do Loss</h3>
+                                <p class="step-description">Medir erro das predições</p>
+                            </div>
                         </div>
-                        <div class="training-step step-item" data-step="backward">
-                            <div class="step-indicator">3</div>
-                            <h3 class="font-semibold">Backward Pass</h3>
-                            <p class="text-sm opacity-75">Calcular gradientes</p>
+                        <div class="step-item" data-step="backward">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3 class="step-title">Backward Pass</h3>
+                                <p class="step-description">Calcular gradientes</p>
+                            </div>
                         </div>
-                        <div class="training-step step-item" data-step="optimize">
-                            <div class="step-indicator">4</div>
-                            <h3 class="font-semibold">Otimização</h3>
-                            <p class="text-sm opacity-75">Atualizar parâmetros</p>
+                        <div class="step-item" data-step="optimize">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3 class="step-title">Otimização</h3>
+                                <p class="step-description">Atualizar parâmetros</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -366,31 +406,36 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
             <!-- Visualização Principal -->
             <div class="lg:col-span-3 space-y-6">
                 <!-- Status do Treinamento -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Status do Treinamento</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📊</span>
+                            Status do Treinamento
+                        </h2>
+                    </div>
+                    <div class="metrics-grid">
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Época Atual</h3>
-                            <div id="currentEpoch" class="text-3xl font-bold text-blue-400">0</div>
+                            <div class="metric-label">Época Atual</div>
+                            <div id="currentEpoch" class="metric-value">0</div>
                         </div>
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Batch Atual</h3>
-                            <div id="currentBatch" class="text-3xl font-bold text-green-400">0</div>
+                            <div class="metric-label">Batch Atual</div>
+                            <div id="currentBatch" class="metric-value">0</div>
                         </div>
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Loss Atual</h3>
-                            <div id="currentLoss" class="text-3xl font-bold text-red-400">0.000</div>
+                            <div class="metric-label">Loss Atual</div>
+                            <div id="currentLoss" class="metric-value">0.000</div>
                         </div>
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Acurácia</h3>
-                            <div id="currentAccuracy" class="text-3xl font-bold text-purple-400">0%</div>
+                            <div class="metric-label">Acurácia</div>
+                            <div id="currentAccuracy" class="metric-value">0%</div>
                         </div>
                     </div>
                     
-                    <div class="mt-6">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium">Progresso da Época</span>
-                            <span id="epochProgress" class="text-sm opacity-75">0%</span>
+                    <div class="progress-section">
+                        <div class="progress-header">
+                            <span class="progress-label">Progresso da Época</span>
+                            <span id="epochProgress" class="progress-value">0%</span>
                         </div>
                         <div class="progress-bar">
                             <div id="epochProgressBar" class="progress-fill" style="width: 0%"></div>
@@ -399,17 +444,32 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                 </div>
                 
                 <!-- Batch Atual -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Batch Atual</h2>
-                    <div id="currentBatchData" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Sequências de Entrada</h3>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📦</span>
+                            Batch Atual
+                        </h2>
+                    </div>
+                    <div id="currentBatchData" class="grid-layout">
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">📝</span>
+                                    Sequências de Entrada
+                                </h3>
+                            </div>
                             <div id="batchSequences" class="space-y-2">
                                 <!-- Será preenchido dinamicamente -->
                             </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Targets Esperados</h3>
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">🎯</span>
+                                    Targets Esperados
+                                </h3>
+                            </div>
                             <div id="batchTargets" class="space-y-2">
                                 <!-- Será preenchido dinamicamente -->
                             </div>
@@ -418,22 +478,37 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                 </div>
                 
                 <!-- Visualização do Loss -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Função de Loss</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Equação</h3>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📉</span>
+                            Função de Loss
+                        </h2>
+                    </div>
+                    <div class="grid-layout">
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">🧮</span>
+                                    Equação
+                                </h3>
+                            </div>
                             <div id="lossEquation" class="equation">
                                 L = -∑ y_true * log(y_pred)
                             </div>
-                            <div class="loss-visualization mt-4">
-                                <div id="lossValue" class="text-2xl font-bold">Loss: 0.000</div>
-                                <div class="text-sm opacity-75 mt-2">Cross-Entropy Loss</div>
+                            <div class="visualization-container">
+                                <div id="lossValue" class="metric-value">Loss: 0.000</div>
+                                <div class="metric-description">Cross-Entropy Loss</div>
                             </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Curva de Aprendizado</h3>
-                            <div class="learning-curve">
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">📈</span>
+                                    Curva de Aprendizado
+                                </h3>
+                            </div>
+                            <div class="visualization-container">
                                 <canvas id="lossChart" width="400" height="200"></canvas>
                             </div>
                         </div>
@@ -441,11 +516,21 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                 </div>
                 
                 <!-- Gradientes e Otimização -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Gradientes e Otimização</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Backpropagation</h3>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚡</span>
+                            Gradientes e Otimização
+                        </h2>
+                    </div>
+                    <div class="grid-layout">
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">🔄</span>
+                                    Backpropagation
+                                </h3>
+                            </div>
                             <div class="space-y-2">
                                 <div class="gradient-flow">
                                     ∂L/∂W_output
@@ -458,32 +543,62 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                                 </div>
                             </div>
                             
-                            <div id="gradientInfo" class="mt-4 p-4 bg-white/10 rounded-lg">
-                                <h4 class="font-semibold mb-2">Informações dos Gradientes</h4>
-                                <div class="text-sm space-y-1">
-                                    <div>Norma do Gradiente: <span id="gradNorm" class="font-mono">0.000</span></div>
-                                    <div>Gradiente Máximo: <span id="gradMax" class="font-mono">0.000</span></div>
-                                    <div>Gradiente Mínimo: <span id="gradMin" class="font-mono">0.000</span></div>
+                            <div id="gradientInfo" class="glass-card">
+                                <div class="section-header">
+                                    <h4 class="section-subtitle">Informações dos Gradientes</h4>
+                                </div>
+                                <div class="metrics-grid">
+                                    <div class="metric-card">
+                                        <div class="metric-label">Norma do Gradiente</div>
+                                        <div id="gradNorm" class="metric-value">0.000</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-label">Gradiente Máximo</div>
+                                        <div id="gradMax" class="metric-value">0.000</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-label">Gradiente Mínimo</div>
+                                        <div id="gradMin" class="metric-value">0.000</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">Otimizador</h3>
-                            <div class="optimizer-visualization">
+                        <div class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-subtitle">
+                                    <span class="section-icon">🎯</span>
+                                    Otimizador
+                                </h3>
+                            </div>
+                            <div class="visualization-container">
                                 <div class="optimizer-point" id="optimizerPoint"></div>
                                 <div class="text-center">
-                                    <div class="text-lg font-semibold">Convergência</div>
-                                    <div class="text-sm opacity-75">Direção do gradiente</div>
+                                    <div class="metric-value">Convergência</div>
+                                    <div class="metric-description">Direção do gradiente</div>
                                 </div>
                             </div>
                             
-                            <div class="mt-4">
-                                <h4 class="font-semibold mb-2">Hiperparâmetros</h4>
-                                <div class="flex flex-wrap">
-                                    <div class="hyperparameter">LR: <span id="currentLR">3e-4</span></div>
-                                    <div class="hyperparameter">β₁: 0.9</div>
-                                    <div class="hyperparameter">β₂: 0.999</div>
-                                    <div class="hyperparameter">ε: 1e-8</div>
+                            <div class="glass-card">
+                                <div class="section-header">
+                                    <h4 class="section-subtitle">Hiperparâmetros</h4>
+                                </div>
+                                <div class="metrics-grid">
+                                    <div class="metric-card">
+                                        <div class="metric-label">LR</div>
+                                        <div id="currentLR" class="metric-value">3e-4</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-label">β₁</div>
+                                        <div class="metric-value">0.9</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-label">β₂</div>
+                                        <div class="metric-value">0.999</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-label">ε</div>
+                                        <div class="metric-value">1e-8</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -491,17 +606,27 @@ O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.
                 </div>
                 
                 <!-- Atualizações de Parâmetros -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Atualizações de Parâmetros</h2>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">🔄</span>
+                            Atualizações de Parâmetros
+                        </h2>
+                    </div>
                     <div id="parameterUpdates" class="space-y-2">
                         <!-- Será preenchido dinamicamente -->
                     </div>
                 </div>
                 
                 <!-- Log de Treinamento -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Log de Treinamento</h2>
-                    <div id="trainingLog" class="bg-black/30 p-4 rounded-lg h-40 overflow-y-auto font-mono text-sm">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📝</span>
+                            Log de Treinamento
+                        </h2>
+                    </div>
+                    <div id="trainingLog" class="code-block">
                         <div class="text-green-400">[INFO] Sistema de treinamento inicializado</div>
                         <div class="text-blue-400">[INFO] Aguardando início do treinamento...</div>
                     </div>

@@ -7,19 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/integration.js"></script>
     <script src="/js/inference-ui.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-system.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-            min-height: 100vh;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        /* Estilos específicos para inferência */
         .token {
             display: inline-block;
             padding: 4px 8px;
@@ -1319,60 +1309,71 @@
         }
     </style>
 </head>
-<body class="text-white">
+<body>
     <!-- Container de Notificações Toast -->
     <div id="toastContainer" class="toast-container"></div>
     
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8 relative">
+    <div class="container">
+        <header class="page-header">
             <!-- Botão de Voltar -->
-            <div class="absolute left-0 top-0">
-                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Voltar
-                </a>
-            </div>
+            <a href="index.html" class="back-button">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Voltar
+            </a>
             
-            <h1 class="text-4xl font-bold mb-2">Inferência com Modelos GPT</h1>
-            <p class="text-xl opacity-90">Explore como modelos treinados geram texto de forma interativa</p>
+            <h1 class="page-title">
+                <span class="page-icon">🧠</span>
+                Inferência com Modelos GPT
+            </h1>
+            <p class="page-subtitle">Explore como modelos treinados geram texto de forma interativa</p>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <main class="grid-layout">
             <!-- Painel de Controle -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Configurações de Inferência</h2>
+            <div class="control-panel">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚙️</span>
+                            Configurações de Inferência
+                        </h2>
+                    </div>
                     
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Prompt Inicial</label>
-                            <textarea id="promptInput" class="w-full h-20 bg-white/20 border border-white/30 rounded-lg p-3 text-white resize-none" placeholder="Digite o prompt inicial...">Era uma vez uma</textarea>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📝</span>
+                                Prompt Inicial
+                            </label>
+                            <textarea id="promptInput" class="form-input" style="height: 80px; resize: none;" placeholder="Digite o prompt inicial...">Era uma vez uma</textarea>
                         </div>
                         
                         <!-- Visualização de Tokenização -->
-                        <div id="tokenizationVisualization" class="bg-black/20 border border-white/20 rounded-lg p-4">
-                            <h3 class="text-lg font-semibold mb-3 flex items-center">
-                                <span class="mr-2">🔤</span>
-                                Tokenização do Prompt
-                            </h3>
+                        <div id="tokenizationVisualization" class="glass-card">
+                            <div class="section-header">
+                                <h3 class="section-title">
+                                    <span class="section-icon">🔤</span>
+                                    Tokenização do Prompt
+                                </h3>
+                            </div>
                             <div class="space-y-3">
-                                <div>
-                                    <label class="text-sm font-medium text-gray-300 mb-1 block">Texto Original:</label>
-                                    <div id="originalText" class="bg-gray-800/50 p-3 rounded-lg text-white font-mono text-sm">
-                                        Era uma vez uma
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-center py-2">
-                                    <div class="tokenization-arrow">
-                                        <span class="text-2xl">⬇️</span>
-                                        <span class="text-xs text-gray-400 ml-2">Tokenização</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-sm font-medium text-gray-300 mb-1 block">Tokens Gerados:</label>
-                                    <div id="tokenizedOutput" class="bg-gray-800/50 p-3 rounded-lg min-h-[60px] flex flex-wrap gap-2 items-start">
+                                 <div class="form-group">
+                                     <label class="form-label">Texto Original:</label>
+                                     <div id="originalText" class="code-block">
+                                         Era uma vez uma
+                                     </div>
+                                 </div>
+                                 <div class="flex items-center justify-center py-2">
+                                     <div class="tokenization-arrow">
+                                         <span class="text-2xl">⬇️</span>
+                                         <span class="text-xs text-gray-400 ml-2">Tokenização</span>
+                                     </div>
+                                 </div>
+                                 <div class="form-group">
+                                     <label class="form-label">Tokens Gerados:</label>
+                                     <div id="tokenizedOutput" class="token-container">
                                         <div class="token-item" data-token-id="0">
                                             <span class="token-text">Era</span>
                                             <span class="token-id">[1234]</span>
@@ -1394,38 +1395,56 @@
                             </div>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Máximo de Tokens</label>
-                            <input type="range" id="maxTokens" min="5" max="50" value="20" class="w-full">
-                            <span id="maxTokensValue" class="text-sm opacity-75">20 tokens</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🔢</span>
+                                Máximo de Tokens
+                            </label>
+                            <input type="range" id="maxTokens" min="5" max="50" value="20" class="form-range">
+                            <span id="maxTokensValue" class="range-value">20 tokens</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Temperatura</label>
-                            <input type="range" id="temperature" min="1" max="200" value="70" class="w-full">
-                            <span id="temperatureValue" class="text-sm opacity-75">0.7</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🌡️</span>
+                                Temperatura
+                            </label>
+                            <input type="range" id="temperature" min="1" max="200" value="70" class="form-range">
+                            <span id="temperatureValue" class="range-value">0.7</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Top-p (Nucleus)</label>
-                            <input type="range" id="topP" min="10" max="100" value="90" class="w-full">
-                            <span id="topPValue" class="text-sm opacity-75">0.9</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🎯</span>
+                                Top-p (Nucleus)
+                            </label>
+                            <input type="range" id="topP" min="10" max="100" value="90" class="form-range">
+                            <span id="topPValue" class="range-value">0.9</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Top-k</label>
-                            <input type="range" id="topK" min="1" max="100" value="50" class="w-full">
-                            <span id="topKValue" class="text-sm opacity-75">50</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🔝</span>
+                                Top-k
+                            </label>
+                            <input type="range" id="topK" min="1" max="100" value="50" class="form-range">
+                            <span id="topKValue" class="range-value">50</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Beam Width</label>
-                            <input type="range" id="beamWidth" min="1" max="8" value="3" class="w-full">
-                            <span id="beamWidthValue" class="text-sm opacity-75">3 beams</span>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">📡</span>
+                                Beam Width
+                            </label>
+                            <input type="range" id="beamWidth" min="1" max="8" value="3" class="form-range">
+                            <span id="beamWidthValue" class="range-value">3 beams</span>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Método de Sampling</label>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-icon">🎲</span>
+                                Método de Sampling
+                            </label>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="sampling-method active" data-method="greedy">
                                     <div class="font-semibold">Greedy</div>
@@ -1446,17 +1465,17 @@
                             </div>
                         </div>
                         
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="showProbabilities" class="mr-2" checked>
-                                <span class="text-sm font-medium">Mostrar Probabilidades</span>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showProbabilities" class="form-checkbox" checked>
+                                <span class="checkbox-text">Mostrar Probabilidades</span>
                             </label>
                         </div>
                         
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="showAttention" class="mr-2">
-                                <span class="text-sm font-medium">Visualizar Atenção</span>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showAttention" class="form-checkbox">
+                                <span class="checkbox-text">Visualizar Atenção</span>
                             </label>
                         </div>
                     </div>
@@ -1491,32 +1510,32 @@
                         <span class="flex-1">Status da geração...</span>
                     </div>
                     
-                    <button id="generateText" class="btn btn-primary w-full mt-6">
+                    <button id="generateText" class="btn btn-primary btn-full btn-icon">
                         <span id="generateTextLabel">🚀 Gerar Texto</span>
                         <div id="generateSpinner" class="spinner" style="display: none;"></div>
                     </button>
                     
-                    <button id="stepGenerate" class="btn btn-secondary w-full mt-2">
+                    <button id="stepGenerate" class="btn btn-secondary btn-full btn-icon">
                         <span id="stepGenerateLabel">👣 Gerar Passo a Passo</span>
                         <div id="stepSpinner" class="spinner" style="display: none;"></div>
                     </button>
                     
-                    <button id="resetGeneration" class="btn btn-outline w-full mt-2">
+                    <button id="resetGeneration" class="btn btn-outline btn-full btn-icon">
                         <span id="resetGenerationLabel">🔄 Resetar</span>
                     </button>
                     
-                    <button id="testNotifications" class="btn btn-secondary w-full mt-2">
+                    <button id="testNotifications" class="btn btn-secondary btn-full btn-icon">
                         <span id="testNotificationsLabel">🔔 Testar Notificações</span>
                     </button>
                     
-                    <button id="toggleSound" class="btn btn-outline w-full mt-2">
+                    <button id="toggleSound" class="btn btn-outline btn-full btn-icon">
                         <span id="toggleSoundLabel">🔇 Som Desativado</span>
                     </button>
                     
                     <!-- Progresso Detalhado -->
-                    <div id="detailedProgress" class="detailed-progress" style="display: none;">
-                        <div class="progress-header">
-                            <div class="progress-title">Gerando Texto</div>
+                    <div id="detailedProgress" class="glass-card" style="display: none;">
+                        <div class="section-header">
+                            <div class="section-title">Gerando Texto</div>
                             <div class="progress-percentage" id="detailedPercentage">0%</div>
                         </div>
                         <div class="progress-track">
@@ -1530,22 +1549,22 @@
                     
                     <!-- Badges de Estatísticas -->
                     <div class="stats-badges" id="statsBadges" style="display: none;">
-                        <div class="stat-badge success">
+                        <div class="badge badge-success">
                             <span class="badge-icon">✓</span>
                             <span id="successTokens">0 tokens</span>
                         </div>
-                        <div class="stat-badge" id="speedBadge">
+                        <div class="badge" id="speedBadge">
                             <span class="badge-icon">⚡</span>
                             <span id="speedValue">0 t/s</span>
                         </div>
-                        <div class="stat-badge" id="qualityBadge">
+                        <div class="badge" id="qualityBadge">
                             <span class="badge-icon">🎯</span>
                             <span id="qualityValue">--</span>
                         </div>
                     </div>
                     
                     <!-- Logs em Tempo Real -->
-                    <div id="realtimeLogs" class="realtime-logs" style="display: none;">
+                    <div id="realtimeLogs" class="glass-card" style="display: none;">
                         <div class="log-entry">
                             <span class="log-timestamp">00:00</span>
                             <span class="log-level info">INFO</span>
@@ -1554,50 +1573,52 @@
                     </div>
                     
                     <!-- Métricas de Geração -->
-                    <div class="metrics-grid grid grid-cols-3 gap-2 mt-4">
-                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
-                            <div class="metric-label text-xs text-gray-400 mb-1">Tokens</div>
-                            <div class="metric-value text-lg font-bold text-blue-400" id="tokensGenerated">0</div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Tokens</div>
+                            <div class="metric-value" id="tokensGenerated">0</div>
                         </div>
-                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
-                            <div class="metric-label text-xs text-gray-400 mb-1">Velocidade</div>
-                            <div class="metric-value text-lg font-bold text-green-400" id="generationSpeed">0.0</div>
+                        <div class="metric-card">
+                            <div class="metric-label">Velocidade</div>
+                            <div class="metric-value" id="generationSpeed">0.0</div>
                         </div>
-                        <div class="metric-card bg-black/20 p-3 rounded-lg text-center">
-                            <div class="metric-label text-xs text-gray-400 mb-1">Perplexidade</div>
-                            <div class="metric-value text-lg font-bold text-purple-400" id="perplexity">0.0</div>
+                        <div class="metric-card">
+                            <div class="metric-label">Perplexidade</div>
+                            <div class="metric-value" id="perplexity">0.0</div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Etapas da Inferência -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Etapas</h2>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">🔄 Etapas</h2>
+                    </div>
                     <div class="space-y-2">
-                        <div class="generation-step step-item" data-step="tokenize">
+                        <div class="step-item" data-step="tokenize">
                             <div class="step-number">1</div>
-                            <h3 class="font-semibold">Tokenização</h3>
-                            <p class="text-sm opacity-75">Converter texto em tokens</p>
+                            <h3 class="step-title">Tokenização</h3>
+                            <p class="step-description">Converter texto em tokens</p>
                         </div>
-                        <div class="generation-step step-item" data-step="embed">
+                        <div class="step-item" data-step="embed">
                             <div class="step-number">2</div>
-                            <h3 class="font-semibold">Embeddings</h3>
-                            <p class="text-sm opacity-75">Converter tokens em vetores</p>
+                            <h3 class="step-title">Embeddings</h3>
+                            <p class="step-description">Converter tokens em vetores</p>
                         </div>
-                        <div class="generation-step step-item" data-step="forward">
+                        <div class="step-item" data-step="forward">
                             <div class="step-number">3</div>
-                            <h3 class="font-semibold">Forward Pass</h3>
-                            <p class="text-sm opacity-75">Processar através do modelo</p>
+                            <h3 class="step-title">Forward Pass</h3>
+                            <p class="step-description">Processar através do modelo</p>
                         </div>
-                        <div class="generation-step step-item" data-step="sample">
+                        <div class="step-item" data-step="sample">
                             <div class="step-number">4</div>
-                            <h3 class="font-semibold">Sampling</h3>
-                            <p class="text-sm opacity-75">Escolher próximo token</p>
+                            <h3 class="step-title">Sampling</h3>
+                            <p class="step-description">Escolher próximo token</p>
                         </div>
-                        <div class="generation-step step-item" data-step="decode">
+                        <div class="step-item" data-step="decode">
                             <div class="step-number">5</div>
-                            <h3 class="font-semibold">Decodificação</h3>
-                            <p class="text-sm opacity-75">Converter token em texto</p>
+                            <h3 class="step-title">Decodificação</h3>
+                            <p class="step-description">Converter token em texto</p>
                         </div>
                     </div>
                 </div>
@@ -1606,107 +1627,108 @@
             <!-- Visualização Principal -->
             <div class="lg:col-span-3 space-y-6">
                 <!-- Texto Gerado -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Texto Gerado</h2>
-                    <div id="generatedText" class="min-h-20 p-4 bg-black/30 rounded-lg text-lg leading-relaxed">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">📝 Texto Gerado</h2>
+                    </div>
+                    <div id="generatedText" class="code-block">
                         <span class="text-gray-400">O texto gerado aparecerá aqui...</span>
                     </div>
                     
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="metrics-grid">
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Tokens Gerados</h3>
-                            <div id="tokensGenerated" class="text-3xl font-bold text-blue-400">0</div>
+                            <div class="metric-label">Tokens Gerados</div>
+                            <div class="metric-value" id="tokensGeneratedDisplay">0</div>
                         </div>
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Velocidade</h3>
-                            <div id="generationSpeed" class="text-3xl font-bold text-green-400">0</div>
-                            <div class="text-sm opacity-75">tokens/s</div>
+                            <div class="metric-label">Velocidade</div>
+                            <div class="metric-value" id="generationSpeedDisplay">0</div>
+                            <div class="metric-unit">tokens/s</div>
                         </div>
                         <div class="metric-card">
-                            <h3 class="text-lg font-semibold mb-2">Perplexidade</h3>
-                            <div id="perplexity" class="text-3xl font-bold text-purple-400">0.0</div>
+                            <div class="metric-label">Perplexidade</div>
+                            <div class="metric-value" id="perplexityDisplay">0.0</div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Visualização do Fluxo de Inferência -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4 flex items-center">
-                        <span class="mr-2">🔄</span>
-                        Fluxo de Inferência
-                    </h2>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">🔄 Fluxo de Inferência</h2>
+                    </div>
                     <div id="inferenceFlow" class="inference-flow space-y-4">
                         <!-- Etapa 1: Tokenização -->
-                        <div class="flow-step" data-step="tokenize">
-                            <div class="flow-step-icon">🔤</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">1. Tokenização</h3>
-                                <p class="text-sm text-gray-400 mb-2">Convertendo texto em tokens...</p>
+                        <div class="step-item" data-step="tokenize">
+                            <div class="step-icon">🔤</div>
+                            <div class="step-content">
+                                <h3 class="step-title">1. Tokenização</h3>
+                                <p class="step-description">Convertendo texto em tokens...</p>
                                 <div class="flow-tokens" id="tokenizeTokens">
                                     <!-- Tokens serão adicionados dinamicamente -->
                                 </div>
                             </div>
-                            <div class="flow-connection"></div>
+                            <div class="step-connector"></div>
                         </div>
                         
                         <!-- Etapa 2: Embeddings -->
-                        <div class="flow-step" data-step="embed">
-                            <div class="flow-step-icon">📊</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">2. Embeddings</h3>
-                                <p class="text-sm text-gray-400 mb-2">Convertendo tokens em vetores...</p>
+                        <div class="step-item" data-step="embed">
+                            <div class="step-icon">📊</div>
+                            <div class="step-content">
+                                <h3 class="step-title">2. Embeddings</h3>
+                                <p class="step-description">Convertendo tokens em vetores...</p>
                                 <div class="flow-tokens" id="embedTokens">
                                     <!-- Vetores serão representados aqui -->
                                 </div>
                             </div>
-                            <div class="flow-connection"></div>
+                            <div class="step-connector"></div>
                         </div>
                         
                         <!-- Etapa 3: Attention -->
-                        <div class="flow-step" data-step="attention">
-                            <div class="flow-step-icon">👁️</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">3. Mecanismo de Atenção</h3>
-                                <p class="text-sm text-gray-400 mb-2">Calculando relações entre tokens...</p>
+                        <div class="step-item" data-step="attention">
+                            <div class="step-icon">👁️</div>
+                            <div class="step-content">
+                                <h3 class="step-title">3. Mecanismo de Atenção</h3>
+                                <p class="step-description">Calculando relações entre tokens...</p>
                                 <div class="flow-tokens" id="attentionTokens">
                                     <!-- Pesos de atenção serão mostrados aqui -->
                                 </div>
                             </div>
-                            <div class="flow-connection"></div>
+                            <div class="step-connector"></div>
                         </div>
                         
                         <!-- Etapa 4: Forward Pass -->
-                        <div class="flow-step" data-step="forward">
-                            <div class="flow-step-icon">⚡</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">4. Forward Pass</h3>
-                                <p class="text-sm text-gray-400 mb-2">Processando através das camadas...</p>
+                        <div class="step-item" data-step="forward">
+                            <div class="step-icon">⚡</div>
+                            <div class="step-content">
+                                <h3 class="step-title">4. Forward Pass</h3>
+                                <p class="step-description">Processando através das camadas...</p>
                                 <div class="flow-tokens" id="forwardTokens">
                                     <!-- Representação do processamento -->
                                 </div>
                             </div>
-                            <div class="flow-connection"></div>
+                            <div class="step-connector"></div>
                         </div>
                         
                         <!-- Etapa 5: Sampling -->
-                        <div class="flow-step" data-step="sample">
-                            <div class="flow-step-icon">🎲</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">5. Sampling</h3>
-                                <p class="text-sm text-gray-400 mb-2">Escolhendo o próximo token...</p>
+                        <div class="step-item" data-step="sample">
+                            <div class="step-icon">🎲</div>
+                            <div class="step-content">
+                                <h3 class="step-title">5. Sampling</h3>
+                                <p class="step-description">Escolhendo o próximo token...</p>
                                 <div class="flow-tokens" id="sampleTokens">
                                     <!-- Candidatos e probabilidades -->
                                 </div>
                             </div>
-                            <div class="flow-connection"></div>
+                            <div class="step-connector"></div>
                         </div>
                         
                         <!-- Etapa 6: Decodificação -->
-                        <div class="flow-step" data-step="decode">
-                            <div class="flow-step-icon">📝</div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-lg">6. Decodificação</h3>
-                                <p class="text-sm text-gray-400 mb-2">Convertendo token em texto...</p>
+                        <div class="step-item" data-step="decode">
+                            <div class="step-icon">📝</div>
+                            <div class="step-content">
+                                <h3 class="step-title">6. Decodificação</h3>
+                                <p class="step-description">Convertendo token em texto...</p>
                                 <div class="flow-tokens" id="decodeTokens">
                                     <!-- Texto final -->
                                 </div>
@@ -1716,34 +1738,40 @@
                 </div>
                 
                 <!-- Probabilidades dos Tokens -->
-                <div class="glass-effect p-6 rounded-2xl" id="probabilitiesSection">
-                    <h2 class="text-2xl font-semibold mb-4">Probabilidades dos Próximos Tokens</h2>
+                <div class="glass-card" id="probabilitiesSection">
+                    <div class="section-header">
+                        <h2 class="section-title">📊 Probabilidades dos Próximos Tokens</h2>
+                    </div>
                     <div id="tokenProbabilities" class="space-y-2">
                         <!-- Será preenchido dinamicamente -->
                     </div>
                 </div>
                 
                 <!-- Beam Search -->
-                <div class="glass-effect p-6 rounded-2xl" id="beamSearchSection" style="display: none;">
-                    <h2 class="text-2xl font-semibold mb-4">Beam Search</h2>
+                <div class="glass-card" id="beamSearchSection" style="display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">🔍 Beam Search</h2>
+                    </div>
                     <div id="beamCandidates" class="space-y-2">
                         <!-- Será preenchido dinamicamente -->
                     </div>
                 </div>
                 
                 <!-- Visualização de Atenção -->
-                <div class="glass-effect p-6 rounded-2xl" id="attentionSection" style="display: none;">
-                    <h2 class="text-2xl font-semibold mb-4">Mapa de Atenção</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card" id="attentionSection" style="display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">👁️ Mapa de Atenção</h2>
+                    </div>
+                    <div class="grid-layout">
                         <div>
-                            <h3 class="text-lg font-semibold mb-2">Cabeças de Atenção</h3>
+                            <h3 class="section-subtitle">Cabeças de Atenção</h3>
                             <div id="attentionHeads" class="grid grid-cols-4 gap-2">
                                 <!-- Será preenchido dinamicamente -->
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold mb-2">Matriz de Atenção</h3>
-                            <div id="attentionMatrix" class="bg-black/30 p-4 rounded-lg">
+                            <h3 class="section-subtitle">Matriz de Atenção</h3>
+                            <div id="attentionMatrix" class="visualization-container">
                                 <canvas id="attentionCanvas" width="300" height="300"></canvas>
                             </div>
                         </div>
@@ -1751,17 +1779,19 @@
                 </div>
                 
                 <!-- Logits e Softmax -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Logits e Softmax</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">📈 Logits e Softmax</h2>
+                    </div>
+                    <div class="grid-layout">
                         <div>
-                            <h3 class="text-lg font-semibold mb-2">Logits Brutos</h3>
+                            <h3 class="section-subtitle">Logits Brutos</h3>
                             <div id="rawLogits" class="space-y-2">
                                 <!-- Será preenchido dinamicamente -->
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold mb-2">Após Softmax</h3>
+                            <h3 class="section-subtitle">Após Softmax</h3>
                             <div id="softmaxProbs" class="space-y-2">
                                 <!-- Será preenchido dinamicamente -->
                             </div>
@@ -1769,33 +1799,32 @@
                     </div>
                     
                     <div class="mt-6">
-                        <h3 class="text-lg font-semibold mb-2">Efeito da Temperatura</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="text-center">
-                                <div class="text-sm font-medium mb-2">Baixa (0.1)</div>
-                                <div class="inference-visualization">
+                        <h3 class="section-subtitle">Efeito da Temperatura</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card text-center">
+                                <div class="metric-label">Baixa (0.1)</div>
+                                <div class="visualization-container">
                                     <div class="text-center">
-                                        <div class="text-lg font-semibold">Determinístico</div>
-                                        <div class="text-sm opacity-75">Sempre o mesmo</div>
+                                        <div class="metric-value">Determinístico</div>
+                                        <div class="metric-description">Sempre o mesmo</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-center">
-                                <div class="text-sm font-medium mb-2">Média (1.0)</div>
-                                <div class="inference-visualization">
-                                    <div class="inference-point"></div>
+                            <div class="metric-card text-center">
+                                <div class="metric-label">Média (1.0)</div>
+                                <div class="visualization-container">
                                     <div class="text-center">
-                                        <div class="text-lg font-semibold">Balanceado</div>
-                                        <div class="text-sm opacity-75">Criativo e coerente</div>
+                                        <div class="metric-value">Balanceado</div>
+                                        <div class="metric-description">Criativo e coerente</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-center">
-                                <div class="text-sm font-medium mb-2">Alta (2.0)</div>
-                                <div class="inference-visualization">
+                            <div class="metric-card text-center">
+                                <div class="metric-label">Alta (2.0)</div>
+                                <div class="visualization-container">
                                     <div class="text-center">
-                                        <div class="text-lg font-semibold">Criativo</div>
-                                        <div class="text-sm opacity-75">Mais aleatório</div>
+                                        <div class="metric-value">Criativo</div>
+                                        <div class="metric-description">Mais aleatório</div>
                                     </div>
                                 </div>
                             </div>
@@ -1804,9 +1833,11 @@
                 </div>
                 
                 <!-- Log de Geração -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Log de Geração</h2>
-                    <div id="generationLog" class="bg-black/30 p-4 rounded-lg h-40 overflow-y-auto font-mono text-sm">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">📝 Log de Geração</h2>
+                    </div>
+                    <div id="generationLog" class="code-block h-40 overflow-y-auto">
                         <div class="text-green-400">[INFO] Sistema de inferência inicializado</div>
                         <div class="text-blue-400">[INFO] Aguardando prompt para geração...</div>
                     </div>

@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer Avançado - Arquitetura Completa</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <style>
+        .advanced-transformer-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .architecture-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .architecture-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .transformer-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+            background: var(--surface-color);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid var(--border-color);
+        }
+        
+        .transformer-layer {
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .transformer-layer:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: var(--primary-dark);
+        }
+        
+        .transformer-layer.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .layer-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .layer-description {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .layer-number {
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .data-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .flow-step {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .flow-step:hover {
+            border-color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .flow-step.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        
+        .flow-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--surface-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        
+        .flow-step.active .flow-icon {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .flow-content {
+            flex: 1;
+        }
+        
+        .flow-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .flow-desc {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .control-panel {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .control-group {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .value-display {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: var(--surface-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .model-button {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .model-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .model-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        
+        .metrics-dashboard {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2.2em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .metric-change {
+            font-size: 0.8em;
+            margin-top: 5px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .metric-change.positive {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+        
+        .metric-change.negative {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .visualization-canvas {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 20px 0;
+            width: 100%;
+        }
+        
+        .comparison-section {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .comparison-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .action-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .action-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .action-button.secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.secondary:hover {
+            background: #ccc;
+        }
+        
+        .mathematical-details {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .math-title {
+            color: #388e3c;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+        }
+        
+        .formula-box {
+            background: white;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .architecture-diagram {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .diagram-layer {
+            background: var(--surface-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .diagram-layer:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.02);
+        }
+        
+        .layer-connections {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        
+        .connection-arrow {
+            font-size: 1.5em;
+            color: var(--primary-color);
+            margin: 0 10px;
+        }
+        
+        .performance-chart {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .architecture-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .model-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="advanced-transformer-container">
+        <header class="hero-section">
+            <h1>🏗️ Transformer Avançado - Arquitetura Completa</h1>
+            <p class="hero-description">
+                Explore a arquitetura completa do Transformer com visualizações interativas detalhadas, 
+                comparações entre diferentes configurações e análise de performance em tempo real.
+            </p>
+        </header>
+
+        <section class="control-panel">
+            <h2>🎛️ Configuração do Modelo</h2>
+            
+            <div class="model-selector">
+                <button class="model-button active" onclick="setModelConfig('gpt2-small')">📱 GPT-2 Small</button>
+                <button class="model-button" onclick="setModelConfig('gpt2-medium')">💻 GPT-2 Medium</button>
+                <button class="model-button" onclick="setModelConfig('gpt2-large')">🖥️ GPT-2 Large</button>
+                <button class="model-button" onclick="setModelConfig('custom')">⚙️ Custom</button>
+            </div>
+            
+            <div class="control-grid">
+                <div class="control-group">
+                    <label>Número de Camadas: <span id="layers-value">12</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="layers-slider" class="slider" min="6" max="48" step="6" value="12">
+                        <div class="value-display" id="layers-display">12</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Dimensão do Modelo: <span id="model-dim-value">768</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="model-dim-slider" class="slider" min="256" max="2048" step="256" value="768">
+                        <div class="value-display" id="model-dim-display">768</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Cabeças de Atenção: <span id="heads-value">12</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="heads-slider" class="slider" min="4" max="32" step="4" value="12">
+                        <div class="value-display" id="heads-display">12</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Tamanho do Vocabulário: <span id="vocab-value">50257</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="vocab-slider" class="slider" min="10000" max="100000" step="10000" value="50257">
+                        <div class="value-display" id="vocab-display">50K</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="action-button" onclick="animateDataFlow()">▶️ Animar Fluxo</button>
+            <button class="action-button" onclick="compareModels()">⚖️ Comparar Modelos</button>
+            <button class="action-button secondary" onclick="resetConfiguration()">↩️ Reset</button>
+        </section>
+
+        <section class="architecture-grid">
+            <div class="architecture-panel">
+                <div class="panel-title">
+                    🏗️ Arquitetura do Modelo
+                </div>
+                
+                <div class="transformer-stack" id="transformer-stack">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+                
+                <div class="architecture-diagram">
+                    <div class="diagram-layer" onclick="highlightComponent('embedding')">
+                        📝 Token + Position Embeddings
+                    </div>
+                    <div class="layer-connections">
+                        <span class="connection-arrow">↓</span>
+                    </div>
+                    <div class="diagram-layer" onclick="highlightComponent('transformer-blocks')">
+                        🔄 Transformer Blocks (×N)
+                    </div>
+                    <div class="layer-connections">
+                        <span class="connection-arrow">↓</span>
+                    </div>
+                    <div class="diagram-layer" onclick="highlightComponent('layer-norm')">
+                        📊 Final Layer Norm
+                    </div>
+                    <div class="layer-connections">
+                        <span class="connection-arrow">↓</span>
+                    </div>
+                    <div class="diagram-layer" onclick="highlightComponent('output')">
+                        🎯 Output Projection
+                    </div>
+                </div>
+            </div>
+            
+            <div class="architecture-panel">
+                <div class="panel-title">
+                    🔄 Fluxo de Dados
+                </div>
+                
+                <div class="data-flow" id="data-flow">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+                
+                <canvas id="flow-visualization" class="visualization-canvas" width="400" height="300"></canvas>
+            </div>
+        </section>
+
+        <section class="metrics-dashboard">
+            <h2>📊 Métricas do Modelo</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="parameters-count">117M</div>
+                    <div class="metric-label">Parâmetros</div>
+                    <div class="metric-change positive" id="params-change">+0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="memory-usage">468MB</div>
+                    <div class="metric-label">Memória (FP32)</div>
+                    <div class="metric-change positive" id="memory-change">+0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="flops-count">2.3B</div>
+                    <div class="metric-label">FLOPs/Token</div>
+                    <div class="metric-change positive" id="flops-change">+0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="context-length">1024</div>
+                    <div class="metric-label">Contexto Máximo</div>
+                    <div class="metric-change positive" id="context-change">+0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="attention-heads">12</div>
+                    <div class="metric-label">Cabeças Atenção</div>
+                    <div class="metric-change positive" id="heads-change">+0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="layers-count">12</div>
+                    <div class="metric-label">Camadas</div>
+                    <div class="metric-change positive" id="layers-change">+0%</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="comparison-section">
+            <h2>⚖️ Comparação de Modelos</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-title">📱 GPT-2 Small (117M)</div>
+                    <ul>
+                        <li><strong>Camadas:</strong> 12</li>
+                        <li><strong>Dimensão:</strong> 768</li>
+                        <li><strong>Cabeças:</strong> 12</li>
+                        <li><strong>Contexto:</strong> 1024</li>
+                        <li><strong>Memória:</strong> ~468MB</li>
+                        <li><strong>Velocidade:</strong> Rápida</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">💻 GPT-2 Medium (345M)</div>
+                    <ul>
+                        <li><strong>Camadas:</strong> 24</li>
+                        <li><strong>Dimensão:</strong> 1024</li>
+                        <li><strong>Cabeças:</strong> 16</li>
+                        <li><strong>Contexto:</strong> 1024</li>
+                        <li><strong>Memória:</strong> ~1.4GB</li>
+                        <li><strong>Velocidade:</strong> Moderada</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🖥️ GPT-2 Large (774M)</div>
+                    <ul>
+                        <li><strong>Camadas:</strong> 36</li>
+                        <li><strong>Dimensão:</strong> 1280</li>
+                        <li><strong>Cabeças:</strong> 20</li>
+                        <li><strong>Contexto:</strong> 1024</li>
+                        <li><strong>Memória:</strong> ~3.1GB</li>
+                        <li><strong>Velocidade:</strong> Lenta</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="performance-chart">
+            <h2>📈 Performance vs Tamanho</h2>
+            <canvas id="performance-chart" class="visualization-canvas" width="800" height="400"></canvas>
+        </section>
+
+        <section class="mathematical-details">
+            <div class="math-title">
+                🧮 Detalhes Matemáticos
+            </div>
+            
+            <h3>Arquitetura Transformer</h3>
+            
+            <div class="formula-box">
+                <strong>Transformer Block:</strong><br>
+                x' = LayerNorm(x + MultiHeadAttention(x))<br>
+                y = LayerNorm(x' + FeedForward(x'))
+            </div>
+            
+            <div class="formula-box">
+                <strong>Contagem de Parâmetros:</strong><br>
+                Embedding: vocab_size × d_model<br>
+                Attention: 4 × d_model² × num_layers<br>
+                FFN: 8 × d_model² × num_layers<br>
+                Total ≈ vocab_size × d_model + 12 × d_model² × num_layers
+            </div>
+            
+            <div class="formula-box">
+                <strong>Complexidade Computacional:</strong><br>
+                Attention: O(n² × d + n × d²)<br>
+                FFN: O(n × d²)<br>
+                Total por camada: O(n² × d + n × d²)
+            </div>
+            
+            <h3>Escalabilidade</h3>
+            <ul>
+                <li><strong>Parâmetros:</strong> Escalam quadraticamente com d_model</li>
+                <li><strong>Memória:</strong> Linear com número de parâmetros</li>
+                <li><strong>Computação:</strong> Quadrática com comprimento da sequência</li>
+                <li><strong>Qualidade:</strong> Melhora com escala (scaling laws)</li>
+            </ul>
+        </section>
+
+        <section class="implementation-details">
+            <h2>💻 Implementação em Rust</h2>
+            
+            <div class="mathematical-details">
+                <div class="math-title">
+                    🦀 Código Rust
+                </div>
+                
+                <div class="formula-box" style="text-align: left; font-family: 'Courier New', monospace;">
+                    <strong>struct TransformerConfig {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;vocab_size: usize,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;n_positions: usize,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;n_embd: usize,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;n_layer: usize,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;n_head: usize,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;n_inner: Option&lt;usize&gt;,<br>
+                    <strong>}</strong><br><br>
+                    
+                    <strong>impl TransformerConfig {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;fn gpt2_small() -> Self {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vocab_size: 50257,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n_positions: 1024,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n_embd: 768,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n_layer: 12,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n_head: 12,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n_inner: Some(3072),<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    <strong>}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentConfig = {
+            layers: 12,
+            modelDim: 768,
+            heads: 12,
+            vocabSize: 50257,
+            contextLength: 1024
+        };
+        
+        let animationRunning = false;
+        
+        // Configurações predefinidas
+        const modelConfigs = {
+            'gpt2-small': { layers: 12, modelDim: 768, heads: 12, vocabSize: 50257 },
+            'gpt2-medium': { layers: 24, modelDim: 1024, heads: 16, vocabSize: 50257 },
+            'gpt2-large': { layers: 36, modelDim: 1280, heads: 20, vocabSize: 50257 },
+            'custom': { layers: 12, modelDim: 768, heads: 12, vocabSize: 50257 }
+        };
+        
+        // Elementos DOM
+        const layersSlider = document.getElementById('layers-slider');
+        const modelDimSlider = document.getElementById('model-dim-slider');
+        const headsSlider = document.getElementById('heads-slider');
+        const vocabSlider = document.getElementById('vocab-slider');
+        const flowCanvas = document.getElementById('flow-visualization');
+        const performanceCanvas = document.getElementById('performance-chart');
+        const flowCtx = flowCanvas.getContext('2d');
+        const perfCtx = performanceCanvas.getContext('2d');
+        
+        // Event listeners
+        layersSlider.addEventListener('input', (e) => {
+            currentConfig.layers = parseInt(e.target.value);
+            document.getElementById('layers-display').textContent = currentConfig.layers;
+            updateVisualization();
+        });
+        
+        modelDimSlider.addEventListener('input', (e) => {
+            currentConfig.modelDim = parseInt(e.target.value);
+            document.getElementById('model-dim-display').textContent = currentConfig.modelDim;
+            updateVisualization();
+        });
+        
+        headsSlider.addEventListener('input', (e) => {
+            currentConfig.heads = parseInt(e.target.value);
+            document.getElementById('heads-display').textContent = currentConfig.heads;
+            updateVisualization();
+        });
+        
+        vocabSlider.addEventListener('input', (e) => {
+            currentConfig.vocabSize = parseInt(e.target.value);
+            const display = e.target.value >= 50000 ? `${Math.round(e.target.value/1000)}K` : e.target.value;
+            document.getElementById('vocab-display').textContent = display;
+            updateVisualization();
+        });
+        
+        function setModelConfig(modelType) {
+            const config = modelConfigs[modelType];
+            currentConfig = { ...config, contextLength: 1024 };
+            
+            // Atualizar sliders
+            layersSlider.value = config.layers;
+            modelDimSlider.value = config.modelDim;
+            headsSlider.value = config.heads;
+            vocabSlider.value = config.vocabSize;
+            
+            // Atualizar displays
+            document.getElementById('layers-display').textContent = config.layers;
+            document.getElementById('model-dim-display').textContent = config.modelDim;
+            document.getElementById('heads-display').textContent = config.heads;
+            const vocabDisplay = config.vocabSize >= 50000 ? `${Math.round(config.vocabSize/1000)}K` : config.vocabSize;
+            document.getElementById('vocab-display').textContent = vocabDisplay;
+            
+            // Atualizar botões
+            document.querySelectorAll('.model-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateVisualization();
+        }
+        
+        function updateVisualization() {
+            updateTransformerStack();
+            updateDataFlow();
+            updateMetrics();
+            updateFlowVisualization();
+            updatePerformanceChart();
+        }
+        
+        function updateTransformerStack() {
+            const container = document.getElementById('transformer-stack');
+            container.innerHTML = '';
+            
+            // Embedding layer
+            const embeddingLayer = document.createElement('div');
+            embeddingLayer.className = 'transformer-layer';
+            embeddingLayer.innerHTML = `
+                <div class="layer-title">
+                    📝 Token + Position Embeddings
+                    <div class="layer-number">0</div>
+                </div>
+                <div class="layer-description">Converte tokens em vetores de dimensão ${currentConfig.modelDim}</div>
+            `;
+            embeddingLayer.addEventListener('click', () => highlightLayer(embeddingLayer));
+            container.appendChild(embeddingLayer);
+            
+            // Transformer blocks
+            for (let i = 1; i <= currentConfig.layers; i++) {
+                const layer = document.createElement('div');
+                layer.className = 'transformer-layer';
+                layer.innerHTML = `
+                    <div class="layer-title">
+                        🔄 Transformer Block ${i}
+                        <div class="layer-number">${i}</div>
+                    </div>
+                    <div class="layer-description">
+                        Multi-Head Attention (${currentConfig.heads} heads) + Feed-Forward
+                    </div>
+                `;
+                layer.addEventListener('click', () => highlightLayer(layer));
+                container.appendChild(layer);
+            }
+            
+            // Output layer
+            const outputLayer = document.createElement('div');
+            outputLayer.className = 'transformer-layer';
+            outputLayer.innerHTML = `
+                <div class="layer-title">
+                    🎯 Output Projection
+                    <div class="layer-number">${currentConfig.layers + 1}</div>
+                </div>
+                <div class="layer-description">Projeta para vocabulário (${currentConfig.vocabSize} tokens)</div>
+            `;
+            outputLayer.addEventListener('click', () => highlightLayer(outputLayer));
+            container.appendChild(outputLayer);
+        }
+        
+        function updateDataFlow() {
+            const container = document.getElementById('data-flow');
+            container.innerHTML = '';
+            
+            const flowSteps = [
+                { icon: '📝', title: 'Tokenização', desc: 'Texto → IDs de tokens' },
+                { icon: '🔢', title: 'Embeddings', desc: `Tokens → Vetores ${currentConfig.modelDim}D` },
+                { icon: '📍', title: 'Posição', desc: 'Adiciona informação posicional' },
+                { icon: '🧠', title: 'Atenção', desc: `${currentConfig.heads} cabeças paralelas` },
+                { icon: '⚡', title: 'Feed-Forward', desc: `${currentConfig.modelDim} → ${currentConfig.modelDim * 4} → ${currentConfig.modelDim}` },
+                { icon: '🔄', title: 'Repetir', desc: `${currentConfig.layers} camadas` },
+                { icon: '📊', title: 'Normalização', desc: 'Layer norm final' },
+                { icon: '🎯', title: 'Projeção', desc: `→ ${currentConfig.vocabSize} logits` }
+            ];
+            
+            flowSteps.forEach((step, index) => {
+                const stepElement = document.createElement('div');
+                stepElement.className = 'flow-step';
+                stepElement.innerHTML = `
+                    <div class="flow-icon">${step.icon}</div>
+                    <div class="flow-content">
+                        <div class="flow-title">${step.title}</div>
+                        <div class="flow-desc">${step.desc}</div>
+                    </div>
+                `;
+                stepElement.addEventListener('click', () => highlightFlowStep(stepElement, index));
+                container.appendChild(stepElement);
+            });
+        }
+        
+        function updateMetrics() {
+            // Calcular parâmetros
+            const embeddingParams = currentConfig.vocabSize * currentConfig.modelDim;
+            const attentionParams = 4 * currentConfig.modelDim * currentConfig.modelDim * currentConfig.layers;
+            const ffnParams = 8 * currentConfig.modelDim * currentConfig.modelDim * currentConfig.layers;
+            const totalParams = embeddingParams + attentionParams + ffnParams;
+            
+            // Calcular memória (FP32)
+            const memoryMB = (totalParams * 4) / (1024 * 1024);
+            
+            // Calcular FLOPs por token
+            const attentionFlops = 2 * currentConfig.contextLength * currentConfig.modelDim * currentConfig.modelDim * currentConfig.layers;
+            const ffnFlops = 2 * currentConfig.contextLength * currentConfig.modelDim * currentConfig.modelDim * 4 * currentConfig.layers;
+            const totalFlops = attentionFlops + ffnFlops;
+            
+            // Atualizar displays
+            document.getElementById('parameters-count').textContent = formatNumber(totalParams);
+            document.getElementById('memory-usage').textContent = `${Math.round(memoryMB)}MB`;
+            document.getElementById('flops-count').textContent = formatNumber(totalFlops);
+            document.getElementById('context-length').textContent = currentConfig.contextLength;
+            document.getElementById('attention-heads').textContent = currentConfig.heads;
+            document.getElementById('layers-count').textContent = currentConfig.layers;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1e9) {
+                return `${(num / 1e9).toFixed(1)}B`;
+            } else if (num >= 1e6) {
+                return `${(num / 1e6).toFixed(1)}M`;
+            } else if (num >= 1e3) {
+                return `${(num / 1e3).toFixed(1)}K`;
+            }
+            return num.toString();
+        }
+        
+        function updateFlowVisualization() {
+            flowCtx.clearRect(0, 0, flowCanvas.width, flowCanvas.height);
+            
+            const width = flowCanvas.width;
+            const height = flowCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Desenhar arquitetura simplificada
+            const layerHeight = 30;
+            const layerSpacing = 20;
+            const totalHeight = (currentConfig.layers + 2) * (layerHeight + layerSpacing);
+            const startY = centerY - totalHeight / 2;
+            
+            // Embedding
+            flowCtx.fillStyle = '#e3f2fd';
+            flowCtx.fillRect(centerX - 100, startY, 200, layerHeight);
+            flowCtx.fillStyle = '#1976d2';
+            flowCtx.font = '12px Arial';
+            flowCtx.textAlign = 'center';
+            flowCtx.fillText('Embeddings', centerX, startY + layerHeight/2 + 4);
+            
+            // Transformer layers
+            for (let i = 0; i < currentConfig.layers; i++) {
+                const y = startY + (i + 1) * (layerHeight + layerSpacing);
+                flowCtx.fillStyle = '#f3e5f5';
+                flowCtx.fillRect(centerX - 100, y, 200, layerHeight);
+                flowCtx.fillStyle = '#7b1fa2';
+                flowCtx.fillText(`Layer ${i + 1}`, centerX, y + layerHeight/2 + 4);
+                
+                // Setas
+                flowCtx.strokeStyle = '#666';
+                flowCtx.lineWidth = 2;
+                flowCtx.beginPath();
+                flowCtx.moveTo(centerX, y - layerSpacing/2);
+                flowCtx.lineTo(centerX, y);
+                flowCtx.stroke();
+                
+                // Ponta da seta
+                flowCtx.beginPath();
+                flowCtx.moveTo(centerX - 5, y - 5);
+                flowCtx.lineTo(centerX, y);
+                flowCtx.lineTo(centerX + 5, y - 5);
+                flowCtx.stroke();
+            }
+            
+            // Output
+            const outputY = startY + (currentConfig.layers + 1) * (layerHeight + layerSpacing);
+            flowCtx.fillStyle = '#e8f5e8';
+            flowCtx.fillRect(centerX - 100, outputY, 200, layerHeight);
+            flowCtx.fillStyle = '#388e3c';
+            flowCtx.fillText('Output', centerX, outputY + layerHeight/2 + 4);
+            
+            // Última seta
+            flowCtx.strokeStyle = '#666';
+            flowCtx.beginPath();
+            flowCtx.moveTo(centerX, outputY - layerSpacing/2);
+            flowCtx.lineTo(centerX, outputY);
+            flowCtx.stroke();
+            flowCtx.beginPath();
+            flowCtx.moveTo(centerX - 5, outputY - 5);
+            flowCtx.lineTo(centerX, outputY);
+            flowCtx.lineTo(centerX + 5, outputY - 5);
+            flowCtx.stroke();
+        }
+        
+        function updatePerformanceChart() {
+            perfCtx.clearRect(0, 0, performanceCanvas.width, performanceCanvas.height);
+            
+            const width = performanceCanvas.width;
+            const height = performanceCanvas.height;
+            const margin = 60;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Dados dos modelos
+            const models = [
+                { name: 'GPT-2 Small', params: 117, performance: 65, x: 117 },
+                { name: 'GPT-2 Medium', params: 345, performance: 75, x: 345 },
+                { name: 'GPT-2 Large', params: 774, performance: 82, x: 774 },
+                { name: 'GPT-2 XL', params: 1558, performance: 87, x: 1558 }
+            ];
+            
+            const maxParams = Math.max(...models.map(m => m.x));
+            const maxPerf = Math.max(...models.map(m => m.performance));
+            
+            // Eixos
+            perfCtx.strokeStyle = '#333';
+            perfCtx.lineWidth = 2;
+            perfCtx.beginPath();
+            perfCtx.moveTo(margin, margin + chartHeight);
+            perfCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            perfCtx.moveTo(margin, margin);
+            perfCtx.lineTo(margin, margin + chartHeight);
+            perfCtx.stroke();
+            
+            // Labels dos eixos
+            perfCtx.fillStyle = '#333';
+            perfCtx.font = '14px Arial';
+            perfCtx.textAlign = 'center';
+            perfCtx.fillText('Parâmetros (M)', margin + chartWidth/2, height - 20);
+            
+            perfCtx.save();
+            perfCtx.translate(20, margin + chartHeight/2);
+            perfCtx.rotate(-Math.PI/2);
+            perfCtx.fillText('Performance (%)', 0, 0);
+            perfCtx.restore();
+            
+            // Pontos dos modelos
+            models.forEach((model, i) => {
+                const x = margin + (model.x / maxParams) * chartWidth;
+                const y = margin + chartHeight - (model.performance / 100) * chartHeight;
+                
+                perfCtx.fillStyle = `hsl(${i * 60}, 70%, 50%)`;
+                perfCtx.beginPath();
+                perfCtx.arc(x, y, 8, 0, 2 * Math.PI);
+                perfCtx.fill();
+                
+                // Labels
+                perfCtx.fillStyle = '#333';
+                perfCtx.font = '12px Arial';
+                perfCtx.textAlign = 'center';
+                perfCtx.fillText(model.name, x, y - 15);
+            });
+            
+            // Linha de tendência
+            perfCtx.strokeStyle = '#ff6b6b';
+            perfCtx.lineWidth = 3;
+            perfCtx.setLineDash([5, 5]);
+            perfCtx.beginPath();
+            models.forEach((model, i) => {
+                const x = margin + (model.x / maxParams) * chartWidth;
+                const y = margin + chartHeight - (model.performance / 100) * chartHeight;
+                if (i === 0) {
+                    perfCtx.moveTo(x, y);
+                } else {
+                    perfCtx.lineTo(x, y);
+                }
+            });
+            perfCtx.stroke();
+            perfCtx.setLineDash([]);
+        }
+        
+        function highlightLayer(layerElement) {
+            // Remove active class from all layers
+            document.querySelectorAll('.transformer-layer').forEach(layer => {
+                layer.classList.remove('active');
+            });
+            
+            // Add active class to clicked layer
+            layerElement.classList.add('active');
+        }
+        
+        function highlightFlowStep(stepElement, index) {
+            // Remove active class from all steps
+            document.querySelectorAll('.flow-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Add active class to clicked step
+            stepElement.classList.add('active');
+        }
+        
+        function highlightComponent(componentType) {
+            // Implementar destaque de componentes específicos
+            console.log(`Highlighting component: ${componentType}`);
+        }
+        
+        function animateDataFlow() {
+            if (animationRunning) return;
+            
+            animationRunning = true;
+            const steps = document.querySelectorAll('.flow-step');
+            let currentStep = 0;
+            
+            const animationInterval = setInterval(() => {
+                // Remove active from all steps
+                steps.forEach(step => step.classList.remove('active'));
+                
+                // Add active to current step
+                if (currentStep < steps.length) {
+                    steps[currentStep].classList.add('active');
+                    currentStep++;
+                } else {
+                    clearInterval(animationInterval);
+                    animationRunning = false;
+                    // Remove all active classes
+                    steps.forEach(step => step.classList.remove('active'));
+                }
+            }, 1000);
+        }
+        
+        function compareModels() {
+            // Implementar comparação detalhada entre modelos
+            alert('Comparação detalhada entre diferentes configurações de modelo!');
+        }
+        
+        function resetConfiguration() {
+            setModelConfig('gpt2-small');
+        }
+        
+        // Inicialização
+        updateVisualization();
+    </script>
+</body>
+</html>

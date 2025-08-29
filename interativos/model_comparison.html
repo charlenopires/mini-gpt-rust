@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparação de Modelos GPT</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .model-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .model-card.selected {
+            border-color: #3498db;
+            transform: translateY(-5px);
+        }
+
+        .model-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .model-specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .spec-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .spec-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .spec-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .comparison-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-comparison {
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .better {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .worse {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .equal {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .generation-demo {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .demo-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .demo-button {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .demo-button:hover {
+            background: #2980b9;
+        }
+
+        .generation-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .result-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-text {
+            line-height: 1.6;
+            color: #34495e;
+        }
+
+        .generation-time {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .math-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .math-content {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid,
+            .comparison-charts,
+            .generation-results {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Comparação de Modelos GPT</h1>
+        <p class="subtitle">Compare diferentes tamanhos de modelo e suas características</p>
+
+        <div class="comparison-grid">
+            <div class="model-card" id="model1-card">
+                <h3>GPT-2 Small (117M)</h3>
+                <div class="model-specs">
+                    <div class="spec-item">
+                        <div class="spec-label">Parâmetros</div>
+                        <div class="spec-value">117M</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Camadas</div>
+                        <div class="spec-value">12</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Dimensão</div>
+                        <div class="spec-value">768</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Cabeças</div>
+                        <div class="spec-value">12</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Contexto</div>
+                        <div class="spec-value">1024</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Vocabulário</div>
+                        <div class="spec-value">50,257</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="model-card" id="model2-card">
+                <h3>GPT-2 Medium (345M)</h3>
+                <div class="model-specs">
+                    <div class="spec-item">
+                        <div class="spec-label">Parâmetros</div>
+                        <div class="spec-value">345M</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Camadas</div>
+                        <div class="spec-value">24</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Dimensão</div>
+                        <div class="spec-value">1024</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Cabeças</div>
+                        <div class="spec-value">16</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Contexto</div>
+                        <div class="spec-value">1024</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Vocabulário</div>
+                        <div class="spec-value">50,257</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3>⚙️ Configurações de Geração</h3>
+            <div class="control-group">
+                <label>Temperature (Criatividade)</label>
+                <div class="control-row">
+                    <input type="range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.8">
+                    <span class="value-display" id="temperature-value">0.8</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Top-k (Diversidade)</label>
+                <div class="control-row">
+                    <input type="range" id="top-k" min="1" max="100" step="1" value="50">
+                    <span class="value-display" id="top-k-value">50</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Comprimento Máximo</label>
+                <div class="control-row">
+                    <input type="range" id="max-length" min="10" max="200" step="10" value="100">
+                    <span class="value-display" id="max-length-value">100</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-charts">
+            <div class="chart-container">
+                <h3>📊 Comparação de Performance</h3>
+                <canvas id="performance-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>⚡ Uso de Recursos</h3>
+                <canvas id="resources-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Velocidade de Inferência</div>
+                <div class="metric-value" style="color: #27ae60;">2.3x</div>
+                <div class="metric-comparison better">Small é mais rápido</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Uso de Memória</div>
+                <div class="metric-value" style="color: #e74c3c;">3.2x</div>
+                <div class="metric-comparison worse">Medium usa mais RAM</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Qualidade do Texto</div>
+                <div class="metric-value" style="color: #f39c12;">1.4x</div>
+                <div class="metric-comparison better">Medium é melhor</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Coerência</div>
+                <div class="metric-value" style="color: #3498db;">1.6x</div>
+                <div class="metric-comparison better">Medium é mais coerente</div>
+            </div>
+        </div>
+
+        <div class="generation-demo">
+            <h3>🎯 Demonstração de Geração</h3>
+            <div class="demo-controls">
+                <input type="text" class="demo-input" id="prompt-input" placeholder="Digite um prompt para comparar a geração..." value="Era uma vez em um reino distante">
+                <button class="demo-button" onclick="generateComparison()">Gerar Comparação</button>
+            </div>
+            <div class="generation-results">
+                <div class="result-card">
+                    <div class="result-header">
+                        <span>GPT-2 Small (117M)</span>
+                        <span class="generation-time" id="small-time">~45ms</span>
+                    </div>
+                    <div class="result-text" id="small-result">
+                        Era uma vez em um reino distante, havia um jovem príncipe que sonhava em explorar terras desconhecidas. Ele passava horas olhando pela janela do castelo, imaginando as aventuras que o esperavam além das montanhas.
+                    </div>
+                </div>
+                <div class="result-card">
+                    <div class="result-header">
+                        <span>GPT-2 Medium (345M)</span>
+                        <span class="generation-time" id="medium-time">~120ms</span>
+                    </div>
+                    <div class="result-text" id="medium-result">
+                        Era uma vez em um reino distante, onde as estrelas dançavam no céu noturno como diamantes espalhados sobre veludo negro. Neste lugar mágico, vivia uma princesa cujo coração guardava segredos ancestrais, e cuja sabedoria era procurada por viajantes de terras longínquas que buscavam respostas para os mistérios da vida.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="math-section">
+            <h3>🧮 Fundamentos Matemáticos</h3>
+            
+            <h4>Escalabilidade de Parâmetros</h4>
+            <div class="math-content">
+                <p><strong>Relação entre parâmetros e capacidade:</strong></p>
+                <p>• <strong>Embedding:</strong> vocab_size × d_model = 50,257 × d_model</p>
+                <p>• <strong>Attention:</strong> n_layers × (4 × d_model²) para Q, K, V, O</p>
+                <p>• <strong>Feed-Forward:</strong> n_layers × (8 × d_model²) para expansão 4x</p>
+                <p>• <strong>Total aproximado:</strong> vocab_size × d_model + n_layers × (12 × d_model²)</p>
+            </div>
+
+            <h4>Complexidade Computacional</h4>
+            <div class="math-content">
+                <p><strong>Self-Attention:</strong> O(n² × d_model + n × d_model²)</p>
+                <p>• n = comprimento da sequência</p>
+                <p>• d_model = dimensão do modelo</p>
+                <p>• Quadrática no comprimento da sequência</p>
+                <p>• Linear no número de parâmetros</p>
+            </div>
+
+            <h4>Implementação em Rust</h4>
+            <div class="code-block">
+// Estrutura para comparação de modelos
+struct ModelConfig {
+    n_layers: usize,
+    d_model: usize,
+    n_heads: usize,
+    vocab_size: usize,
+    max_seq_len: usize,
+}
+
+impl ModelConfig {
+    fn gpt2_small() -> Self {
+        Self {
+            n_layers: 12,
+            d_model: 768,
+            n_heads: 12,
+            vocab_size: 50_257,
+            max_seq_len: 1024,
+        }
+    }
+    
+    fn gpt2_medium() -> Self {
+        Self {
+            n_layers: 24,
+            d_model: 1024,
+            n_heads: 16,
+            vocab_size: 50_257,
+            max_seq_len: 1024,
+        }
+    }
+    
+    // Calcula número aproximado de parâmetros
+    fn parameter_count(&self) -> usize {
+        let embedding_params = self.vocab_size * self.d_model;
+        let attention_params = self.n_layers * 4 * self.d_model * self.d_model;
+        let ffn_params = self.n_layers * 8 * self.d_model * self.d_model;
+        let layer_norm_params = self.n_layers * 2 * self.d_model;
+        
+        embedding_params + attention_params + ffn_params + layer_norm_params
+    }
+    
+    // Estima uso de memória em MB
+    fn memory_usage_mb(&self) -> f32 {
+        let params = self.parameter_count() as f32;
+        // 4 bytes por parâmetro (f32) + overhead
+        (params * 4.0 + params * 0.5) / (1024.0 * 1024.0)
+    }
+}
+
+// Comparador de performance
+struct ModelComparator {
+    small: ModelConfig,
+    medium: ModelConfig,
+}
+
+impl ModelComparator {
+    fn new() -> Self {
+        Self {
+            small: ModelConfig::gpt2_small(),
+            medium: ModelConfig::gpt2_medium(),
+        }
+    }
+    
+    fn compare_inference_speed(&self, seq_len: usize) -> (f32, f32) {
+        // Estimativa baseada na complexidade computacional
+        let small_ops = self.small.flops_per_token(seq_len);
+        let medium_ops = self.medium.flops_per_token(seq_len);
+        
+        // Normalizado para o modelo small
+        (1.0, medium_ops / small_ops)
+    }
+}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração dos modelos
+        const models = {
+            small: {
+                name: 'GPT-2 Small',
+                params: 117,
+                layers: 12,
+                dimension: 768,
+                heads: 12,
+                memory: 468, // MB
+                speed: 1.0, // relativo
+                quality: 0.7
+            },
+            medium: {
+                name: 'GPT-2 Medium',
+                params: 345,
+                layers: 24,
+                dimension: 1024,
+                heads: 16,
+                memory: 1380, // MB
+                speed: 0.43, // relativo
+                quality: 0.85
+            }
+        };
+
+        // Inicialização dos controles
+        function initializeControls() {
+            const controls = ['temperature', 'top-k', 'max-length'];
+            controls.forEach(control => {
+                const slider = document.getElementById(control);
+                const display = document.getElementById(control + '-value');
+                
+                slider.addEventListener('input', () => {
+                    display.textContent = slider.value;
+                    updateCharts();
+                });
+            });
+        }
+
+        // Gráfico de performance
+        function createPerformanceChart() {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            return new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Velocidade', 'Qualidade', 'Eficiência', 'Coerência', 'Criatividade'],
+                    datasets: [{
+                        label: 'GPT-2 Small',
+                        data: [100, 70, 90, 65, 75],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        pointBackgroundColor: '#3498db'
+                    }, {
+                        label: 'GPT-2 Medium',
+                        data: [43, 85, 60, 80, 85],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                        pointBackgroundColor: '#e74c3c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de recursos
+        function createResourcesChart() {
+            const ctx = document.getElementById('resources-chart').getContext('2d');
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Parâmetros (M)', 'Memória (MB)', 'FLOPS (G)', 'Latência (ms)'],
+                    datasets: [{
+                        label: 'GPT-2 Small',
+                        data: [117, 468, 2.3, 45],
+                        backgroundColor: '#3498db'
+                    }, {
+                        label: 'GPT-2 Medium',
+                        data: [345, 1380, 7.8, 120],
+                        backgroundColor: '#e74c3c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atualizar gráficos baseado nos controles
+        function updateCharts() {
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const topK = parseInt(document.getElementById('top-k').value);
+            const maxLength = parseInt(document.getElementById('max-length').value);
+            
+            // Simular impacto dos parâmetros na performance
+            const creativityBoost = (temperature - 0.5) * 20;
+            const diversityPenalty = (100 - topK) * 0.3;
+            const lengthPenalty = (maxLength - 50) * 0.1;
+            
+            // Atualizar dados dos gráficos (simulado)
+            console.log('Parâmetros atualizados:', { temperature, topK, maxLength });
+        }
+
+        // Geração de texto comparativa
+        function generateComparison() {
+            const prompt = document.getElementById('prompt-input').value;
+            
+            if (!prompt.trim()) {
+                alert('Por favor, digite um prompt!');
+                return;
+            }
+            
+            // Simular geração para GPT-2 Small
+            const smallResult = generateText(prompt, 'small');
+            const mediumResult = generateText(prompt, 'medium');
+            
+            document.getElementById('small-result').textContent = smallResult;
+            document.getElementById('medium-result').textContent = mediumResult;
+            
+            // Atualizar tempos de geração
+            document.getElementById('small-time').textContent = `~${Math.floor(Math.random() * 30 + 30)}ms`;
+            document.getElementById('medium-time').textContent = `~${Math.floor(Math.random() * 50 + 100)}ms`;
+        }
+
+        // Simulador de geração de texto
+        function generateText(prompt, modelType) {
+            const templates = {
+                small: [
+                    prompt + ', havia uma história interessante que muitos conheciam.',
+                    prompt + ', as pessoas costumavam contar lendas sobre este lugar.',
+                    prompt + ', existia uma tradição antiga que poucos lembravam.',
+                    prompt + ', os habitantes locais tinham costumes únicos e fascinantes.'
+                ],
+                medium: [
+                    prompt + ', onde os ventos sussurravam segredos ancestrais através das folhas douradas dos carvalhos centenários, e cada pedra do caminho guardava memórias de viajantes que passaram por ali em busca de sabedoria.',
+                    prompt + ', cujas torres se erguiam majestosamente contra o horizonte púrpura do entardecer, enquanto os sinos da catedral ecoavam melodias que tocavam a alma de todos que as ouviam, criando uma atmosfera de paz e contemplação.',
+                    prompt + ', habitado por criaturas mágicas que dançavam sob a luz prateada da lua cheia, tecendo encantamentos que protegiam a terra de males antigos e preservavam a harmonia entre todos os seres vivos.',
+                    prompt + ', onde o tempo parecia fluir de forma diferente, permitindo que os sonhos se tornassem realidade e que a imaginação ganhasse vida através de cores vibrantes que pintavam paisagens impossíveis de se esquecer.'
+                ]
+            };
+            
+            const options = templates[modelType];
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        // Seleção de modelos
+        function selectModel(modelId) {
+            document.querySelectorAll('.model-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById(modelId + '-card').classList.add('selected');
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeControls();
+            createPerformanceChart();
+            createResourcesChart();
+            
+            // Selecionar modelo small por padrão
+            selectModel('model1');
+            
+            // Event listeners para seleção de modelos
+            document.getElementById('model1-card').addEventListener('click', () => selectModel('model1'));
+            document.getElementById('model2-card').addEventListener('click', () => selectModel('model2'));
+        });
+    </script>
+</body>
+</html>

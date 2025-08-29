@@ -3,113 +3,495 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demonstração Interativa do Mecanismo de Atenção</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>🧠 Mecanismo de Atenção - Guia Completo</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .glass-effect {
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-5px);
+        }
+        
+        .page-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .learning-path {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .path-step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .path-step:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        .path-step.active {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .step-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .step-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .glass-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
+        
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .range-input {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .range-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .param-group {
+            margin-bottom: 15px;
+        }
+        
+        .param-label {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .param-value {
+            font-weight: bold;
+            color: #60a5fa;
+            margin-left: 10px;
+        }
+        
+        .param-hint {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .token-item {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .token-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .token-item.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
         .attention-matrix {
             display: grid;
             gap: 2px;
-            background: #f8fafc;
-            padding: 8px;
-            border-radius: 8px;
-            border: 2px solid #e2e8f0;
+            justify-content: center;
+            margin: 20px 0;
         }
+        
         .attention-cell {
             width: 40px;
             height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            font-weight: bold;
             cursor: pointer;
-            border: 1px solid #cbd5e1;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
         .attention-cell:hover {
             transform: scale(1.1);
             z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        .token-item {
-            padding: 8px 12px;
-            margin: 4px;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .token-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        .token-selected {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .vector-visualization {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .vector-component {
-            height: 20px;
-            border-radius: 2px;
+        
+        .matrix-label {
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .vector-visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        
+        .vector-component {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: bold;
             color: white;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
+        
         .attention-flow {
-            position: relative;
-            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .attention-arrow {
-            position: absolute;
-            width: 2px;
-            background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
-            transform-origin: top;
-            transition: all 0.5s ease;
-            opacity: 0;
+        
+        .flow-bars {
+            display: flex;
+            align-items: end;
+            gap: 10px;
+            height: 150px;
         }
-        .attention-arrow.active {
-            opacity: 1;
+        
+        .flow-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
-        .pulse {
-            animation: pulse 2s infinite;
+        
+        .bar {
+            background: linear-gradient(to top, #3b82f6, #60a5fa);
+            border-radius: 4px 4px 0 0;
+            width: 25px;
+            transition: all 0.3s ease;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        
+        .bar-label {
+            font-size: 12px;
+            text-align: center;
+            opacity: 0.8;
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+        
+        .bar-value {
+            font-size: 11px;
+            font-weight: bold;
+            color: #60a5fa;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        .explanation-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 0 15px 15px 0;
+            margin: 20px 0;
         }
+        
+        .explanation-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #60a5fa;
+        }
+        
+        .math-formula {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .concept-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .concept-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .concept-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .concept-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #60a5fa;
+        }
+        
+        .interactive-demo {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .empty-state {
+            text-align: center;
+            opacity: 0.6;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+        
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .progress-dot.active {
+            background: #3b82f6;
+            transform: scale(1.2);
+        }
+        
         .tooltip {
             position: relative;
             display: inline-block;
         }
+        
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 200px;
@@ -127,236 +509,563 @@
             transition: opacity 0.3s;
             font-size: 12px;
         }
+        
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
         }
     </style>
 </head>
-<body class="text-white">
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8 relative">
-            <!-- Botão de Voltar -->
-            <div class="absolute left-0 top-0">
-                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Voltar
-                </a>
-            </div>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <a href="index.html" class="back-button">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Voltar
+            </a>
             
-            <h1 class="text-4xl font-bold mb-2">Mecanismo de Atenção</h1>
-            <p class="text-xl opacity-90">Descubra como os modelos "prestam atenção" a diferentes partes do texto</p>
+            <h1 class="page-title">🧠 Mecanismo de Atenção</h1>
+            <p class="page-subtitle">Guia Completo: Da Teoria à Prática</p>
+            
+            <div class="learning-path">
+                <div class="path-step active" data-step="1">
+                    <div class="step-number">1️⃣</div>
+                    <div class="step-title">Conceitos Básicos</div>
+                </div>
+                <div class="path-step" data-step="2">
+                    <div class="step-number">2️⃣</div>
+                    <div class="step-title">Matemática</div>
+                </div>
+                <div class="path-step" data-step="3">
+                    <div class="step-number">3️⃣</div>
+                    <div class="step-title">Visualização</div>
+                </div>
+                <div class="path-step" data-step="4">
+                    <div class="step-number">4️⃣</div>
+                    <div class="step-title">Tipos de Atenção</div>
+                </div>
+                <div class="path-step" data-step="5">
+                    <div class="step-number">5️⃣</div>
+                    <div class="step-title">Prática</div>
+                </div>
+            </div>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Painel de Controle -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">1. Configure a Sequência</h2>
-                    <textarea id="inputSequence" class="w-full h-32 p-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:ring-2 focus:ring-blue-400 transition" placeholder="Digite uma frase para analisar...">O gato subiu no telhado</textarea>
-
-                    <h2 class="text-2xl font-semibold mt-6 mb-4">2. Tipo de Atenção</h2>
-                    <div id="attentionTypeSelector" class="space-y-2">
-                        <div>
-                            <input type="radio" id="self_attention" name="attention_type" value="self" class="hidden peer" checked>
-                            <label for="self_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
-                                Self-Attention
-                                <span class="tooltiptext">Cada token presta atenção a todos os outros tokens na sequência</span>
-                            </label>
-                        </div>
-                        <div>
-                            <input type="radio" id="masked_attention" name="attention_type" value="masked" class="hidden peer">
-                            <label for="masked_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
-                                Masked Attention
-                                <span class="tooltiptext">Cada token só pode prestar atenção aos tokens anteriores (usado em GPT)</span>
-                            </label>
-                        </div>
-                        <div>
-                            <input type="radio" id="cross_attention" name="attention_type" value="cross" class="hidden peer">
-                            <label for="cross_attention" class="block w-full text-center p-3 border-2 border-white/30 rounded-lg cursor-pointer peer-checked:border-blue-400 peer-checked:bg-blue-400/20 font-medium transition tooltip">
-                                Cross-Attention
-                                <span class="tooltiptext">Tokens de uma sequência prestam atenção a tokens de outra sequência</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <h2 class="text-2xl font-semibold mt-6 mb-4">3. Parâmetros</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Número de Cabeças de Atenção</label>
-                            <input type="range" id="numHeads" min="1" max="8" value="4" class="w-full">
-                            <span id="numHeadsValue" class="text-sm opacity-75">4 cabeças</span>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Dimensão do Modelo</label>
-                            <input type="range" id="modelDim" min="64" max="512" step="64" value="256" class="w-full">
-                            <span id="modelDimValue" class="text-sm opacity-75">256 dimensões</span>
-                        </div>
-                        <div>
-                            <label class="flex items-center mt-4">
-                                <input type="checkbox" id="showMath" class="mr-2">
-                                <span class="text-sm font-medium">Mostrar Cálculos Matemáticos</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button id="computeAttention" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105 active:scale-100">
-                        Calcular Atenção
-                    </button>
+        <!-- Seção 1: Conceitos Básicos -->
+        <div class="content-section active" id="section-1">
+            <div class="glass-card">
+                <h2 class="section-title">🎯 O que é Atenção?</h2>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">💡 Analogia do Mundo Real</div>
+                    <p>Imagine que você está em uma festa barulhenta, mas consegue focar na conversa com seu amigo. Seu cérebro está "prestando atenção" à voz dele, filtrando outros ruídos. O mecanismo de atenção em IA funciona de forma similar!</p>
                 </div>
-            </div>
-
-            <!-- Área de Visualização -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Tokens da Sequência -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Tokens da Sequência</h2>
-                    <div id="tokensDisplay" class="flex flex-wrap gap-2">
-                        <p class="text-white/70">Os tokens aparecerão aqui após o processamento.</p>
+                
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <div class="concept-icon">🔍</div>
+                        <div class="concept-title">Foco Seletivo</div>
+                        <p>A atenção permite que o modelo foque nas partes mais relevantes da entrada, ignorando informações menos importantes.</p>
+                    </div>
+                    
+                    <div class="concept-card">
+                        <div class="concept-icon">🔗</div>
+                        <div class="concept-title">Conexões Dinâmicas</div>
+                        <p>Cada palavra pode se relacionar com qualquer outra palavra, criando conexões dinâmicas baseadas no contexto.</p>
+                    </div>
+                    
+                    <div class="concept-card">
+                        <div class="concept-icon">⚖️</div>
+                        <div class="concept-title">Pesos Adaptativos</div>
+                        <p>O modelo aprende automaticamente quais conexões são mais importantes para cada situação específica.</p>
                     </div>
                 </div>
-
-                <!-- Matriz de Atenção -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Matriz de Atenção</h2>
-                    <div class="flex items-center justify-center">
-                        <div id="attentionMatrix" class="attention-matrix">
-                            <p class="text-gray-600 col-span-full text-center">A matriz de atenção aparecerá aqui.</p>
-                        </div>
+                
+                <div class="interactive-demo">
+                    <h3>🎮 Demonstração Interativa</h3>
+                    <p>Clique nas palavras abaixo para ver como elas se relacionam:</p>
+                    <div id="basicDemo" class="demo-area">
+                        <div class="token-item" data-word="O">O</div>
+                        <div class="token-item" data-word="gato">gato</div>
+                        <div class="token-item" data-word="subiu">subiu</div>
+                        <div class="token-item" data-word="no">no</div>
+                        <div class="token-item" data-word="telhado">telhado</div>
                     </div>
-                    <div class="mt-4 text-sm text-white/70">
-                        <p><strong>Como ler:</strong> Cada linha mostra quanto um token presta atenção aos outros tokens.</p>
-                        <p><strong>Cores:</strong> <span class="inline-block w-4 h-4 bg-blue-200 rounded mr-1"></span>Baixa atenção → <span class="inline-block w-4 h-4 bg-blue-800 rounded mr-1"></span>Alta atenção</p>
-                    </div>
-                </div>
-
-                <!-- Visualização de Vetores Q, K, V -->
-                <div class="glass-effect p-6 rounded-2xl" id="vectorsSection" style="display: none;">
-                    <h2 class="text-2xl font-semibold mb-4">Vetores Query, Key e Value</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2 text-blue-300">Query (Q)</h3>
-                            <div id="queryVectors" class="vector-visualization">
-                                <p class="text-white/70 text-sm">Vetores de consulta</p>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2 text-green-300">Key (K)</h3>
-                            <div id="keyVectors" class="vector-visualization">
-                                <p class="text-white/70 text-sm">Vetores de chave</p>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2 text-purple-300">Value (V)</h3>
-                            <div id="valueVectors" class="vector-visualization">
-                                <p class="text-white/70 text-sm">Vetores de valor</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fluxo de Atenção -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Fluxo de Atenção</h2>
-                    <div id="attentionFlow" class="attention-flow h-64 bg-white/10 rounded-lg relative">
-                        <p class="text-white/70 text-center pt-24">Clique em um token para ver o fluxo de atenção.</p>
-                    </div>
-                </div>
-
-                <!-- Múltiplas Cabeças de Atenção -->
-                <div class="glass-effect p-6 rounded-2xl" id="multiHeadSection">
-                    <h2 class="text-2xl font-semibold mb-4">Múltiplas Cabeças de Atenção</h2>
-                    <div id="multiHeadDisplay" class="grid gap-4">
-                        <p class="text-white/70">As diferentes cabeças de atenção aparecerão aqui.</p>
+                    <div id="basicExplanation" class="explanation-box" style="display: none;">
+                        <div class="explanation-title">Análise da Conexão</div>
+                        <p id="connectionText"></p>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <!-- Seção 2: Matemática -->
+        <div class="content-section" id="section-2">
+            <div class="glass-card">
+                <h2 class="section-title">🧮 A Matemática por Trás da Atenção</h2>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">📐 Fórmula Fundamental</div>
+                    <p>O mecanismo de atenção pode ser resumido em uma fórmula elegante:</p>
+                    <div class="math-formula">
+                        Attention(Q, K, V) = softmax(QK^T / √d_k)V
+                    </div>
+                    <p>Onde:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Q</strong> = Query (consulta) - "O que estou procurando?"</li>
+                        <li><strong>K</strong> = Key (chave) - "O que está disponível?"</li>
+                        <li><strong>V</strong> = Value (valor) - "Qual informação vou usar?"</li>
+                        <li><strong>d_k</strong> = Dimensão das chaves (para normalização)</li>
+                    </ul>
+                </div>
+                
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <div class="concept-icon">🔎</div>
+                        <div class="concept-title">Query (Q)</div>
+                        <p>Representa "o que estamos procurando". É como fazer uma pergunta: "Que informação preciso para entender esta palavra?"</p>
+                        <div class="math-formula">Q = X × W_Q</div>
+                    </div>
+                    
+                    <div class="concept-card">
+                        <div class="concept-icon">🔑</div>
+                        <div class="concept-title">Key (K)</div>
+                        <p>Representa "o que está disponível". São as "etiquetas" de cada posição que podem ser consultadas.</p>
+                        <div class="math-formula">K = X × W_K</div>
+                    </div>
+                    
+                    <div class="concept-card">
+                        <div class="concept-icon">💎</div>
+                        <div class="concept-title">Value (V)</div>
+                        <p>Representa "a informação real". É o conteúdo que será usado quando uma posição receber atenção.</p>
+                        <div class="math-formula">V = X × W_V</div>
+                    </div>
+                </div>
+                
+                <div class="interactive-demo">
+                    <h3>🎯 Calculadora de Atenção</h3>
+                    <div class="demo-controls">
+                        <button class="btn btn-secondary" onclick="generateRandomVectors()">🎲 Gerar Vetores Aleatórios</button>
+                        <button class="btn btn-primary" onclick="calculateAttentionStep()">➡️ Próximo Passo</button>
+                        <button class="btn btn-secondary" onclick="resetCalculation()">🔄 Reiniciar</button>
+                    </div>
+                    <div id="mathVisualization">
+                        <div class="empty-state">Clique em "Gerar Vetores Aleatórios" para começar</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Visualização -->
+        <div class="content-section" id="section-3">
+            <div class="grid-layout">
+                <div class="control-panel">
+                    <div class="form-group">
+                        <label class="form-label">📝 Texto para Análise</label>
+                        <textarea id="inputText" class="form-input form-textarea" placeholder="Digite uma frase para analisar...">O gato subiu no telhado</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">⚙️ Configurações</label>
+                        <div class="param-group">
+                            <label class="param-label">📐 Dimensão do Modelo</label>
+                            <input type="range" id="modelDim" min="64" max="512" step="64" value="256" class="range-input">
+                            <span id="modelDimValue" class="param-value">256 dimensões</span>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">🎯 Temperatura</label>
+                            <input type="range" id="temperature" min="0.1" max="2" step="0.1" value="1" class="range-input">
+                            <span id="temperatureValue" class="param-value">1.0</span>
+                        </div>
+                    </div>
+                    
+                    <button id="analyzeButton" class="btn btn-primary" style="width: 100%;">🚀 Analisar Atenção</button>
+                </div>
+                
+                <div>
+                    <div class="glass-card">
+                        <h2 class="section-title">🔤 Tokens</h2>
+                        <div id="tokensDisplay">
+                            <div class="empty-state">Os tokens aparecerão aqui após a análise</div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card">
+                        <h2 class="section-title">🎯 Matriz de Atenção</h2>
+                        <div id="attentionMatrixContainer">
+                            <div class="empty-state">A matriz de atenção aparecerá aqui</div>
+                        </div>
+                        <div class="explanation-box">
+                            <div class="explanation-title">📖 Como Interpretar</div>
+                            <p><strong>Linhas:</strong> Token que está "prestando atenção"</p>
+                            <p><strong>Colunas:</strong> Token que está "recebendo atenção"</p>
+                            <p><strong>Cores:</strong> Intensidade da atenção (azul claro = baixa, azul escuro = alta)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card">
+                        <h2 class="section-title">🌊 Fluxo de Atenção</h2>
+                        <div id="attentionFlow">
+                            <div class="empty-state">Clique em um token para ver seu fluxo de atenção</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 4: Tipos de Atenção -->
+        <div class="content-section" id="section-4">
+            <div class="glass-card">
+                <h2 class="section-title">🎭 Tipos de Atenção</h2>
+                
+                <div class="concept-grid">
+                    <div class="concept-card" onclick="selectAttentionType('self')">
+                        <div class="concept-icon">🔄</div>
+                        <div class="concept-title">Self-Attention</div>
+                        <p>Cada token presta atenção a todos os outros tokens na mesma sequência. Usado em BERT e na parte encoder do Transformer.</p>
+                        <div class="math-formula">Bidirectional</div>
+                    </div>
+                    
+                    <div class="concept-card" onclick="selectAttentionType('masked')">
+                        <div class="concept-icon">🎭</div>
+                        <div class="concept-title">Masked Self-Attention</div>
+                        <p>Cada token só pode prestar atenção aos tokens anteriores. Usado em GPT para geração de texto.</p>
+                        <div class="math-formula">Causal/Autoregressive</div>
+                    </div>
+                    
+                    <div class="concept-card" onclick="selectAttentionType('cross')">
+                        <div class="concept-icon">🔀</div>
+                        <div class="concept-title">Cross-Attention</div>
+                        <p>Tokens de uma sequência prestam atenção a tokens de outra sequência. Usado em tradução e no decoder do Transformer.</p>
+                        <div class="math-formula">Encoder-Decoder</div>
+                    </div>
+                </div>
+                
+                <div id="attentionTypeDemo" class="interactive-demo">
+                    <h3 id="demoTitle">🔄 Self-Attention</h3>
+                    <div id="typeVisualization">
+                        <div class="empty-state">Selecione um tipo de atenção acima para ver a demonstração</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 5: Prática -->
+        <div class="content-section" id="section-5">
+            <div class="glass-card">
+                <h2 class="section-title">🛠️ Laboratório Prático</h2>
+                
+                <div class="interactive-demo">
+                    <h3>🧪 Experimente Diferentes Cenários</h3>
+                    
+                    <div class="demo-controls">
+                        <button class="btn btn-secondary" onclick="loadExample('simple')">📝 Frase Simples</button>
+                        <button class="btn btn-secondary" onclick="loadExample('complex')">🧩 Frase Complexa</button>
+                        <button class="btn btn-secondary" onclick="loadExample('ambiguous')">❓ Frase Ambígua</button>
+                        <button class="btn btn-secondary" onclick="loadExample('long')">📚 Texto Longo</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">✏️ Ou digite seu próprio texto:</label>
+                        <textarea id="practiceText" class="form-input form-textarea" placeholder="Digite aqui para experimentar..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">🎛️ Configurações Avançadas</label>
+                        <div class="param-group">
+                            <label class="param-label">🧠 Número de Cabeças</label>
+                            <input type="range" id="numHeads" min="1" max="12" value="8" class="range-input">
+                            <span id="numHeadsValue" class="param-value">8 cabeças</span>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">🎯 Tipo de Atenção</label>
+                            <select id="attentionTypeSelect" class="form-input">
+                                <option value="self">Self-Attention</option>
+                                <option value="masked">Masked Self-Attention</option>
+                                <option value="cross">Cross-Attention</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button id="runExperiment" class="btn btn-primary" style="width: 100%;">🚀 Executar Experimento</button>
+                </div>
+                
+                <div id="experimentResults" class="glass-card" style="display: none; margin-top: 20px;">
+                    <h3>📊 Resultados do Experimento</h3>
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+            
+            <div class="glass-card">
+                <h2 class="section-title">💻 Implementação em Rust</h2>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">🦀 Código de Exemplo</div>
+                    <p>Aqui está como implementar atenção básica em Rust:</p>
+                </div>
+                
+                <div class="math-formula">
+<pre style="color: #e2e8f0; line-height: 1.5;">
+use ndarray::{Array2, Axis};
+use ndarray_linalg::Norm;
+
+struct AttentionLayer {
+    d_model: usize,
+    d_k: usize,
+    w_q: Array2&lt;f32&gt;,
+    w_k: Array2&lt;f32&gt;,
+    w_v: Array2&lt;f32&gt;,
+}
+
+impl AttentionLayer {
+    fn new(d_model: usize, d_k: usize) -&gt; Self {
+        // Inicializar pesos aleatoriamente
+        Self {
+            d_model,
+            d_k,
+            w_q: Array2::random((d_model, d_k), Uniform::new(-0.1, 0.1)),
+            w_k: Array2::random((d_model, d_k), Uniform::new(-0.1, 0.1)),
+            w_v: Array2::random((d_model, d_k), Uniform::new(-0.1, 0.1)),
+        }
+    }
+    
+    fn forward(&amp;self, x: &amp;Array2&lt;f32&gt;) -&gt; Array2&lt;f32&gt; {
+        // Calcular Q, K, V
+        let q = x.dot(&amp;self.w_q);
+        let k = x.dot(&amp;self.w_k);
+        let v = x.dot(&amp;self.w_v);
+        
+        // Calcular scores de atenção
+        let scores = q.dot(&amp;k.t()) / (self.d_k as f32).sqrt();
+        
+        // Aplicar softmax
+        let attention_weights = softmax(&amp;scores);
+        
+        // Aplicar atenção aos valores
+        attention_weights.dot(&amp;v)
+    }
+}
+
+fn softmax(x: &amp;Array2&lt;f32&gt;) -&gt; Array2&lt;f32&gt; {
+    let mut result = x.clone();
+    for mut row in result.axis_iter_mut(Axis(0)) {
+        let max_val = row.fold(f32::NEG_INFINITY, |a, &amp;b| a.max(b));
+        row.mapv_inplace(|x| (x - max_val).exp());
+        let sum: f32 = row.sum();
+        row /= sum;
+    }
+    result
+}
+</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-indicator">
+            <div class="progress-dot active" data-section="1"></div>
+            <div class="progress-dot" data-section="2"></div>
+            <div class="progress-dot" data-section="3"></div>
+            <div class="progress-dot" data-section="4"></div>
+            <div class="progress-dot" data-section="5"></div>
+        </div>
     </div>
 
     <script>
-        // --- ELEMENTOS DO DOM ---
-        const inputSequence = document.getElementById('inputSequence');
-        const attentionTypeSelector = document.getElementById('attentionTypeSelector');
-        const numHeads = document.getElementById('numHeads');
-        const numHeadsValue = document.getElementById('numHeadsValue');
-        const modelDim = document.getElementById('modelDim');
-        const modelDimValue = document.getElementById('modelDimValue');
-        const showMath = document.getElementById('showMath');
-        const computeAttention = document.getElementById('computeAttention');
-        const tokensDisplay = document.getElementById('tokensDisplay');
-        const attentionMatrix = document.getElementById('attentionMatrix');
-        const vectorsSection = document.getElementById('vectorsSection');
-        const queryVectors = document.getElementById('queryVectors');
-        const keyVectors = document.getElementById('keyVectors');
-        const valueVectors = document.getElementById('valueVectors');
-        const attentionFlow = document.getElementById('attentionFlow');
-        const multiHeadDisplay = document.getElementById('multiHeadDisplay');
-
-        // --- ESTADO DA APLICAÇÃO ---
+        // Estado global
+        let currentSection = 1;
         let currentTokens = [];
-        let currentAttentionType = 'self';
         let attentionWeights = [];
-        let selectedTokenIndex = -1;
+        let selectedToken = -1;
+        let mathStep = 0;
         let qkvVectors = { Q: [], K: [], V: [] };
 
-        // --- FUNÇÕES UTILITÁRIAS ---
+        // Navegação entre seções
+        document.querySelectorAll('.path-step').forEach(step => {
+            step.addEventListener('click', () => {
+                const sectionNum = parseInt(step.dataset.step);
+                showSection(sectionNum);
+            });
+        });
 
-        /**
-         * Tokeniza o texto de entrada
-         */
-        function tokenizeText(text) {
-            if (!text.trim()) return [];
-            return text.trim().split(/\s+/).map((token, index) => ({
-                text: token,
-                id: index,
-                position: index
-            }));
+        function showSection(sectionNum) {
+            // Esconder todas as seções
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Mostrar seção selecionada
+            document.getElementById(`section-${sectionNum}`).classList.add('active');
+            
+            // Atualizar indicadores
+            document.querySelectorAll('.path-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.querySelector(`[data-step="${sectionNum}"]`).classList.add('active');
+            
+            document.querySelectorAll('.progress-dot').forEach(dot => {
+                dot.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionNum}"]`).classList.add('active');
+            
+            currentSection = sectionNum;
         }
 
-        /**
-         * Gera vetores aleatórios para Q, K, V
-         */
+        // Seção 1: Demonstração básica
+        document.querySelectorAll('#basicDemo .token-item').forEach(token => {
+            token.addEventListener('click', () => {
+                const word = token.dataset.word;
+                showBasicConnection(word);
+                
+                // Destacar token selecionado
+                document.querySelectorAll('#basicDemo .token-item').forEach(t => t.classList.remove('selected'));
+                token.classList.add('selected');
+            });
+        });
+
+        function showBasicConnection(word) {
+            const explanations = {
+                'O': 'O artigo "O" presta atenção principalmente ao substantivo "gato" para determinar o gênero e número.',
+                'gato': 'O substantivo "gato" é o sujeito da frase e presta atenção ao verbo "subiu" para entender a ação.',
+                'subiu': 'O verbo "subiu" conecta o sujeito "gato" com o complemento "telhado" através da preposição.',
+                'no': 'A preposição "no" liga o verbo "subiu" ao local "telhado", indicando direção.',
+                'telhado': 'O substantivo "telhado" é o destino da ação e recebe atenção de "subiu" e "no".'
+            };
+            
+            document.getElementById('basicExplanation').style.display = 'block';
+            document.getElementById('connectionText').textContent = explanations[word];
+        }
+
+        // Seção 2: Matemática
+        function generateRandomVectors() {
+            const dim = 4; // Dimensão pequena para visualização
+            const numTokens = 3;
+            
+            qkvVectors = {
+                Q: Array.from({length: numTokens}, () => Array.from({length: dim}, () => Math.random() * 2 - 1)),
+                K: Array.from({length: numTokens}, () => Array.from({length: dim}, () => Math.random() * 2 - 1)),
+                V: Array.from({length: numTokens}, () => Array.from({length: dim}, () => Math.random() * 2 - 1))
+            };
+            
+            mathStep = 0;
+            displayMathVisualization();
+        }
+
+        function calculateAttentionStep() {
+            mathStep++;
+            displayMathVisualization();
+        }
+
+        function resetCalculation() {
+            mathStep = 0;
+            document.getElementById('mathVisualization').innerHTML = '<div class="empty-state">Clique em "Gerar Vetores Aleatórios" para começar</div>';
+        }
+
+        function displayMathVisualization() {
+            const container = document.getElementById('mathVisualization');
+            let html = '';
+            
+            if (mathStep === 0) {
+                html = `
+                    <div class="explanation-box">
+                        <div class="explanation-title">Passo 1: Vetores Q, K, V Gerados</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                            <div>
+                                <h4 style="color: #60a5fa;">Query (Q)</h4>
+                                ${displayVector(qkvVectors.Q[0], 'blue')}
+                            </div>
+                            <div>
+                                <h4 style="color: #34d399;">Key (K)</h4>
+                                ${displayVector(qkvVectors.K[0], 'green')}
+                            </div>
+                            <div>
+                                <h4 style="color: #a78bfa;">Value (V)</h4>
+                                ${displayVector(qkvVectors.V[0], 'purple')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (mathStep === 1) {
+                const dotProduct = qkvVectors.Q[0].reduce((sum, q, i) => sum + q * qkvVectors.K[0][i], 0);
+                html += `
+                    <div class="explanation-box">
+                        <div class="explanation-title">Passo 2: Produto Escalar Q·K</div>
+                        <div class="math-formula">Q·K = ${dotProduct.toFixed(3)}</div>
+                        <p>Este valor representa a "compatibilidade" entre a query e a key.</p>
+                    </div>
+                `;
+            } else if (mathStep === 2) {
+                const dotProduct = qkvVectors.Q[0].reduce((sum, q, i) => sum + q * qkvVectors.K[0][i], 0);
+                const scaled = dotProduct / Math.sqrt(qkvVectors.Q[0].length);
+                html += `
+                    <div class="explanation-box">
+                        <div class="explanation-title">Passo 3: Escalonamento</div>
+                        <div class="math-formula">Score = Q·K / √d_k = ${scaled.toFixed(3)}</div>
+                        <p>Dividimos por √d_k para estabilizar os gradientes.</p>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function displayVector(vector, color) {
+            return `
+                <div class="vector-visualization">
+                    ${vector.map(v => `<div class="vector-component" style="background: ${color}; opacity: ${Math.abs(v)}">${v.toFixed(2)}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        // Seção 3: Visualização principal
+        document.getElementById('modelDim').addEventListener('input', (e) => {
+            document.getElementById('modelDimValue').textContent = `${e.target.value} dimensões`;
+        });
+
+        document.getElementById('temperature').addEventListener('input', (e) => {
+            document.getElementById('temperatureValue').textContent = e.target.value;
+        });
+
+        document.getElementById('analyzeButton').addEventListener('click', () => {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) {
+                alert('Por favor, insira um texto para analisar.');
+                return;
+            }
+            
+            analyzeAttention(text);
+        });
+
+        function analyzeAttention(text) {
+            // Tokenizar
+            currentTokens = text.split(/\s+/).map((token, i) => ({ text: token, id: i }));
+            
+            // Gerar vetores Q, K, V
+            const dim = parseInt(document.getElementById('modelDim').value);
+            qkvVectors = generateQKVVectors(currentTokens, dim);
+            
+            // Calcular atenção
+            attentionWeights = computeAttentionMatrix(qkvVectors.Q, qkvVectors.K);
+            
+            // Atualizar visualizações
+            displayTokens();
+            displayAttentionMatrix();
+        }
+
         function generateQKVVectors(tokens, dim) {
-            const numTokens = tokens.length;
             const Q = [], K = [], V = [];
             
-            for (let i = 0; i < numTokens; i++) {
-                const q = Array.from({ length: dim }, () => Math.random() * 2 - 1);
-                const k = Array.from({ length: dim }, () => Math.random() * 2 - 1);
-                const v = Array.from({ length: dim }, () => Math.random() * 2 - 1);
-                
-                Q.push(q);
-                K.push(k);
-                V.push(v);
+            for (let i = 0; i < tokens.length; i++) {
+                Q.push(Array.from({length: dim}, () => Math.random() * 2 - 1));
+                K.push(Array.from({length: dim}, () => Math.random() * 2 - 1));
+                V.push(Array.from({length: dim}, () => Math.random() * 2 - 1));
             }
             
             return { Q, K, V };
         }
 
-        /**
-         * Calcula produto escalar entre dois vetores
-         */
-        function dotProduct(a, b) {
-            return a.reduce((sum, val, i) => sum + val * b[i], 0);
-        }
-
-        /**
-         * Aplica softmax a um array
-         */
-        function softmax(arr) {
-            const max = Math.max(...arr);
-            const exp = arr.map(x => Math.exp(x - max));
-            const sum = exp.reduce((a, b) => a + b, 0);
-            return exp.map(x => x / sum);
-        }
-
-        /**
-         * Calcula a matriz de atenção
-         */
-        function computeAttentionMatrix(Q, K, attentionType) {
+        function computeAttentionMatrix(Q, K) {
             const numTokens = Q.length;
             const dim = Q[0].length;
             const scale = 1 / Math.sqrt(dim);
@@ -366,12 +1075,8 @@
             for (let i = 0; i < numTokens; i++) {
                 const row = [];
                 for (let j = 0; j < numTokens; j++) {
-                    if (attentionType === 'masked' && j > i) {
-                        row.push(-Infinity); // Máscara para atenção causal
-                    } else {
-                        const score = dotProduct(Q[i], K[j]) * scale;
-                        row.push(score);
-                    }
+                    const score = Q[i].reduce((sum, q, k) => sum + q * K[j][k], 0) * scale;
+                    row.push(score);
                 }
                 scores.push(softmax(row));
             }
@@ -379,199 +1084,107 @@
             return scores;
         }
 
-        /**
-         * Gera cor baseada na intensidade da atenção
-         */
+        function softmax(arr) {
+            const max = Math.max(...arr);
+            const exp = arr.map(x => Math.exp(x - max));
+            const sum = exp.reduce((a, b) => a + b, 0);
+            return exp.map(x => x / sum);
+        }
+
+        function displayTokens() {
+            const container = document.getElementById('tokensDisplay');
+            container.innerHTML = '';
+            
+            currentTokens.forEach((token, i) => {
+                const tokenEl = document.createElement('div');
+                tokenEl.className = 'token-item';
+                tokenEl.textContent = token.text;
+                tokenEl.addEventListener('click', () => selectToken(i));
+                container.appendChild(tokenEl);
+            });
+        }
+
+        function displayAttentionMatrix() {
+            const container = document.getElementById('attentionMatrixContainer');
+            const matrix = document.createElement('div');
+            matrix.className = 'attention-matrix';
+            matrix.style.gridTemplateColumns = `repeat(${currentTokens.length + 1}, 1fr)`;
+            
+            // Cabeçalho
+            matrix.appendChild(document.createElement('div'));
+            currentTokens.forEach(token => {
+                const header = document.createElement('div');
+                header.className = 'matrix-label';
+                header.textContent = token.text;
+                matrix.appendChild(header);
+            });
+            
+            // Matriz
+            attentionWeights.forEach((row, i) => {
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'matrix-label';
+                rowHeader.textContent = currentTokens[i].text;
+                matrix.appendChild(rowHeader);
+                
+                row.forEach((weight, j) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    cell.style.backgroundColor = getAttentionColor(weight);
+                    cell.textContent = weight.toFixed(2);
+                    cell.addEventListener('click', () => showAttentionDetails(i, j, weight));
+                    matrix.appendChild(cell);
+                });
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(matrix);
+        }
+
         function getAttentionColor(weight) {
             const intensity = Math.floor(weight * 255);
             return `rgb(${59 + intensity}, ${130 + intensity/2}, ${246})`;
         }
 
-        // --- FUNÇÕES DE VISUALIZAÇÃO ---
-
-        /**
-         * Exibe os tokens
-         */
-        function displayTokens(tokens) {
-            tokensDisplay.innerHTML = '';
-            
-            if (tokens.length === 0) {
-                tokensDisplay.innerHTML = '<p class="text-white/70">Nenhum token para exibir.</p>';
-                return;
-            }
-            
-            tokens.forEach((token, index) => {
-                const tokenEl = document.createElement('div');
-                tokenEl.className = 'token-item bg-white/20 text-white cursor-pointer';
-                tokenEl.textContent = token.text;
-                tokenEl.dataset.index = index;
-                
-                tokenEl.addEventListener('click', () => {
-                    selectToken(index);
-                });
-                
-                tokensDisplay.appendChild(tokenEl);
-            });
-        }
-
-        /**
-         * Exibe a matriz de atenção
-         */
-        function displayAttentionMatrix(weights, tokens) {
-            attentionMatrix.innerHTML = '';
-            
-            if (weights.length === 0) {
-                attentionMatrix.innerHTML = '<p class="text-gray-600 col-span-full text-center">Nenhuma matriz de atenção para exibir.</p>';
-                return;
-            }
-            
-            const numTokens = tokens.length;
-            attentionMatrix.style.gridTemplateColumns = `repeat(${numTokens + 1}, 1fr)`;
-            
-            // Cabeçalho das colunas
-            attentionMatrix.appendChild(document.createElement('div')); // Célula vazia
-            tokens.forEach(token => {
-                const headerEl = document.createElement('div');
-                headerEl.className = 'text-xs font-bold text-gray-700 text-center p-1';
-                headerEl.textContent = token.text;
-                attentionMatrix.appendChild(headerEl);
-            });
-            
-            // Linhas da matriz
-            weights.forEach((row, i) => {
-                // Cabeçalho da linha
-                const rowHeaderEl = document.createElement('div');
-                rowHeaderEl.className = 'text-xs font-bold text-gray-700 text-center p-1';
-                rowHeaderEl.textContent = tokens[i].text;
-                attentionMatrix.appendChild(rowHeaderEl);
-                
-                // Células da matriz
-                row.forEach((weight, j) => {
-                    const cellEl = document.createElement('div');
-                    cellEl.className = 'attention-cell';
-                    cellEl.style.backgroundColor = getAttentionColor(weight);
-                    cellEl.style.color = weight > 0.5 ? 'white' : 'black';
-                    cellEl.textContent = weight.toFixed(2);
-                    cellEl.title = `${tokens[i].text} → ${tokens[j].text}: ${weight.toFixed(3)}`;
-                    
-                    cellEl.addEventListener('click', () => {
-                        highlightAttentionPath(i, j, weight);
-                    });
-                    
-                    attentionMatrix.appendChild(cellEl);
-                });
-            });
-        }
-
-        /**
-         * Exibe os vetores Q, K, V
-         */
-        function displayQKVVectors(vectors, tokens) {
-            if (!showMath.checked) {
-                vectorsSection.style.display = 'none';
-                return;
-            }
-            
-            vectorsSection.style.display = 'block';
-            
-            ['Q', 'K', 'V'].forEach(type => {
-                const container = type === 'Q' ? queryVectors : 
-                                 type === 'K' ? keyVectors : valueVectors;
-                container.innerHTML = '';
-                
-                vectors[type].forEach((vector, tokenIndex) => {
-                    const tokenDiv = document.createElement('div');
-                    tokenDiv.className = 'mb-2';
-                    
-                    const label = document.createElement('div');
-                    label.className = 'text-xs font-bold mb-1';
-                    label.textContent = `${tokens[tokenIndex].text}`;
-                    tokenDiv.appendChild(label);
-                    
-                    const vectorDiv = document.createElement('div');
-                    vectorDiv.className = 'vector-visualization';
-                    
-                    // Mostra apenas os primeiros 8 componentes para economizar espaço
-                    vector.slice(0, 8).forEach((component, i) => {
-                        const componentDiv = document.createElement('div');
-                        componentDiv.className = 'vector-component';
-                        
-                        const intensity = Math.abs(component);
-                        const hue = type === 'Q' ? 200 : type === 'K' ? 120 : 280;
-                        componentDiv.style.backgroundColor = `hsl(${hue}, 70%, ${30 + intensity * 40}%)`;
-                        componentDiv.textContent = component.toFixed(2);
-                        
-                        vectorDiv.appendChild(componentDiv);
-                    });
-                    
-                    if (vector.length > 8) {
-                        const moreDiv = document.createElement('div');
-                        moreDiv.className = 'text-xs text-white/50 text-center mt-1';
-                        moreDiv.textContent = `... +${vector.length - 8} mais`;
-                        vectorDiv.appendChild(moreDiv);
-                    }
-                    
-                    tokenDiv.appendChild(vectorDiv);
-                    container.appendChild(tokenDiv);
-                });
-            });
-        }
-
-        /**
-         * Seleciona um token e mostra sua atenção
-         */
         function selectToken(index) {
-            selectedTokenIndex = index;
+            selectedToken = index;
             
-            // Remove seleção anterior
-            document.querySelectorAll('.token-selected').forEach(el => {
-                el.classList.remove('token-selected');
+            // Atualizar seleção visual
+            document.querySelectorAll('#tokensDisplay .token-item').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
             });
             
-            // Adiciona nova seleção
-            const tokenEl = document.querySelector(`[data-index="${index}"]`);
-            if (tokenEl) {
-                tokenEl.classList.add('token-selected');
-            }
-            
-            // Mostra fluxo de atenção
+            // Mostrar fluxo de atenção
             showAttentionFlow(index);
         }
 
-        /**
-         * Mostra o fluxo de atenção para um token
-         */
         function showAttentionFlow(tokenIndex) {
-            attentionFlow.innerHTML = '';
+            const container = document.getElementById('attentionFlow');
             
-            if (attentionWeights.length === 0 || tokenIndex < 0) {
-                attentionFlow.innerHTML = '<p class="text-white/70 text-center pt-24">Selecione um token para ver o fluxo de atenção.</p>';
+            if (attentionWeights.length === 0) {
+                container.innerHTML = '<div class="empty-state">Analise um texto primeiro</div>';
                 return;
             }
             
             const weights = attentionWeights[tokenIndex];
             const maxWeight = Math.max(...weights);
             
-            // Cria visualização de barras
             const barsContainer = document.createElement('div');
-            barsContainer.className = 'flex items-end justify-center h-full p-4 gap-2';
+            barsContainer.className = 'flow-bars';
             
             weights.forEach((weight, i) => {
                 const barContainer = document.createElement('div');
-                barContainer.className = 'flex flex-col items-center';
+                barContainer.className = 'flow-bar';
                 
                 const bar = document.createElement('div');
-                bar.className = 'bg-blue-500 rounded-t transition-all duration-500';
-                bar.style.width = '20px';
-                bar.style.height = `${(weight / maxWeight) * 200}px`;
-                bar.style.opacity = weight.toString();
+                bar.className = 'bar';
+                bar.style.height = `${(weight / maxWeight) * 120}px`;
                 
                 const label = document.createElement('div');
-                label.className = 'text-xs text-white/70 mt-1 text-center';
+                label.className = 'bar-label';
                 label.textContent = currentTokens[i].text;
                 
                 const value = document.createElement('div');
-                value.className = 'text-xs text-white font-bold';
+                value.className = 'bar-value';
                 value.textContent = weight.toFixed(2);
                 
                 barContainer.appendChild(bar);
@@ -580,134 +1193,127 @@
                 barsContainer.appendChild(barContainer);
             });
             
-            attentionFlow.appendChild(barsContainer);
+            container.innerHTML = '';
+            container.appendChild(barsContainer);
         }
 
-        /**
-         * Exibe múltiplas cabeças de atenção
-         */
-        function displayMultiHeadAttention(numHeadsValue) {
-            multiHeadDisplay.innerHTML = '';
-            
-            if (attentionWeights.length === 0) {
-                multiHeadDisplay.innerHTML = '<p class="text-white/70">Calcule a atenção primeiro para ver as múltiplas cabeças.</p>';
-                return;
-            }
-            
-            multiHeadDisplay.style.gridTemplateColumns = `repeat(${Math.min(numHeadsValue, 4)}, 1fr)`;
-            
-            for (let head = 0; head < numHeadsValue; head++) {
-                const headDiv = document.createElement('div');
-                headDiv.className = 'glass-effect p-4 rounded-lg';
-                
-                const title = document.createElement('h3');
-                title.className = 'text-lg font-semibold mb-2 text-center';
-                title.textContent = `Cabeça ${head + 1}`;
-                headDiv.appendChild(title);
-                
-                // Gera uma variação da matriz de atenção para esta cabeça
-                const headMatrix = document.createElement('div');
-                headMatrix.className = 'attention-matrix';
-                headMatrix.style.gridTemplateColumns = `repeat(${currentTokens.length}, 1fr)`;
-                
-                attentionWeights.forEach((row, i) => {
-                    row.forEach((weight, j) => {
-                        // Adiciona variação aleatória para simular diferentes cabeças
-                        const variation = 0.8 + Math.random() * 0.4;
-                        const headWeight = Math.max(0, Math.min(1, weight * variation));
-                        
-                        const cell = document.createElement('div');
-                        cell.className = 'attention-cell';
-                        cell.style.backgroundColor = getAttentionColor(headWeight);
-                        cell.style.color = headWeight > 0.5 ? 'white' : 'black';
-                        cell.style.width = '25px';
-                        cell.style.height = '25px';
-                        cell.style.fontSize = '10px';
-                        cell.textContent = headWeight.toFixed(1);
-                        cell.title = `Cabeça ${head + 1}: ${currentTokens[i].text} → ${currentTokens[j].text}`;
-                        
-                        headMatrix.appendChild(cell);
-                    });
-                });
-                
-                headDiv.appendChild(headMatrix);
-                multiHeadDisplay.appendChild(headDiv);
-            }
+        function showAttentionDetails(fromIndex, toIndex, weight) {
+            const from = currentTokens[fromIndex].text;
+            const to = currentTokens[toIndex].text;
+            alert(`Atenção: "${from}" → "${to}" = ${weight.toFixed(3)}\n\nIsso significa que "${from}" presta ${(weight * 100).toFixed(1)}% de atenção a "${to}".`);
         }
 
-        /**
-         * Destaca um caminho de atenção específico
-         */
-        function highlightAttentionPath(fromIndex, toIndex, weight) {
-            // Remove destaques anteriores
-            document.querySelectorAll('.attention-cell').forEach(cell => {
-                cell.style.transform = '';
-                cell.style.zIndex = '';
-            });
+        // Seção 4: Tipos de atenção
+        function selectAttentionType(type) {
+            const titles = {
+                'self': '🔄 Self-Attention',
+                'masked': '🎭 Masked Self-Attention',
+                'cross': '🔀 Cross-Attention'
+            };
             
-            // Destaca a célula clicada
-            const cells = document.querySelectorAll('.attention-cell');
-            const cellIndex = (fromIndex * currentTokens.length) + toIndex + currentTokens.length + 1;
-            if (cells[cellIndex]) {
-                cells[cellIndex].style.transform = 'scale(1.2)';
-                cells[cellIndex].style.zIndex = '100';
-            }
+            document.getElementById('demoTitle').textContent = titles[type];
             
-            // Mostra informações detalhadas
-            console.log(`Atenção: ${currentTokens[fromIndex].text} → ${currentTokens[toIndex].text} = ${weight.toFixed(3)}`);
+            const container = document.getElementById('typeVisualization');
+            container.innerHTML = `
+                <div class="explanation-box">
+                    <div class="explanation-title">Demonstração: ${titles[type]}</div>
+                    <p>${getAttentionTypeExplanation(type)}</p>
+                </div>
+                <div class="interactive-demo">
+                    <button class="btn btn-primary" onclick="demonstrateAttentionType('${type}')">🎯 Ver Exemplo</button>
+                </div>
+                <div id="typeExample"></div>
+            `;
         }
 
-        // --- EVENT LISTENERS ---
+        function getAttentionTypeExplanation(type) {
+            const explanations = {
+                'self': 'Cada palavra pode prestar atenção a qualquer outra palavra na frase, incluindo ela mesma. Isso permite capturar relações bidirecionais.',
+                'masked': 'Cada palavra só pode prestar atenção às palavras que vêm antes dela. Isso é essencial para modelos generativos como GPT.',
+                'cross': 'Palavras de uma sequência (ex: pergunta) prestam atenção a palavras de outra sequência (ex: contexto). Usado em tradução e Q&A.'
+            };
+            return explanations[type];
+        }
 
-        // Atualização dos sliders
-        numHeads.addEventListener('input', (e) => {
-            numHeadsValue.textContent = `${e.target.value} cabeças`;
+        function demonstrateAttentionType(type) {
+            // Implementar demonstração específica para cada tipo
+            const container = document.getElementById('typeExample');
+            container.innerHTML = `<div class="explanation-box">Demonstração de ${type} em desenvolvimento...</div>`;
+        }
+
+        // Seção 5: Prática
+        document.getElementById('numHeads').addEventListener('input', (e) => {
+            document.getElementById('numHeadsValue').textContent = `${e.target.value} cabeças`;
         });
 
-        modelDim.addEventListener('input', (e) => {
-            modelDimValue.textContent = `${e.target.value} dimensões`;
-        });
+        function loadExample(type) {
+            const examples = {
+                'simple': 'O gato subiu no telhado.',
+                'complex': 'O gato preto que estava dormindo no jardim subiu rapidamente no telhado vermelho.',
+                'ambiguous': 'O homem viu o menino com o telescópio.',
+                'long': 'Era uma vez um gato muito esperto que vivia em uma casa antiga. Todos os dias ele subia no telhado para observar os pássaros que voavam pelo céu azul.'
+            };
+            
+            document.getElementById('practiceText').value = examples[type];
+        }
 
-        // Seleção do tipo de atenção
-        attentionTypeSelector.addEventListener('change', (e) => {
-            if (e.target.name === 'attention_type') {
-                currentAttentionType = e.target.value;
-            }
-        });
-
-        // Botão principal
-        computeAttention.addEventListener('click', () => {
-            const text = inputSequence.value.trim();
+        document.getElementById('runExperiment').addEventListener('click', () => {
+            const text = document.getElementById('practiceText').value.trim();
             if (!text) {
-                alert('Por favor, insira um texto para analisar.');
+                alert('Por favor, insira um texto para experimentar.');
                 return;
             }
             
-            // Tokeniza o texto
-            currentTokens = tokenizeText(text);
-            
-            // Gera vetores Q, K, V
-            const dim = parseInt(modelDim.value);
-            qkvVectors = generateQKVVectors(currentTokens, dim);
-            
-            // Calcula matriz de atenção
-            attentionWeights = computeAttentionMatrix(qkvVectors.Q, qkvVectors.K, currentAttentionType);
-            
-            // Atualiza visualizações
-            displayTokens(currentTokens);
-            displayAttentionMatrix(attentionWeights, currentTokens);
-            displayQKVVectors(qkvVectors, currentTokens);
-            displayMultiHeadAttention(parseInt(numHeads.value));
-            
-            // Reset seleção
-            selectedTokenIndex = -1;
-            showAttentionFlow(-1);
+            runExperiment(text);
         });
+
+        function runExperiment(text) {
+            const numHeads = parseInt(document.getElementById('numHeads').value);
+            const attentionType = document.getElementById('attentionTypeSelect').value;
+            
+            // Simular experimento
+            const results = {
+                text: text,
+                numHeads: numHeads,
+                attentionType: attentionType,
+                tokens: text.split(/\s+/).length,
+                avgAttention: Math.random().toFixed(3),
+                maxAttention: Math.random().toFixed(3)
+            };
+            
+            displayExperimentResults(results);
+        }
+
+        function displayExperimentResults(results) {
+            const container = document.getElementById('experimentResults');
+            const content = document.getElementById('resultsContent');
+            
+            content.innerHTML = `
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <div class="concept-title">📊 Estatísticas</div>
+                        <p><strong>Tokens:</strong> ${results.tokens}</p>
+                        <p><strong>Cabeças:</strong> ${results.numHeads}</p>
+                        <p><strong>Tipo:</strong> ${results.attentionType}</p>
+                    </div>
+                    <div class="concept-card">
+                        <div class="concept-title">🎯 Atenção</div>
+                        <p><strong>Média:</strong> ${results.avgAttention}</p>
+                        <p><strong>Máxima:</strong> ${results.maxAttention}</p>
+                    </div>
+                </div>
+                <div class="explanation-box">
+                    <div class="explanation-title">💡 Insights</div>
+                    <p>Com ${results.numHeads} cabeças de atenção, o modelo pode capturar ${results.numHeads} tipos diferentes de relações simultaneamente.</p>
+                </div>
+            `;
+            
+            container.style.display = 'block';
+        }
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
-            // Processa o texto inicial
-            computeAttention.click();
+            showSection(1);
         });
     </script>
 </body>

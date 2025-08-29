@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Head Attention - Mini GPT Rust</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .attention-head {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            margin: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .attention-head:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .attention-head.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .token {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .token:hover {
+            transform: scale(1.05);
+        }
+        .token.query {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        .token.key {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .token.value {
+            background: #dcfce7;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        .attention-matrix {
+            display: grid;
+            gap: 2px;
+            margin: 16px 0;
+            justify-content: center;
+        }
+        .attention-cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .attention-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            position: relative;
+        }
+        .head-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0;
+            justify-content: center;
+        }
+        .head-button {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .head-button:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .head-button.active {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            color: white;
+        }
+        .formula-box {
+            background: #1f2937;
+            color: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            margin: 16px 0;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .attention-visualization {
+            height: 300px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            position: relative;
+            overflow: hidden;
+        }
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            transform-origin: left center;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        .connection-line.strong {
+            height: 4px;
+            opacity: 1;
+        }
+        .token-position {
+            position: absolute;
+            width: 60px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .token-position:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        .aggregation-demo {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .head-output {
+            background: #fef7cd;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            text-align: center;
+        }
+        .final-output {
+            background: #dcfce7;
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        .parameter-controls {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .slider-container {
+            margin: 12px 0;
+        }
+        .slider {
+            width: 100%;
+            margin: 8px 0;
+        }
+        .attention-pattern {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 16px 0;
+        }
+        .pattern-row {
+            display: flex;
+            gap: 4px;
+            margin: 2px 0;
+        }
+        .pattern-cell {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                        🎯 Multi-Head Attention
+                    </h1>
+                    <p class="text-lg opacity-90">
+                        Múltiplas perspectivas de atenção trabalhando em paralelo
+                    </p>
+                </div>
+                <button onclick="window.history.back()" 
+                        class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    ← Voltar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Introdução -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🧠 O que é Multi-Head Attention?</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-gray-600 leading-relaxed mb-4">
+                        Multi-Head Attention é como ter <strong>múltiplos especialistas</strong> analisando 
+                        o mesmo texto simultaneamente. Cada "cabeça" de atenção foca em diferentes 
+                        aspectos das relações entre palavras.
+                    </p>
+                    <p class="text-gray-600 leading-relaxed">
+                        Enquanto uma cabeça pode focar em <strong>relações sintáticas</strong> 
+                        (sujeito-verbo), outra pode capturar <strong>relações semânticas</strong> 
+                        (palavras relacionadas por significado).
+                    </p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-2">🎭 Analogia: Orquestra</h3>
+                    <p class="text-blue-700 text-sm">
+                        Imagine uma orquestra onde cada músico (cabeça de atenção) toca uma parte 
+                        diferente da mesma música. O maestro (mecanismo de agregação) combina 
+                        todas as partes para criar a harmonia final.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controles Interativos -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎛️ Controles Interativos</h2>
+            <div class="parameter-controls">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="slider-container">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Cabeças</label>
+                        <input type="range" id="numHeads" min="2" max="8" value="4" class="slider">
+                        <div class="text-center text-sm text-gray-600">Cabeças: <span id="numHeadsValue">4</span></div>
+                    </div>
+                    <div class="slider-container">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dimensão por Cabeça</label>
+                        <input type="range" id="headDim" min="32" max="128" step="16" value="64" class="slider">
+                        <div class="text-center text-sm text-gray-600">d_k: <span id="headDimValue">64</span></div>
+                    </div>
+                    <div class="slider-container">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Comprimento da Sequência</label>
+                        <input type="range" id="seqLength" min="4" max="8" value="6" class="slider">
+                        <div class="text-center text-sm text-gray-600">Tokens: <span id="seqLengthValue">6</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fórmula Matemática -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📐 Fórmula Matemática</h2>
+            <div class="formula-box">
+                <div class="text-center mb-4">
+                    <div class="text-lg font-bold mb-4">Multi-Head Attention:</div>
+                    <div class="mb-2">MultiHead(Q, K, V) = Concat(head₁, head₂, ..., headₕ)W^O</div>
+                    <div class="mb-2">onde headᵢ = Attention(QWᵢ^Q, KWᵢ^K, VWᵢ^V)</div>
+                    <div class="mb-2">Attention(Q, K, V) = softmax(QK^T/√d_k)V</div>
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Parâmetros:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><code>h</code> = número de cabeças de atenção</li>
+                        <li><code>d_model</code> = dimensão do modelo (512)</li>
+                        <li><code>d_k = d_v = d_model/h</code> = dimensão por cabeça</li>
+                        <li><code>W^O</code> = matriz de projeção final</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Matrizes de Projeção:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><code>Wᵢ^Q ∈ ℝ^(d_model × d_k)</code> = projeção Query</li>
+                        <li><code>Wᵢ^K ∈ ℝ^(d_model × d_k)</code> = projeção Key</li>
+                        <li><code>Wᵢ^V ∈ ℝ^(d_model × d_v)</code> = projeção Value</li>
+                        <li><code>W^O ∈ ℝ^(hd_v × d_model)</code> = projeção saída</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seletor de Cabeças -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎯 Visualização por Cabeça</h2>
+            <div class="head-selector" id="headSelector">
+                <!-- Botões de cabeças serão gerados dinamicamente -->
+            </div>
+            <div class="text-center text-sm text-gray-600 mb-4">
+                Clique em uma cabeça para ver seu padrão de atenção específico
+            </div>
+        </section>
+
+        <!-- Sequência de Exemplo -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Sequência de Exemplo</h2>
+            <div class="text-center mb-4">
+                <div id="exampleSequence" class="flex flex-wrap justify-center gap-2">
+                    <!-- Tokens serão gerados dinamicamente -->
+                </div>
+            </div>
+            <div class="text-sm text-gray-600 text-center">
+                Cada token é processado por todas as cabeças simultaneamente
+            </div>
+        </section>
+
+        <!-- Visualização das Cabeças -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔍 Padrões de Atenção por Cabeça</h2>
+            <div id="attentionHeads" class="comparison-grid">
+                <!-- Cabeças de atenção serão geradas dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Agregação Final -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔄 Processo de Agregação</h2>
+            <div class="aggregation-demo">
+                <h3 class="font-semibold text-sky-800 mb-4 text-center">Como as saídas são combinadas:</h3>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">1. Saídas Individuais das Cabeças:</h4>
+                        <div id="headOutputs">
+                            <!-- Saídas das cabeças serão geradas dinamicamente -->
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">2. Concatenação e Projeção:</h4>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-2">Concat(head₁, head₂, ..., headₕ)</div>
+                            <div class="text-2xl text-gray-400 my-2">↓</div>
+                            <div class="text-sm text-gray-600 mb-2">Multiplicação por W^O</div>
+                            <div class="text-2xl text-gray-400 my-2">↓</div>
+                            <div class="final-output">
+                                Saída Final Multi-Head Attention
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparação: Single vs Multi-Head -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚔️ Single-Head vs Multi-Head</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-red-800 mb-2">👤 Single-Head Attention</h3>
+                    <ul class="list-disc list-inside space-y-1 text-red-700 text-sm">
+                        <li>Uma única perspectiva de atenção</li>
+                        <li>Pode perder relações importantes</li>
+                        <li>Limitado a um tipo de padrão</li>
+                        <li>Menor capacidade representacional</li>
+                        <li>Mais simples, mas menos expressivo</li>
+                    </ul>
+                    <div class="mt-4">
+                        <div class="attention-pattern">
+                            <div class="text-xs text-gray-600 mb-2">Padrão único:</div>
+                            <div class="pattern-row">
+                                <div class="pattern-cell" style="background: #ef4444;"></div>
+                                <div class="pattern-cell" style="background: #f87171;"></div>
+                                <div class="pattern-cell" style="background: #fca5a5;"></div>
+                                <div class="pattern-cell" style="background: #fecaca;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-green-800 mb-2">👥 Multi-Head Attention</h3>
+                    <ul class="list-disc list-inside space-y-1 text-green-700 text-sm">
+                        <li>Múltiplas perspectivas simultâneas</li>
+                        <li>Captura diferentes tipos de relações</li>
+                        <li>Padrões especializados por cabeça</li>
+                        <li>Alta capacidade representacional</li>
+                        <li>Mais complexo, mas muito mais expressivo</li>
+                    </ul>
+                    <div class="mt-4">
+                        <div class="attention-pattern">
+                            <div class="text-xs text-gray-600 mb-2">Múltiplos padrões:</div>
+                            <div class="pattern-row">
+                                <div class="pattern-cell" style="background: #10b981;"></div>
+                                <div class="pattern-cell" style="background: #3b82f6;"></div>
+                                <div class="pattern-cell" style="background: #8b5cf6;"></div>
+                                <div class="pattern-cell" style="background: #f59e0b;"></div>
+                            </div>
+                            <div class="pattern-row">
+                                <div class="pattern-cell" style="background: #34d399;"></div>
+                                <div class="pattern-cell" style="background: #60a5fa;"></div>
+                                <div class="pattern-cell" style="background: #a78bfa;"></div>
+                                <div class="pattern-cell" style="background: #fbbf24;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipos de Padrões -->
+        <section class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎨 Tipos de Padrões de Atenção</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-purple-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl mb-2">🔗</div>
+                    <h3 class="font-semibold text-purple-800 mb-2">Sintático</h3>
+                    <p class="text-purple-700 text-sm">Relações gramaticais como sujeito-verbo-objeto</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl mb-2">💭</div>
+                    <h3 class="font-semibold text-blue-800 mb-2">Semântico</h3>
+                    <p class="text-blue-700 text-sm">Palavras relacionadas por significado ou contexto</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl mb-2">📍</div>
+                    <h3 class="font-semibold text-green-800 mb-2">Posicional</h3>
+                    <p class="text-green-700 text-sm">Atenção baseada na distância entre tokens</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl mb-2">🎯</div>
+                    <h3 class="font-semibold text-orange-800 mb-2">Focal</h3>
+                    <p class="text-orange-700 text-sm">Concentração em tokens específicos importantes</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Variáveis globais
+        let currentNumHeads = 4;
+        let currentHeadDim = 64;
+        let currentSeqLength = 6;
+        let activeHead = 0;
+        let exampleTokens = ['O', 'gato', 'subiu', 'no', 'telhado', 'ontem'];
+        
+        // Elementos DOM
+        const numHeadsSlider = document.getElementById('numHeads');
+        const headDimSlider = document.getElementById('headDim');
+        const seqLengthSlider = document.getElementById('seqLength');
+        const numHeadsValue = document.getElementById('numHeadsValue');
+        const headDimValue = document.getElementById('headDimValue');
+        const seqLengthValue = document.getElementById('seqLengthValue');
+
+        // Função para gerar matriz de atenção aleatória
+        function generateAttentionMatrix(seqLen, headIndex) {
+            const matrix = [];
+            for (let i = 0; i < seqLen; i++) {
+                const row = [];
+                let sum = 0;
+                
+                // Gerar padrões diferentes para cada cabeça
+                for (let j = 0; j < seqLen; j++) {
+                    let value;
+                    switch (headIndex % 4) {
+                        case 0: // Padrão sintático (adjacentes)
+                            value = Math.exp(-Math.abs(i - j) * 0.5 + Math.random() * 0.3);
+                            break;
+                        case 1: // Padrão semântico (palavras relacionadas)
+                            value = Math.random() * 0.8 + 0.2;
+                            if ((i === 1 && j === 4) || (i === 4 && j === 1)) value *= 2; // gato-telhado
+                            break;
+                        case 2: // Padrão posicional (início/fim)
+                            value = (i === 0 || j === 0 || i === seqLen-1 || j === seqLen-1) ? 
+                                   Math.random() * 0.8 + 0.5 : Math.random() * 0.3;
+                            break;
+                        case 3: // Padrão focal (palavra principal)
+                            const focal = Math.floor(seqLen / 2);
+                            value = (i === focal || j === focal) ? 
+                                   Math.random() * 0.8 + 0.6 : Math.random() * 0.4;
+                            break;
+                        default:
+                            value = Math.random();
+                    }
+                    row.push(value);
+                    sum += value;
+                }
+                
+                // Normalizar para que a soma seja 1 (softmax)
+                for (let j = 0; j < seqLen; j++) {
+                    row[j] = row[j] / sum;
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        // Função para renderizar seletor de cabeças
+        function renderHeadSelector() {
+            const container = document.getElementById('headSelector');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < currentNumHeads; i++) {
+                const button = document.createElement('button');
+                button.className = `head-button ${i === activeHead ? 'active' : ''}`;
+                button.textContent = `Cabeça ${i + 1}`;
+                button.onclick = () => {
+                    activeHead = i;
+                    renderHeadSelector();
+                    renderAttentionHeads();
+                };
+                container.appendChild(button);
+            }
+        }
+
+        // Função para renderizar sequência de exemplo
+        function renderExampleSequence() {
+            const container = document.getElementById('exampleSequence');
+            container.innerHTML = '';
+            
+            const tokens = exampleTokens.slice(0, currentSeqLength);
+            tokens.forEach((token, index) => {
+                const tokenElement = document.createElement('div');
+                tokenElement.className = 'token';
+                tokenElement.textContent = token;
+                tokenElement.style.background = `hsl(${index * 60}, 70%, 85%)`;
+                tokenElement.style.borderColor = `hsl(${index * 60}, 70%, 60%)`;
+                tokenElement.style.color = `hsl(${index * 60}, 70%, 30%)`;
+                container.appendChild(tokenElement);
+            });
+        }
+
+        // Função para renderizar matriz de atenção
+        function renderAttentionMatrix(matrix, containerId, title) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = `<h4 class="text-sm font-semibold mb-2 text-center">${title}</h4>`;
+            
+            const matrixDiv = document.createElement('div');
+            matrixDiv.className = 'attention-matrix';
+            matrixDiv.style.gridTemplateColumns = `repeat(${matrix.length}, 30px)`;
+            
+            matrix.forEach((row, i) => {
+                row.forEach((value, j) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    cell.textContent = value.toFixed(2);
+                    cell.title = `Atenção de "${exampleTokens[i]}" para "${exampleTokens[j]}": ${value.toFixed(3)}`;
+                    
+                    // Colorir baseado na intensidade
+                    const intensity = value;
+                    const hue = 220; // Azul
+                    cell.style.backgroundColor = `hsla(${hue}, 70%, 50%, ${0.2 + intensity * 0.8})`;
+                    
+                    matrixDiv.appendChild(cell);
+                });
+            });
+            
+            container.appendChild(matrixDiv);
+        }
+
+        // Função para renderizar cabeças de atenção
+        function renderAttentionHeads() {
+            const container = document.getElementById('attentionHeads');
+            container.innerHTML = '';
+            
+            for (let h = 0; h < currentNumHeads; h++) {
+                const headDiv = document.createElement('div');
+                headDiv.className = `attention-head ${h === activeHead ? 'active' : ''}`;
+                headDiv.onclick = () => {
+                    activeHead = h;
+                    renderHeadSelector();
+                    renderAttentionHeads();
+                };
+                
+                const matrix = generateAttentionMatrix(currentSeqLength, h);
+                
+                const title = document.createElement('h3');
+                title.className = 'font-semibold text-gray-800 mb-2 text-center';
+                title.textContent = `Cabeça ${h + 1}`;
+                headDiv.appendChild(title);
+                
+                const matrixContainer = document.createElement('div');
+                matrixContainer.id = `matrix-${h}`;
+                headDiv.appendChild(matrixContainer);
+                
+                renderAttentionMatrix(matrix, `matrix-${h}`, getHeadDescription(h));
+                
+                container.appendChild(headDiv);
+            }
+        }
+
+        // Função para obter descrição da cabeça
+        function getHeadDescription(headIndex) {
+            const patterns = [
+                'Padrão Sintático',
+                'Padrão Semântico', 
+                'Padrão Posicional',
+                'Padrão Focal'
+            ];
+            return patterns[headIndex % 4];
+        }
+
+        // Função para renderizar saídas das cabeças
+        function renderHeadOutputs() {
+            const container = document.getElementById('headOutputs');
+            container.innerHTML = '';
+            
+            for (let h = 0; h < currentNumHeads; h++) {
+                const outputDiv = document.createElement('div');
+                outputDiv.className = 'head-output';
+                outputDiv.innerHTML = `
+                    <div class="text-xs font-semibold mb-1">Cabeça ${h + 1}</div>
+                    <div class="text-xs">Saída: [${Array(currentHeadDim/8).fill(0).map(() => (Math.random() * 2 - 1).toFixed(2)).join(', ')}...]</div>
+                `;
+                container.appendChild(outputDiv);
+            }
+        }
+
+        // Função para atualizar todas as visualizações
+        function updateVisualization() {
+            renderHeadSelector();
+            renderExampleSequence();
+            renderAttentionHeads();
+            renderHeadOutputs();
+        }
+
+        // Event listeners
+        numHeadsSlider.addEventListener('input', (e) => {
+            currentNumHeads = parseInt(e.target.value);
+            numHeadsValue.textContent = currentNumHeads;
+            activeHead = Math.min(activeHead, currentNumHeads - 1);
+            updateVisualization();
+        });
+
+        headDimSlider.addEventListener('input', (e) => {
+            currentHeadDim = parseInt(e.target.value);
+            headDimValue.textContent = currentHeadDim;
+            renderHeadOutputs();
+        });
+
+        seqLengthSlider.addEventListener('input', (e) => {
+            currentSeqLength = parseInt(e.target.value);
+            seqLengthValue.textContent = currentSeqLength;
+            updateVisualization();
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateVisualization();
+        });
+
+        // Atualizar matrizes a cada 4 segundos para mostrar variabilidade
+        setInterval(() => {
+            renderAttentionHeads();
+        }, 4000);
+    </script>
+</body>
+</html>

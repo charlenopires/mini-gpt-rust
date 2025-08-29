@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tokenização - Mini-GPT Rust</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-system.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
         .token-item {
             display: inline-block;
             margin: 2px;
@@ -101,145 +98,185 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <header class="gradient-bg text-white py-8">
-        <div class="container mx-auto px-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold mb-2">🔤 Tokenização</h1>
-                    <p class="text-lg opacity-90">Como o texto é convertido em tokens processáveis</p>
-                </div>
-                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Voltar
-                </a>
-            </div>
-        </div>
-    </header>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="page-header">
+            <a href="index.html" class="back-button">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Voltar
+            </a>
+            <h1 class="page-title">
+                <span class="page-icon">🔤</span>
+                Tokenização
+            </h1>
+            <p class="page-subtitle">Como o texto é convertido em tokens processáveis</p>
+        </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-6 py-8">
-        <!-- Control Panel -->
-        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">🎮 Painel de Controle</h2>
+        <!-- Main Content -->
+        <main class="grid-layout">
+            <!-- Control Panel -->
+            <section class="control-panel">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-icon">🎮</span>
+                        Painel de Controle
+                    </h2>
+                </div>
+                
+                <!-- Text Input -->
+                <div class="form-group">
+                    <label for="input-text" class="form-label">
+                        Texto para Tokenizar:
+                    </label>
+                    <textarea 
+                        id="input-text" 
+                        class="form-textarea"
+                        rows="4"
+                        placeholder="Digite ou cole o texto que você quer tokenizar..."
+                    >Olá mundo! Como você está hoje? Espero que esteja bem. 😊</textarea>
+                </div>
+
+                <!-- Algorithm Selection -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">🔧</span>
+                        Algoritmo de Tokenização:
+                    </label>
+                    <div class="radio-grid">
+                        <div class="radio-option algorithm-option selected" data-algorithm="word">
+                            <input type="radio" name="algorithm" value="word" class="radio-input" checked>
+                            <label class="radio-label">
+                                <span class="radio-icon">📝</span>
+                                <div class="radio-content">
+                                    <span class="radio-title">Por Palavras</span>
+                                    <span class="radio-description">Divide o texto em palavras completas</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="radio-option algorithm-option" data-algorithm="subword">
+                            <input type="radio" name="algorithm" value="subword" class="radio-input">
+                            <label class="radio-label">
+                                <span class="radio-icon">🔤</span>
+                                <div class="radio-content">
+                                    <span class="radio-title">Subpalavras (BPE)</span>
+                                    <span class="radio-description">Divide em subunidades menores</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="radio-option algorithm-option" data-algorithm="character">
+                            <input type="radio" name="algorithm" value="character" class="radio-input">
+                            <label class="radio-label">
+                                <span class="radio-icon">🔡</span>
+                                <div class="radio-content">
+                                    <span class="radio-title">Por Caracteres</span>
+                                    <span class="radio-description">Cada caractere é um token</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+            </div>
+
+                <!-- Parameters -->
+                <div class="form-group" id="parameters-section">
+                    <label class="form-label">
+                        <span class="label-icon">⚙️</span>
+                        Parâmetros
+                    </label>
+                    <div class="param-grid" id="parameters-container">
+                        <!-- Parâmetros serão inseridos dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button 
+                    id="tokenize-btn" 
+                    class="btn btn-primary btn-full"
+                >
+                    <span class="btn-icon">🚀</span>
+                    Visualizar Tokenização
+                </button>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-area">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-icon">📊</span>
+                        Resultado da Tokenização
+                    </h2>
+                </div>
             
-            <!-- Text Input -->
-            <div class="mb-6">
-                <label for="input-text" class="block text-sm font-medium text-gray-700 mb-2">
-                    Texto para Tokenizar:
-                </label>
-                <textarea 
-                    id="input-text" 
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows="4"
-                    placeholder="Digite ou cole o texto que você quer tokenizar..."
-                >Olá mundo! Como você está hoje? Espero que esteja bem. 😊</textarea>
-            </div>
-
-            <!-- Algorithm Selection -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-3">
-                    Algoritmo de Tokenização:
-                </label>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <div class="algorithm-option selected border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-algorithm="word">
-                        <div class="flex items-center mb-2">
-                            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                            <h3 class="font-semibold text-gray-800">Por Palavras</h3>
+                <!-- Visualization Area -->
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <span class="section-icon">🎬</span>
+                            Processo de Tokenização
+                        </h3>
+                    </div>
+                    <div class="visualization-container" id="visualization-area">
+                        <div class="empty-state">
+                            Clique em "Visualizar Tokenização" para ver o processo em ação
                         </div>
-                        <p class="text-sm text-gray-600">Divide o texto em palavras completas</p>
-                        <div class="tooltip">Simples e intuitivo, mas vocabulário limitado</div>
                     </div>
-                    <div class="algorithm-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-algorithm="subword">
-                        <div class="flex items-center mb-2">
-                            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                            <h3 class="font-semibold text-gray-800">Subpalavras (BPE)</h3>
+                </div>
+
+                <!-- Tokens Display -->
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <span class="section-icon">🔤</span>
+                            Tokens Gerados
+                        </h3>
+                    </div>
+                    <div class="tokens-container" id="tokens-display">
+                        <div class="empty-state">
+                            Os tokens aparecerão aqui após a tokenização
                         </div>
-                        <p class="text-sm text-gray-600">Divide em subunidades menores</p>
-                        <div class="tooltip">Usado em modelos modernos como GPT</div>
                     </div>
-                    <div class="algorithm-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-algorithm="character">
-                        <div class="flex items-center mb-2">
-                            <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                            <h3 class="font-semibold text-gray-800">Por Caracteres</h3>
+                </div>
+            </div>
+
+                <!-- Statistics -->
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <span class="section-icon">📈</span>
+                            Estatísticas
+                        </h3>
+                    </div>
+                    <div class="stats-grid" id="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-tokens">-</div>
+                            <div class="stat-label">Total de Tokens</div>
                         </div>
-                        <p class="text-sm text-gray-600">Cada caractere é um token</p>
-                        <div class="tooltip">Vocabulário mínimo, mas sequências longas</div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="unique-tokens">-</div>
+                            <div class="stat-label">Tokens Únicos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="avg-length">-</div>
+                            <div class="stat-label">Comprimento Médio</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="compression-ratio">-</div>
+                            <div class="stat-label">Taxa de Compressão</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Parameters -->
-            <div class="mb-6" id="parameters-section">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">⚙️ Parâmetros</h3>
-                <div class="grid md:grid-cols-2 gap-4" id="parameters-container">
-                    <!-- Parâmetros serão inseridos dinamicamente -->
+            <!-- Educational Content -->
+            <section class="glass-card">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-icon">📚</span>
+                        Conceitos Fundamentais
+                    </h2>
                 </div>
-            </div>
-
-            <!-- Action Button -->
-            <button 
-                id="tokenize-btn" 
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-                🚀 Visualizar Tokenização
-            </button>
-        </section>
-
-        <!-- Results Section -->
-        <section class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Resultado da Tokenização</h2>
-            
-            <!-- Visualization Area -->
-            <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">🎬 Processo de Tokenização</h3>
-                <div class="bg-gray-50 rounded-lg p-6 relative" id="visualization-area">
-                    <div class="text-gray-500 text-center py-8">
-                        Clique em "Visualizar Tokenização" para ver o processo em ação
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tokens Display -->
-            <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">🔤 Tokens Gerados</h3>
-                <div class="bg-gray-50 rounded-lg p-6" id="tokens-display">
-                    <div class="text-gray-500 text-center py-4">
-                        Os tokens aparecerão aqui após a tokenização
-                    </div>
-                </div>
-            </div>
-
-            <!-- Statistics -->
-            <div>
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">📈 Estatísticas</h3>
-                <div class="grid md:grid-cols-4 gap-4" id="stats-container">
-                    <div class="bg-blue-50 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-blue-600" id="total-tokens">-</div>
-                        <div class="text-sm text-blue-800">Total de Tokens</div>
-                    </div>
-                    <div class="bg-green-50 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-green-600" id="unique-tokens">-</div>
-                        <div class="text-sm text-green-800">Tokens Únicos</div>
-                    </div>
-                    <div class="bg-yellow-50 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-yellow-600" id="avg-length">-</div>
-                        <div class="text-sm text-yellow-800">Comprimento Médio</div>
-                    </div>
-                    <div class="bg-purple-50 rounded-lg p-4 text-center">
-                        <div class="text-2xl font-bold text-purple-600" id="compression-ratio">-</div>
-                        <div class="text-sm text-purple-800">Taxa de Compressão</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Educational Content -->
-        <section class="bg-white rounded-lg shadow-lg p-6 mt-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 Conceitos Fundamentais</h2>
             
             <div class="grid md:grid-cols-2 gap-8">
                 <div>
@@ -588,5 +625,7 @@
         // Inicialização
         updateParameters();
     </script>
+        </main>
+    </div>
 </body>
 </html>

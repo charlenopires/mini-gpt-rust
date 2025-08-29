@@ -108,6 +108,42 @@ impl WebServer {
             file_path: "embeddings.html".to_string(),
         });
         
+        interactives.insert("positional_encoding".to_string(), InteractiveMetadata {
+            id: "positional_encoding".to_string(),
+            title: "Codificação Posicional".to_string(),
+            description: "Entenda como os Transformers sabem a ordem das palavras usando funções matemáticas".to_string(),
+            difficulty: "Intermediário".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "positional_encoding.html".to_string(),
+        });
+        
+        interactives.insert("layer_normalization".to_string(), InteractiveMetadata {
+            id: "layer_normalization".to_string(),
+            title: "Layer Normalization".to_string(),
+            description: "Descubra como a normalização estabiliza o treinamento de redes neurais profundas".to_string(),
+            difficulty: "Intermediário".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "layer_normalization.html".to_string(),
+        });
+        
+        interactives.insert("multi_head_attention".to_string(), InteractiveMetadata {
+            id: "multi_head_attention".to_string(),
+            title: "Multi-Head Attention".to_string(),
+            description: "Explore como múltiplas cabeças de atenção trabalham em paralelo".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "multi_head_attention.html".to_string(),
+        });
+        
+        interactives.insert("advanced_attention".to_string(), InteractiveMetadata {
+            id: "advanced_attention".to_string(),
+            title: "Atenção Avançada".to_string(),
+            description: "Visualização completa com controles avançados, tipos de atenção e métricas detalhadas".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Atenção".to_string(),
+            file_path: "advanced_attention.html".to_string(),
+        });
+        
         interactives.insert("transformer".to_string(), InteractiveMetadata {
             id: "transformer".to_string(),
             title: "Arquitetura Transformer".to_string(),
@@ -115,6 +151,69 @@ impl WebServer {
             difficulty: "Avançado".to_string(),
             category: "Arquitetura".to_string(),
             file_path: "transformer.html".to_string(),
+        });
+        
+        interactives.insert("advanced_transformer".to_string(), InteractiveMetadata {
+            id: "advanced_transformer".to_string(),
+            title: "Transformer Avançado".to_string(),
+            description: "Arquitetura completa com comparações, métricas e visualizações detalhadas".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "advanced_transformer.html".to_string(),
+        });
+        
+        interactives.insert("sampling_strategies".to_string(), InteractiveMetadata {
+            id: "sampling_strategies".to_string(),
+            title: "Estratégias de Amostragem".to_string(),
+            description: "Explore como diferentes estratégias controlam a criatividade na geração de texto".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Inferência".to_string(),
+            file_path: "sampling_strategies.html".to_string(),
+        });
+        
+        interactives.insert("advanced_sampling".to_string(), InteractiveMetadata {
+            id: "advanced_sampling".to_string(),
+            title: "Estratégias de Amostragem Avançadas".to_string(),
+            description: "Explore técnicas avançadas de amostragem com visualizações interativas e comparações em tempo real".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Geração".to_string(),
+            file_path: "advanced_sampling.html".to_string(),
+        });
+        
+        interactives.insert("feed_forward".to_string(), InteractiveMetadata {
+            id: "feed_forward".to_string(),
+            title: "Feed-Forward Networks".to_string(),
+            description: "Explore como as redes feed-forward processam informações através de camadas densas".to_string(),
+            difficulty: "Intermediário".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "feed_forward.html".to_string(),
+        });
+        
+        interactives.insert("advanced_feedforward".to_string(), InteractiveMetadata {
+            id: "advanced_feedforward".to_string(),
+            title: "Feed-Forward Networks Avançadas".to_string(),
+            description: "Visualizações avançadas de neurônios, ativações, gradientes e comparação de funções de ativação".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "advanced_feedforward.html".to_string(),
+        });
+        
+        interactives.insert("residual_connections".to_string(), InteractiveMetadata {
+            id: "residual_connections".to_string(),
+            title: "Residual Connections".to_string(),
+            description: "Entenda como as conexões residuais resolvem o problema do gradiente que desaparece".to_string(),
+            difficulty: "Intermediário".to_string(),
+            category: "Arquitetura".to_string(),
+            file_path: "residual_connections.html".to_string(),
+        });
+        
+        interactives.insert("loss_function".to_string(), InteractiveMetadata {
+            id: "loss_function".to_string(),
+            title: "Função de Perda Cross-Entropy".to_string(),
+            description: "Entenda como a função de perda mede e otimiza o aprendizado do modelo".to_string(),
+            difficulty: "Intermediário".to_string(),
+            category: "Treinamento".to_string(),
+            file_path: "loss_function.html".to_string(),
         });
         
         interactives.insert("training".to_string(), InteractiveMetadata {
@@ -133,6 +232,15 @@ impl WebServer {
             difficulty: "Intermediário".to_string(),
             category: "Inferência".to_string(),
             file_path: "inference.html".to_string(),
+        });
+        
+        interactives.insert("model_comparison".to_string(), InteractiveMetadata {
+            id: "model_comparison".to_string(),
+            title: "Comparação de Modelos".to_string(),
+            description: "Compare diferentes tamanhos de modelo GPT e suas características de performance".to_string(),
+            difficulty: "Avançado".to_string(),
+            category: "Análise".to_string(),
+            file_path: "model_comparison.html".to_string(),
         });
         
         Self {
@@ -164,10 +272,11 @@ impl WebServer {
     async fn create_router(&self) -> Result<Router> {
         let interactives = self.interactives.clone();
         let interativos_dir = self.config.interativos_dir.clone();
+        let interativos_dir_for_index = self.config.interativos_dir.clone();
         
         let mut app = Router::new()
-            // Página principal (índice)
-            .route("/", get(move || index_handler(interactives.clone())))
+            // Página principal (índice) - tenta servir index.html primeiro
+            .route("/", get(move || static_index_handler(interativos_dir_for_index.clone(), interactives.clone())))
             // Interativo específico
             .route("/interactive/:id", get(move |path| {
                 interactive_handler(path, interativos_dir.clone())
@@ -175,7 +284,9 @@ impl WebServer {
             // Servir arquivos estáticos do diretório interativos
             .nest_service("/static", ServeDir::new(&self.config.interativos_dir))
             // Servir arquivos JavaScript específicos
-            .nest_service("/js", ServeDir::new(self.config.interativos_dir.join("js")));
+            .nest_service("/js", ServeDir::new(self.config.interativos_dir.join("js")))
+            // Servir arquivos CSS específicos
+            .nest_service("/css", ServeDir::new(self.config.interativos_dir.join("css")));
         
         // Integrar WebSocket e API REST se habilitado
         if self.config.enable_integration {
@@ -196,7 +307,23 @@ impl WebServer {
     }
 }
 
-/// Handler para a página de índice
+/// Handler para servir index.html estático ou página dinâmica
+async fn static_index_handler(
+    interativos_dir: PathBuf,
+    interactives: HashMap<String, InteractiveMetadata>,
+) -> impl IntoResponse {
+    let index_path = interativos_dir.join("index.html");
+    
+    // Tenta servir o arquivo index.html estático primeiro
+    if let Ok(content) = fs::read_to_string(&index_path).await {
+        return Html(content).into_response();
+    }
+    
+    // Se não existir, usa o handler dinâmico
+    index_handler(interactives).await.into_response()
+}
+
+/// Handler para a página de índice dinâmica
 async fn index_handler(interactives: HashMap<String, InteractiveMetadata>) -> impl IntoResponse {
     let mut categories: HashMap<String, Vec<&InteractiveMetadata>> = HashMap::new();
     
@@ -1830,13 +1957,25 @@ async fn interactive_handler(
 ) -> Result<Response, StatusCode> {
     // Mapeia IDs para arquivos
     let file_name = match id.as_str() {
-        "chunking" => "sample.html",
+        "chunking" => "chunking.html",
         "attention" => "attention.html",
         "tokenization" => "tokenization.html",
         "embeddings" => "embeddings.html",
+        "positional_encoding" => "positional_encoding.html",
+        "layer_normalization" => "layer_normalization.html",
+        "multi_head_attention" => "multi_head_attention.html",
+        "advanced_attention" => "advanced_attention.html",
         "transformer" => "transformer.html",
+        "advanced_transformer" => "advanced_transformer.html",
+        "sampling_strategies" => "sampling_strategies.html",
+        "advanced_sampling" => "advanced_sampling.html",
+        "feed_forward" => "feed_forward.html",
+        "advanced_feedforward" => "advanced_feedforward.html",
+        "residual_connections" => "residual_connections.html",
+        "loss_function" => "loss_function.html",
         "training" => "training.html",
         "inference" => "inference.html",
+        "model_comparison" => "model_comparison.html",
         _ => return Err(StatusCode::NOT_FOUND),
     };
     

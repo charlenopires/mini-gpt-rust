@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estratégias de Amostragem Avançadas</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <style>
+        .advanced-sampling-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .sampling-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .sampling-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sampling-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .control-panel {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .control-group {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .value-display {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: var(--surface-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .strategy-selector {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .strategy-button {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+        }
+        
+        .strategy-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .strategy-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        
+        .probability-chart {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .chart-canvas {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 20px 0;
+            width: 100%;
+        }
+        
+        .generation-demo {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .demo-input {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            width: 100%;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .demo-output {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        .token-visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .token {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .token:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .token.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        
+        .token.candidate {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .token-probability {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: 600;
+        }
+        
+        .comparison-section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .comparison-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .action-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .action-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .action-button.secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.secondary:hover {
+            background: #ccc;
+        }
+        
+        .metrics-dashboard {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2.2em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .mathematical-details {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .math-title {
+            color: #388e3c;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+        }
+        
+        .formula-box {
+            background: white;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .creativity-scale {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .scale-label {
+            font-weight: 600;
+            min-width: 100px;
+        }
+        
+        .scale-bar {
+            flex: 1;
+            height: 20px;
+            background: linear-gradient(90deg, #4caf50, #ffeb3b, #ff5722);
+            border-radius: 10px;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        
+        .scale-indicator {
+            position: absolute;
+            top: -5px;
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .sampling-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .strategy-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="advanced-sampling-container">
+        <header class="hero-section">
+            <h1>🎲 Estratégias de Amostragem Avançadas</h1>
+            <p class="hero-description">
+                Explore como diferentes estratégias de amostragem controlam a criatividade e qualidade 
+                na geração de texto, com visualizações interativas e comparações em tempo real.
+            </p>
+        </header>
+
+        <section class="control-panel">
+            <h2>🎛️ Configuração de Amostragem</h2>
+            
+            <div class="strategy-selector">
+                <button class="strategy-button active" onclick="setStrategy('greedy')">🎯 Greedy</button>
+                <button class="strategy-button" onclick="setStrategy('temperature')">🌡️ Temperature</button>
+                <button class="strategy-button" onclick="setStrategy('top_k')">🔝 Top-K</button>
+                <button class="strategy-button" onclick="setStrategy('top_p')">📊 Top-P</button>
+                <button class="strategy-button" onclick="setStrategy('nucleus')">⚛️ Nucleus</button>
+            </div>
+            
+            <div class="control-grid">
+                <div class="control-group">
+                    <label>Temperature: <span id="temperature-value">1.0</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="temperature-slider" class="slider" min="0.1" max="2.0" step="0.1" value="1.0">
+                        <div class="value-display" id="temperature-display">1.0</div>
+                    </div>
+                    <div class="creativity-scale">
+                        <span class="scale-label">Conservador</span>
+                        <div class="scale-bar">
+                            <div class="scale-indicator" id="temp-indicator"></div>
+                        </div>
+                        <span class="scale-label">Criativo</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Top-K: <span id="top-k-value">50</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="top-k-slider" class="slider" min="1" max="100" step="1" value="50">
+                        <div class="value-display" id="top-k-display">50</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Top-P (Nucleus): <span id="top-p-value">0.9</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="top-p-slider" class="slider" min="0.1" max="1.0" step="0.05" value="0.9">
+                        <div class="value-display" id="top-p-display">0.9</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Repetition Penalty: <span id="rep-penalty-value">1.1</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="rep-penalty-slider" class="slider" min="1.0" max="2.0" step="0.1" value="1.1">
+                        <div class="value-display" id="rep-penalty-display">1.1</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="action-button" onclick="generateSample()">🎲 Gerar Amostra</button>
+            <button class="action-button" onclick="compareStrategies()">⚖️ Comparar</button>
+            <button class="action-button secondary" onclick="resetSettings()">↩️ Reset</button>
+        </section>
+
+        <section class="sampling-grid">
+            <div class="sampling-panel">
+                <div class="panel-title">
+                    📊 Distribuição de Probabilidades
+                </div>
+                
+                <canvas id="probability-chart" class="chart-canvas" width="500" height="300"></canvas>
+                
+                <div class="token-visualization" id="token-candidates">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+            </div>
+            
+            <div class="sampling-panel">
+                <div class="panel-title">
+                    🎯 Processo de Seleção
+                </div>
+                
+                <canvas id="selection-process" class="chart-canvas" width="500" height="300"></canvas>
+                
+                <div id="selection-steps" class="token-visualization">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+            </div>
+        </section>
+
+        <section class="generation-demo">
+            <h2>💬 Demonstração de Geração</h2>
+            
+            <label for="prompt-input">Prompt de entrada:</label>
+            <textarea id="prompt-input" class="demo-input" placeholder="Digite seu prompt aqui...">Era uma vez</textarea>
+            
+            <div class="demo-output" id="generated-text">
+                Clique em "Gerar Amostra" para ver o texto gerado...
+            </div>
+            
+            <div class="token-visualization" id="generated-tokens">
+                <!-- Tokens gerados aparecerão aqui -->
+            </div>
+        </section>
+
+        <section class="metrics-dashboard">
+            <h2>📊 Métricas de Amostragem</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="entropy-value">2.45</div>
+                    <div class="metric-label">Entropia</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="perplexity-value">15.3</div>
+                    <div class="metric-label">Perplexidade</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="diversity-value">0.78</div>
+                    <div class="metric-label">Diversidade</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="repetition-value">0.12</div>
+                    <div class="metric-label">Repetição</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="coherence-value">0.85</div>
+                    <div class="metric-label">Coerência</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="creativity-value">0.65</div>
+                    <div class="metric-label">Criatividade</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="comparison-section">
+            <h2>⚖️ Comparação de Estratégias</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-title">🎯 Greedy Decoding</div>
+                    <ul>
+                        <li><strong>Método:</strong> Sempre escolhe o token mais provável</li>
+                        <li><strong>Vantagens:</strong> Determinístico, rápido</li>
+                        <li><strong>Desvantagens:</strong> Repetitivo, sem criatividade</li>
+                        <li><strong>Uso:</strong> Tarefas que exigem precisão</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🌡️ Temperature Sampling</div>
+                    <ul>
+                        <li><strong>Método:</strong> Ajusta distribuição com temperatura</li>
+                        <li><strong>Vantagens:</strong> Controle fino da aleatoriedade</li>
+                        <li><strong>Desvantagens:</strong> Pode gerar texto incoerente</li>
+                        <li><strong>Uso:</strong> Geração criativa controlada</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🔝 Top-K Sampling</div>
+                    <ul>
+                        <li><strong>Método:</strong> Considera apenas os K tokens mais prováveis</li>
+                        <li><strong>Vantagens:</strong> Evita tokens improváveis</li>
+                        <li><strong>Desvantagens:</strong> K fixo pode ser limitante</li>
+                        <li><strong>Uso:</strong> Balanceio entre qualidade e diversidade</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">📊 Top-P (Nucleus)</div>
+                    <ul>
+                        <li><strong>Método:</strong> Considera tokens até probabilidade cumulativa P</li>
+                        <li><strong>Vantagens:</strong> Adaptativo ao contexto</li>
+                        <li><strong>Desvantagens:</strong> Mais complexo de ajustar</li>
+                        <li><strong>Uso:</strong> Geração de alta qualidade</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="probability-chart">
+            <h2>📈 Análise de Probabilidades</h2>
+            <canvas id="detailed-probability-chart" class="chart-canvas" width="800" height="400"></canvas>
+        </section>
+
+        <section class="mathematical-details">
+            <div class="math-title">
+                🧮 Detalhes Matemáticos
+            </div>
+            
+            <h3>Temperature Sampling</h3>
+            <div class="formula-box">
+                P'(x_i) = exp(logits_i / T) / Σ exp(logits_j / T)<br>
+                onde T é a temperatura (T → 0: determinístico, T → ∞: uniforme)
+            </div>
+            
+            <h3>Top-K Sampling</h3>
+            <div class="formula-box">
+                P'(x_i) = P(x_i) se x_i ∈ top-K tokens, 0 caso contrário<br>
+                Renormalização: P'(x_i) = P(x_i) / Σ P(x_j) para j ∈ top-K
+            </div>
+            
+            <h3>Top-P (Nucleus) Sampling</h3>
+            <div class="formula-box">
+                V_p = {x ∈ V : Σ P(x_i) ≤ p, onde x_i são ordenados por P(x_i)}<br>
+                Considera o menor conjunto de tokens cuja probabilidade cumulativa ≤ p
+            </div>
+            
+            <h3>Métricas de Qualidade</h3>
+            <div class="formula-box">
+                <strong>Entropia:</strong> H = -Σ P(x_i) log P(x_i)<br>
+                <strong>Perplexidade:</strong> PP = 2^H<br>
+                <strong>Diversidade:</strong> 1 - (repetições / total_tokens)
+            </div>
+        </section>
+
+        <section class="implementation-details">
+            <h2>💻 Implementação em Rust</h2>
+            
+            <div class="mathematical-details">
+                <div class="math-title">
+                    🦀 Código Rust
+                </div>
+                
+                <div class="formula-box" style="text-align: left; font-family: 'Courier New', monospace;">
+                    <strong>pub enum SamplingStrategy {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Greedy,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Temperature { temperature: f32 },<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;TopK { k: usize, temperature: f32 },<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;TopP { p: f32, temperature: f32 },<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Nucleus { p: f32, temperature: f32 },<br>
+                    <strong>}</strong><br><br>
+                    
+                    <strong>impl SamplingStrategy {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;pub fn sample(&self, logits: &[f32]) -> usize {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match self {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Greedy => self.greedy_sample(logits),<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Temperature { temperature } => {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.temperature_sample(logits, *temperature)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ... outras estratégias<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    <strong>}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentStrategy = 'greedy';
+        let currentSettings = {
+            temperature: 1.0,
+            topK: 50,
+            topP: 0.9,
+            repPenalty: 1.1
+        };
+        
+        // Vocabulário simulado para demonstração
+        const vocabulary = [
+            'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'you', 'that',
+            'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i',
+            'at', 'be', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'word',
+            'but', 'not', 'what', 'all', 'were', 'we', 'when', 'your', 'can', 'said',
+            'there', 'each', 'which', 'she', 'do', 'how', 'their', 'if', 'will', 'up'
+        ];
+        
+        // Elementos DOM
+        const temperatureSlider = document.getElementById('temperature-slider');
+        const topKSlider = document.getElementById('top-k-slider');
+        const topPSlider = document.getElementById('top-p-slider');
+        const repPenaltySlider = document.getElementById('rep-penalty-slider');
+        const probabilityCanvas = document.getElementById('probability-chart');
+        const selectionCanvas = document.getElementById('selection-process');
+        const detailedChart = document.getElementById('detailed-probability-chart');
+        const probCtx = probabilityCanvas.getContext('2d');
+        const selCtx = selectionCanvas.getContext('2d');
+        const detailCtx = detailedChart.getContext('2d');
+        
+        // Event listeners
+        temperatureSlider.addEventListener('input', (e) => {
+            currentSettings.temperature = parseFloat(e.target.value);
+            document.getElementById('temperature-display').textContent = currentSettings.temperature.toFixed(1);
+            updateTemperatureIndicator();
+            updateVisualization();
+        });
+        
+        topKSlider.addEventListener('input', (e) => {
+            currentSettings.topK = parseInt(e.target.value);
+            document.getElementById('top-k-display').textContent = currentSettings.topK;
+            updateVisualization();
+        });
+        
+        topPSlider.addEventListener('input', (e) => {
+            currentSettings.topP = parseFloat(e.target.value);
+            document.getElementById('top-p-display').textContent = currentSettings.topP.toFixed(2);
+            updateVisualization();
+        });
+        
+        repPenaltySlider.addEventListener('input', (e) => {
+            currentSettings.repPenalty = parseFloat(e.target.value);
+            document.getElementById('rep-penalty-display').textContent = currentSettings.repPenalty.toFixed(1);
+            updateVisualization();
+        });
+        
+        function setStrategy(strategy) {
+            currentStrategy = strategy;
+            
+            // Atualizar botões
+            document.querySelectorAll('.strategy-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateVisualization();
+        }
+        
+        function updateTemperatureIndicator() {
+            const indicator = document.getElementById('temp-indicator');
+            const percentage = ((currentSettings.temperature - 0.1) / (2.0 - 0.1)) * 100;
+            indicator.style.left = `${percentage}%`;
+        }
+        
+        function updateVisualization() {
+            updateProbabilityChart();
+            updateSelectionProcess();
+            updateDetailedChart();
+            updateTokenCandidates();
+            updateMetrics();
+        }
+        
+        function generateRandomLogits(size = 20) {
+            const logits = [];
+            for (let i = 0; i < size; i++) {
+                logits.push(Math.random() * 10 - 5); // Logits entre -5 e 5
+            }
+            return logits;
+        }
+        
+        function applySoftmax(logits, temperature = 1.0) {
+            const scaledLogits = logits.map(l => l / temperature);
+            const maxLogit = Math.max(...scaledLogits);
+            const expLogits = scaledLogits.map(l => Math.exp(l - maxLogit));
+            const sumExp = expLogits.reduce((a, b) => a + b, 0);
+            return expLogits.map(e => e / sumExp);
+        }
+        
+        function applyTopK(probabilities, k) {
+            const indexed = probabilities.map((p, i) => ({ prob: p, index: i }));
+            indexed.sort((a, b) => b.prob - a.prob);
+            
+            const result = new Array(probabilities.length).fill(0);
+            let sum = 0;
+            for (let i = 0; i < Math.min(k, indexed.length); i++) {
+                result[indexed[i].index] = indexed[i].prob;
+                sum += indexed[i].prob;
+            }
+            
+            // Renormalizar
+            return result.map(p => p / sum);
+        }
+        
+        function applyTopP(probabilities, p) {
+            const indexed = probabilities.map((prob, i) => ({ prob, index: i }));
+            indexed.sort((a, b) => b.prob - a.prob);
+            
+            let cumulativeProb = 0;
+            const result = new Array(probabilities.length).fill(0);
+            let sum = 0;
+            
+            for (const item of indexed) {
+                if (cumulativeProb >= p) break;
+                result[item.index] = item.prob;
+                sum += item.prob;
+                cumulativeProb += item.prob;
+            }
+            
+            // Renormalizar
+            return result.map(prob => prob / sum);
+        }
+        
+        function updateProbabilityChart() {
+            probCtx.clearRect(0, 0, probabilityCanvas.width, probabilityCanvas.height);
+            
+            const logits = generateRandomLogits(15);
+            let probabilities = applySoftmax(logits, currentSettings.temperature);
+            
+            // Aplicar estratégia de amostragem
+            switch (currentStrategy) {
+                case 'top_k':
+                    probabilities = applyTopK(probabilities, currentSettings.topK);
+                    break;
+                case 'top_p':
+                case 'nucleus':
+                    probabilities = applyTopP(probabilities, currentSettings.topP);
+                    break;
+            }
+            
+            const width = probabilityCanvas.width;
+            const height = probabilityCanvas.height;
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            const barWidth = chartWidth / probabilities.length;
+            
+            // Desenhar eixos
+            probCtx.strokeStyle = '#333';
+            probCtx.lineWidth = 2;
+            probCtx.beginPath();
+            probCtx.moveTo(margin, margin + chartHeight);
+            probCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            probCtx.moveTo(margin, margin);
+            probCtx.lineTo(margin, margin + chartHeight);
+            probCtx.stroke();
+            
+            // Desenhar barras
+            const maxProb = Math.max(...probabilities);
+            probabilities.forEach((prob, i) => {
+                const barHeight = (prob / maxProb) * chartHeight * 0.8;
+                const x = margin + i * barWidth;
+                const y = margin + chartHeight - barHeight;
+                
+                // Cor baseada na estratégia
+                let color = '#4caf50';
+                if (currentStrategy === 'temperature') color = '#ff9800';
+                else if (currentStrategy === 'top_k') color = '#2196f3';
+                else if (currentStrategy === 'top_p' || currentStrategy === 'nucleus') color = '#9c27b0';
+                
+                probCtx.fillStyle = color;
+                probCtx.fillRect(x + 2, y, barWidth - 4, barHeight);
+                
+                // Labels
+                probCtx.fillStyle = '#333';
+                probCtx.font = '10px Arial';
+                probCtx.textAlign = 'center';
+                probCtx.fillText(`T${i}`, x + barWidth/2, margin + chartHeight + 15);
+                
+                // Valores de probabilidade
+                if (prob > 0.01) {
+                    probCtx.fillStyle = 'white';
+                    probCtx.font = '8px Arial';
+                    probCtx.fillText(prob.toFixed(2), x + barWidth/2, y + 12);
+                }
+            });
+            
+            // Título
+            probCtx.fillStyle = '#333';
+            probCtx.font = '14px Arial';
+            probCtx.textAlign = 'center';
+            probCtx.fillText(`Distribuição - ${currentStrategy.toUpperCase()}`, width/2, 20);
+        }
+        
+        function updateSelectionProcess() {
+            selCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+            
+            const width = selectionCanvas.width;
+            const height = selectionCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Desenhar processo de seleção como fluxograma
+            const steps = [
+                { text: 'Logits', y: 50, color: '#e3f2fd' },
+                { text: 'Softmax', y: 100, color: '#bbdefb' },
+                { text: currentStrategy.toUpperCase(), y: 150, color: '#90caf9' },
+                { text: 'Amostragem', y: 200, color: '#64b5f6' },
+                { text: 'Token', y: 250, color: '#42a5f5' }
+            ];
+            
+            steps.forEach((step, i) => {
+                // Caixa do passo
+                selCtx.fillStyle = step.color;
+                selCtx.fillRect(centerX - 60, step.y - 15, 120, 30);
+                selCtx.strokeStyle = '#1976d2';
+                selCtx.strokeRect(centerX - 60, step.y - 15, 120, 30);
+                
+                // Texto
+                selCtx.fillStyle = '#1976d2';
+                selCtx.font = '12px Arial';
+                selCtx.textAlign = 'center';
+                selCtx.fillText(step.text, centerX, step.y + 4);
+                
+                // Seta para o próximo passo
+                if (i < steps.length - 1) {
+                    selCtx.strokeStyle = '#666';
+                    selCtx.lineWidth = 2;
+                    selCtx.beginPath();
+                    selCtx.moveTo(centerX, step.y + 15);
+                    selCtx.lineTo(centerX, steps[i + 1].y - 15);
+                    selCtx.stroke();
+                    
+                    // Ponta da seta
+                    selCtx.beginPath();
+                    selCtx.moveTo(centerX - 5, steps[i + 1].y - 20);
+                    selCtx.lineTo(centerX, steps[i + 1].y - 15);
+                    selCtx.lineTo(centerX + 5, steps[i + 1].y - 20);
+                    selCtx.stroke();
+                }
+            });
+        }
+        
+        function updateDetailedChart() {
+            detailCtx.clearRect(0, 0, detailedChart.width, detailedChart.height);
+            
+            const width = detailedChart.width;
+            const height = detailedChart.height;
+            const margin = 60;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Gerar dados para diferentes temperaturas
+            const temperatures = [0.5, 1.0, 1.5, 2.0];
+            const logits = generateRandomLogits(10);
+            const colors = ['#4caf50', '#ff9800', '#f44336', '#9c27b0'];
+            
+            // Eixos
+            detailCtx.strokeStyle = '#333';
+            detailCtx.lineWidth = 2;
+            detailCtx.beginPath();
+            detailCtx.moveTo(margin, margin + chartHeight);
+            detailCtx.lineTo(margin + chartWidth, margin + chartHeight);
+            detailCtx.moveTo(margin, margin);
+            detailCtx.lineTo(margin, margin + chartHeight);
+            detailCtx.stroke();
+            
+            // Labels dos eixos
+            detailCtx.fillStyle = '#333';
+            detailCtx.font = '14px Arial';
+            detailCtx.textAlign = 'center';
+            detailCtx.fillText('Tokens', margin + chartWidth/2, height - 20);
+            
+            detailCtx.save();
+            detailCtx.translate(20, margin + chartHeight/2);
+            detailCtx.rotate(-Math.PI/2);
+            detailCtx.fillText('Probabilidade', 0, 0);
+            detailCtx.restore();
+            
+            // Linhas para diferentes temperaturas
+            temperatures.forEach((temp, tempIndex) => {
+                const probabilities = applySoftmax(logits, temp);
+                
+                detailCtx.strokeStyle = colors[tempIndex];
+                detailCtx.lineWidth = 3;
+                detailCtx.beginPath();
+                
+                probabilities.forEach((prob, i) => {
+                    const x = margin + (i / (probabilities.length - 1)) * chartWidth;
+                    const y = margin + chartHeight - (prob * chartHeight * 0.8);
+                    
+                    if (i === 0) {
+                        detailCtx.moveTo(x, y);
+                    } else {
+                        detailCtx.lineTo(x, y);
+                    }
+                });
+                
+                detailCtx.stroke();
+                
+                // Pontos
+                probabilities.forEach((prob, i) => {
+                    const x = margin + (i / (probabilities.length - 1)) * chartWidth;
+                    const y = margin + chartHeight - (prob * chartHeight * 0.8);
+                    
+                    detailCtx.fillStyle = colors[tempIndex];
+                    detailCtx.beginPath();
+                    detailCtx.arc(x, y, 4, 0, 2 * Math.PI);
+                    detailCtx.fill();
+                });
+            });
+            
+            // Legenda
+            temperatures.forEach((temp, i) => {
+                const legendX = width - 150;
+                const legendY = 50 + i * 25;
+                
+                detailCtx.fillStyle = colors[i];
+                detailCtx.fillRect(legendX, legendY, 20, 15);
+                
+                detailCtx.fillStyle = '#333';
+                detailCtx.font = '12px Arial';
+                detailCtx.textAlign = 'left';
+                detailCtx.fillText(`T = ${temp}`, legendX + 30, legendY + 12);
+            });
+        }
+        
+        function updateTokenCandidates() {
+            const container = document.getElementById('token-candidates');
+            container.innerHTML = '';
+            
+            const logits = generateRandomLogits(10);
+            let probabilities = applySoftmax(logits, currentSettings.temperature);
+            
+            // Aplicar estratégia
+            switch (currentStrategy) {
+                case 'top_k':
+                    probabilities = applyTopK(probabilities, Math.min(currentSettings.topK, 10));
+                    break;
+                case 'top_p':
+                case 'nucleus':
+                    probabilities = applyTopP(probabilities, currentSettings.topP);
+                    break;
+            }
+            
+            // Criar tokens candidatos
+            probabilities.forEach((prob, i) => {
+                if (prob > 0.001) { // Só mostrar tokens com probabilidade significativa
+                    const token = document.createElement('div');
+                    token.className = 'token candidate';
+                    token.innerHTML = `
+                        ${vocabulary[i % vocabulary.length]}
+                        <div class="token-probability">${Math.round(prob * 100)}</div>
+                    `;
+                    token.addEventListener('click', () => selectToken(token, i));
+                    container.appendChild(token);
+                }
+            });
+        }
+        
+        function selectToken(tokenElement, index) {
+            // Remove seleção anterior
+            document.querySelectorAll('.token').forEach(t => t.classList.remove('selected'));
+            
+            // Adiciona seleção atual
+            tokenElement.classList.add('selected');
+            tokenElement.classList.remove('candidate');
+        }
+        
+        function updateMetrics() {
+            const logits = generateRandomLogits(20);
+            const probabilities = applySoftmax(logits, currentSettings.temperature);
+            
+            // Calcular entropia
+            const entropy = -probabilities.reduce((sum, p) => {
+                return sum + (p > 0 ? p * Math.log2(p) : 0);
+            }, 0);
+            
+            // Calcular perplexidade
+            const perplexity = Math.pow(2, entropy);
+            
+            // Simular outras métricas
+            const diversity = Math.min(0.95, 0.3 + currentSettings.temperature * 0.3);
+            const repetition = Math.max(0.05, 0.4 - currentSettings.temperature * 0.15);
+            const coherence = Math.max(0.5, 0.9 - currentSettings.temperature * 0.2);
+            const creativity = Math.min(0.9, currentSettings.temperature * 0.5);
+            
+            // Atualizar displays
+            document.getElementById('entropy-value').textContent = entropy.toFixed(2);
+            document.getElementById('perplexity-value').textContent = perplexity.toFixed(1);
+            document.getElementById('diversity-value').textContent = diversity.toFixed(2);
+            document.getElementById('repetition-value').textContent = repetition.toFixed(2);
+            document.getElementById('coherence-value').textContent = coherence.toFixed(2);
+            document.getElementById('creativity-value').textContent = creativity.toFixed(2);
+        }
+        
+        function generateSample() {
+            const prompt = document.getElementById('prompt-input').value;
+            const output = document.getElementById('generated-text');
+            const tokensContainer = document.getElementById('generated-tokens');
+            
+            // Simular geração de texto
+            const continuations = [
+                ' uma história sobre um jovem aventureiro que descobriu um mapa antigo.',
+                ' um reino mágico onde os dragões eram guardiões da sabedoria.',
+                ' uma pequena vila onde todos os habitantes tinham poderes especiais.',
+                ' um mundo onde a música tinha o poder de curar feridas.',
+                ' uma floresta encantada cheia de criaturas místicas.'
+            ];
+            
+            const randomContinuation = continuations[Math.floor(Math.random() * continuations.length)];
+            const generatedText = prompt + randomContinuation;
+            
+            output.textContent = generatedText;
+            
+            // Mostrar tokens gerados
+            tokensContainer.innerHTML = '';
+            const tokens = randomContinuation.split(' ');
+            tokens.forEach((token, i) => {
+                const tokenElement = document.createElement('div');
+                tokenElement.className = 'token';
+                tokenElement.textContent = token;
+                tokenElement.style.animationDelay = `${i * 0.1}s`;
+                tokensContainer.appendChild(tokenElement);
+            });
+        }
+        
+        function compareStrategies() {
+            alert('Comparação detalhada entre diferentes estratégias de amostragem!');
+        }
+        
+        function resetSettings() {
+            currentSettings = {
+                temperature: 1.0,
+                topK: 50,
+                topP: 0.9,
+                repPenalty: 1.1
+            };
+            
+            // Atualizar sliders
+            temperatureSlider.value = 1.0;
+            topKSlider.value = 50;
+            topPSlider.value = 0.9;
+            repPenaltySlider.value = 1.1;
+            
+            // Atualizar displays
+            document.getElementById('temperature-display').textContent = '1.0';
+            document.getElementById('top-k-display').textContent = '50';
+            document.getElementById('top-p-display').textContent = '0.90';
+            document.getElementById('rep-penalty-display').textContent = '1.1';
+            
+            updateTemperatureIndicator();
+            updateVisualization();
+        }
+        
+        // Inicialização
+        updateTemperatureIndicator();
+        updateVisualization();
+    </script>
+</body>
+</html>

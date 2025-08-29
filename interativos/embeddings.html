@@ -5,19 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demonstração Interativa de Embeddings</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-system.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
-            min-height: 100vh;
+        /* Estilos específicos para embeddings */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
         }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        .preset-word {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+        
+        .preset-purple {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+        }
+        
+        .preset-green {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+        
+        .preset-orange {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+        }
+        
+        .preset-word:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .operation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .vectors-container,
+        .matrix-container,
+        .result-container {
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .embedding-space {
             position: relative;
             width: 100%;
@@ -149,150 +189,209 @@
         }
     </style>
 </head>
-<body class="text-white">
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8 relative">
-            <!-- Botão de Voltar -->
-            <div class="absolute left-0 top-0">
-                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white transition-all duration-300 hover:transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Voltar
-                </a>
-            </div>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <a href="index.html" class="back-button">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Voltar
+            </a>
             
-            <h1 class="text-4xl font-bold mb-2">Embeddings e Representações Vetoriais</h1>
-            <p class="text-xl opacity-90">Descubra como palavras se transformam em vetores que capturam significado</p>
+            <h1 class="page-title">
+                <span class="page-icon">🧠</span>
+                Embeddings e Representações Vetoriais
+            </h1>
+            <p class="page-subtitle">Descubra como palavras se transformam em vetores que capturam significado</p>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main class="grid-layout">
             <!-- Painel de Controle -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">1. Adicionar Palavras</h2>
-                    <div class="space-y-3">
-                        <input type="text" id="wordInput" class="word-input w-full" placeholder="Digite uma palavra...">
-                        <button id="addWordBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+            <div class="control-panel">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">➕</span>
+                            Adicionar Palavras
+                        </h2>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="wordInput" class="form-input" placeholder="Digite uma palavra...">
+                        <button id="addWordBtn" class="btn btn-primary btn-full">
+                            <span class="btn-icon">➕</span>
                             Adicionar Palavra
                         </button>
                     </div>
                     
-                    <div class="mt-4">
-                        <h3 class="text-lg font-semibold mb-2">Palavras Pré-definidas</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button class="preset-word bg-purple-600 hover:bg-purple-700 text-white py-1 px-2 rounded text-sm transition" data-word="rei">rei</button>
-                            <button class="preset-word bg-purple-600 hover:bg-purple-700 text-white py-1 px-2 rounded text-sm transition" data-word="rainha">rainha</button>
-                            <button class="preset-word bg-purple-600 hover:bg-purple-700 text-white py-1 px-2 rounded text-sm transition" data-word="homem">homem</button>
-                            <button class="preset-word bg-purple-600 hover:bg-purple-700 text-white py-1 px-2 rounded text-sm transition" data-word="mulher">mulher</button>
-                            <button class="preset-word bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-sm transition" data-word="gato">gato</button>
-                            <button class="preset-word bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-sm transition" data-word="cachorro">cachorro</button>
-                            <button class="preset-word bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-sm transition" data-word="animal">animal</button>
-                            <button class="preset-word bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-sm transition" data-word="pet">pet</button>
-                            <button class="preset-word bg-orange-600 hover:bg-orange-700 text-white py-1 px-2 rounded text-sm transition" data-word="feliz">feliz</button>
-                            <button class="preset-word bg-orange-600 hover:bg-orange-700 text-white py-1 px-2 rounded text-sm transition" data-word="triste">triste</button>
-                            <button class="preset-word bg-orange-600 hover:bg-orange-700 text-white py-1 px-2 rounded text-sm transition" data-word="alegre">alegre</button>
-                            <button class="preset-word bg-orange-600 hover:bg-orange-700 text-white py-1 px-2 rounded text-sm transition" data-word="melancólico">melancólico</button>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="label-icon">📝</span>
+                            Palavras Pré-definidas
+                        </label>
+                        <div class="preset-grid">
+                            <button class="preset-word preset-purple" data-word="rei">rei</button>
+                            <button class="preset-word preset-purple" data-word="rainha">rainha</button>
+                            <button class="preset-word preset-purple" data-word="homem">homem</button>
+                            <button class="preset-word preset-purple" data-word="mulher">mulher</button>
+                            <button class="preset-word preset-green" data-word="gato">gato</button>
+                            <button class="preset-word preset-green" data-word="cachorro">cachorro</button>
+                            <button class="preset-word preset-green" data-word="animal">animal</button>
+                            <button class="preset-word preset-green" data-word="pet">pet</button>
+                            <button class="preset-word preset-orange" data-word="feliz">feliz</button>
+                            <button class="preset-word preset-orange" data-word="triste">triste</button>
+                            <button class="preset-word preset-orange" data-word="alegre">alegre</button>
+                            <button class="preset-word preset-orange" data-word="melancólico">melancólico</button>
                         </div>
                     </div>
 
-                    <h2 class="text-2xl font-semibold mt-6 mb-4">2. Configurações</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Dimensões do Embedding</label>
-                            <input type="range" id="embeddingDim" min="2" max="512" value="128" class="dimension-slider">
-                            <span id="embeddingDimValue" class="text-sm opacity-75">128 dimensões</span>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Algoritmo de Redução</label>
-                            <select id="reductionAlgorithm" class="w-full word-input">
-                                <option value="pca">PCA (Principal Component Analysis)</option>
-                                <option value="tsne">t-SNE (t-Distributed Stochastic Neighbor Embedding)</option>
-                                <option value="umap">UMAP (Uniform Manifold Approximation)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="showClusters" class="mr-2">
-                                <span class="text-sm font-medium">Mostrar Clusters Semânticos</span>
-                            </label>
-                        </div>
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="showSimilarity" class="mr-2">
-                                <span class="text-sm font-medium">Mostrar Linhas de Similaridade</span>
-                            </label>
-                        </div>
+                </div>
+                
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚙️</span>
+                            Configurações
+                        </h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="label-icon">📏</span>
+                            Dimensões do Embedding
+                        </label>
+                        <input type="range" id="embeddingDim" min="2" max="512" value="128" class="form-range">
+                        <span id="embeddingDimValue" class="range-value">128 dimensões</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="label-icon">🔄</span>
+                            Algoritmo de Redução
+                        </label>
+                        <select id="reductionAlgorithm" class="form-select">
+                            <option value="pca">PCA (Principal Component Analysis)</option>
+                            <option value="tsne">t-SNE (t-Distributed Stochastic Neighbor Embedding)</option>
+                            <option value="umap">UMAP (Uniform Manifold Approximation)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showClusters" class="form-checkbox">
+                            <span class="checkbox-text">Mostrar Clusters Semânticos</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showSimilarity" class="form-checkbox">
+                            <span class="checkbox-text">Mostrar Linhas de Similaridade</span>
+                        </label>
+                    </div>
                     </div>
 
-                    <button id="generateEmbeddings" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">
+                    <button id="generateEmbeddings" class="btn btn-primary btn-full">
+                        <span class="btn-icon">🚀</span>
                         Gerar Embeddings
                     </button>
                 </div>
             </div>
 
             <!-- Área de Visualização -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="results-area">
                 <!-- Espaço de Embeddings 2D -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Espaço de Embeddings (2D)</h2>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">🗺️</span>
+                            Espaço de Embeddings (2D)
+                        </h2>
+                    </div>
                     <div id="embeddingSpace" class="embedding-space">
-                        <div class="absolute inset-0 flex items-center justify-center text-gray-500">
+                        <div class="empty-state">
                             <p>Adicione palavras e clique em "Gerar Embeddings" para visualizar</p>
                         </div>
                     </div>
-                    <div class="mt-4 text-sm text-white/70">
+                    <div class="info-text">
                         <p><strong>Como interpretar:</strong> Palavras próximas têm significados similares. Clique em uma palavra para ver suas similaridades.</p>
                     </div>
                 </div>
 
                 <!-- Vetores de Embedding -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Vetores de Embedding</h2>
-                    <div id="embeddingVectors" class="grid gap-4">
-                        <p class="text-white/70">Os vetores aparecerão aqui após gerar os embeddings.</p>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">📊</span>
+                            Vetores de Embedding
+                        </h2>
+                    </div>
+                    <div id="embeddingVectors" class="vectors-container">
+                        <div class="empty-state">
+                            <p>Os vetores aparecerão aqui após gerar os embeddings.</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Similaridades -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Matriz de Similaridade</h2>
-                    <div id="similarityMatrix" class="overflow-x-auto">
-                        <p class="text-white/70">A matriz de similaridade aparecerá aqui.</p>
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">🔗</span>
+                            Matriz de Similaridade
+                        </h2>
+                    </div>
+                    <div id="similarityMatrix" class="matrix-container">
+                        <div class="empty-state">
+                            <p>A matriz de similaridade aparecerá aqui.</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Operações Vetoriais -->
-                <div class="glass-effect p-6 rounded-2xl">
-                    <h2 class="text-2xl font-semibold mb-4">Operações Vetoriais</h2>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Palavra A</label>
-                                <select id="wordA" class="w-full word-input">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <span class="section-icon">🧮</span>
+                            Operações Vetoriais
+                        </h2>
+                    </div>
+                    <div class="form-group">
+                        <div class="operation-grid">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="label-icon">🅰️</span>
+                                    Palavra A
+                                </label>
+                                <select id="wordA" class="form-select">
                                     <option value="">Selecione...</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Operação</label>
-                                <select id="operation" class="w-full word-input">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="label-icon">⚡</span>
+                                    Operação
+                                </label>
+                                <select id="operation" class="form-select">
                                     <option value="add">A + B</option>
                                     <option value="subtract">A - B</option>
                                     <option value="similarity">Similaridade(A, B)</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Palavra B</label>
-                                <select id="wordB" class="w-full word-input">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="label-icon">🅱️</span>
+                                    Palavra B
+                                </label>
+                                <select id="wordB" class="form-select">
                                     <option value="">Selecione...</option>
                                 </select>
                             </div>
                         </div>
-                        <button id="performOperation" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                        <button id="performOperation" class="btn btn-secondary btn-full">
+                            <span class="btn-icon">▶️</span>
                             Executar Operação
                         </button>
-                        <div id="operationResult" class="mt-4 p-4 bg-white/10 rounded-lg">
-                            <p class="text-white/70">O resultado da operação aparecerá aqui.</p>
+                        <div id="operationResult" class="result-container">
+                            <div class="empty-state">
+                                <p>O resultado da operação aparecerá aqui.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

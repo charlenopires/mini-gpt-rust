@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer Normalization - Mini GPT Rust</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .vector-visualization {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f9fafb;
+            margin: 8px 0;
+        }
+        .vector-element {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            margin: 2px;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .vector-element:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            position: relative;
+        }
+        .stats-box {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+        }
+        .formula-box {
+            background: #1f2937;
+            color: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            margin: 16px 0;
+        }
+        .interactive-slider {
+            width: 100%;
+            margin: 8px 0;
+        }
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .before-after {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            background: white;
+        }
+        .before-after.before {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .before-after.after {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .distribution-chart {
+            height: 200px;
+            margin: 16px 0;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .gradient-problem {
+            background: linear-gradient(90deg, #ef4444 0%, #f97316 50%, #eab308 100%);
+            height: 20px;
+            border-radius: 4px;
+            margin: 8px 0;
+            position: relative;
+        }
+        .gradient-solution {
+            background: linear-gradient(90deg, #10b981 0%, #059669 50%, #047857 100%);
+            height: 20px;
+            border-radius: 4px;
+            margin: 8px 0;
+            position: relative;
+        }
+        .layer-block {
+            border: 2px solid #6366f1;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f0f9ff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                        ⚖️ Layer Normalization
+                    </h1>
+                    <p class="text-lg opacity-90">
+                        Estabilizando o treinamento de redes neurais profundas
+                    </p>
+                </div>
+                <button onclick="window.history.back()" 
+                        class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    ← Voltar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Introdução -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎯 O que é Layer Normalization?</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-gray-600 leading-relaxed mb-4">
+                        Layer Normalization é uma técnica que <strong>normaliza as ativações</strong> de cada camada 
+                        da rede neural, garantindo que elas tenham média zero e variância unitária. 
+                        Isso estabiliza o treinamento e acelera a convergência.
+                    </p>
+                    <p class="text-gray-600 leading-relaxed">
+                        Diferente do Batch Normalization (que normaliza entre exemplos), 
+                        Layer Norm normaliza <strong>dentro de cada exemplo</strong>, tornando-o ideal para sequências.
+                    </p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-2">💡 Analogia</h3>
+                    <p class="text-blue-700 text-sm">
+                        Imagine que você está ajustando o volume de diferentes instrumentos em uma orquestra. 
+                        Layer Normalization é como um equalizador que garante que todos os instrumentos 
+                        (neurônios) toquem no mesmo nível, evitando que alguns sejam muito altos ou baixos.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problema sem Layer Norm -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚠️ O Problema: Instabilidade de Treinamento</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-red-600 mb-2">🔥 Sem Layer Normalization:</h3>
+                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                        <li><strong>Gradientes Explosivos:</strong> Valores muito grandes</li>
+                        <li><strong>Gradientes Desvanecentes:</strong> Valores muito pequenos</li>
+                        <li><strong>Convergência Lenta:</strong> Treinamento instável</li>
+                        <li><strong>Sensibilidade à Inicialização:</strong> Dependente dos pesos iniciais</li>
+                    </ul>
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-500 mb-2">Distribuição das ativações (problemática):</p>
+                        <div class="gradient-problem"></div>
+                        <p class="text-xs text-gray-400">Valores desbalanceados e instáveis</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-green-600 mb-2">✅ Com Layer Normalization:</h3>
+                    <ul class="list-disc list-inside space-y-2 text-gray-600">
+                        <li><strong>Gradientes Estáveis:</strong> Fluxo controlado</li>
+                        <li><strong>Convergência Rápida:</strong> Treinamento eficiente</li>
+                        <li><strong>Robustez:</strong> Menos sensível à inicialização</li>
+                        <li><strong>Generalização:</strong> Melhor performance</li>
+                    </ul>
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-500 mb-2">Distribuição das ativações (normalizada):</p>
+                        <div class="gradient-solution"></div>
+                        <p class="text-xs text-gray-400">Valores balanceados e estáveis</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controles Interativos -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎛️ Controles Interativos</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Dimensão do Vetor</label>
+                    <input type="range" id="vectorDim" min="4" max="16" value="8" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">Dimensões: <span id="vectorDimValue">8</span></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Variabilidade dos Dados</label>
+                    <input type="range" id="dataVariability" min="1" max="10" value="5" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">Nível: <span id="dataVariabilityValue">5</span></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Epsilon (ε)</label>
+                    <input type="range" id="epsilon" min="1" max="100" value="10" 
+                           class="interactive-slider">
+                    <div class="text-center text-sm text-gray-600">ε: <span id="epsilonValue">1e-5</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fórmula Matemática -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📐 Fórmula Matemática</h2>
+            <div class="formula-box">
+                <div class="text-center mb-4">
+                    <div class="text-lg font-bold mb-4">Layer Normalization:</div>
+                    <div class="mb-2">μ = (1/H) Σᵢ xᵢ</div>
+                    <div class="mb-2">σ² = (1/H) Σᵢ (xᵢ - μ)²</div>
+                    <div class="mb-2">x̂ᵢ = (xᵢ - μ) / √(σ² + ε)</div>
+                    <div>yᵢ = γ x̂ᵢ + β</div>
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Onde:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><code>H</code> = número de neurônios na camada</li>
+                        <li><code>μ</code> = média das ativações</li>
+                        <li><code>σ²</code> = variância das ativações</li>
+                        <li><code>ε</code> = pequena constante para estabilidade</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Parâmetros Aprendíveis:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><code>γ</code> = parâmetro de escala (inicializado com 1)</li>
+                        <li><code>β</code> = parâmetro de deslocamento (inicializado com 0)</li>
+                        <li>Permitem que o modelo aprenda a escala e offset ideais</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualização Antes/Depois -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔄 Comparação: Antes vs Depois</h2>
+            <div class="comparison-container">
+                <div class="before-after before">
+                    <h3 class="font-semibold text-red-600 mb-3">❌ Antes da Normalização</h3>
+                    <div id="beforeVector" class="vector-visualization"></div>
+                    <div id="beforeStats" class="stats-box"></div>
+                </div>
+                <div class="before-after after">
+                    <h3 class="font-semibold text-green-600 mb-3">✅ Depois da Normalização</h3>
+                    <div id="afterVector" class="vector-visualization"></div>
+                    <div id="afterStats" class="stats-box"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Distribuições -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Distribuições das Ativações</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Antes da Normalização</h3>
+                    <div id="beforeDistribution" class="distribution-chart"></div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Depois da Normalização</h3>
+                    <div id="afterDistribution" class="distribution-chart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fluxo no Transformer -->
+        <section class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🏗️ Layer Norm no Transformer</h2>
+            <div class="text-center">
+                <div class="layer-block">📥 Input Embeddings</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block bg-yellow-50 border-yellow-400">⚖️ Layer Norm</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block">🎯 Multi-Head Attention</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block">➕ Residual Connection</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block bg-yellow-50 border-yellow-400">⚖️ Layer Norm</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block">🔄 Feed Forward</div>
+                <div class="text-2xl text-gray-400 my-2">↓</div>
+                <div class="layer-block">➕ Residual Connection</div>
+            </div>
+            <div class="mt-6 bg-blue-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-blue-800 mb-2">🔍 Posicionamento Estratégico</h3>
+                <p class="text-blue-700 text-sm">
+                    No Transformer, Layer Norm é aplicada <strong>antes</strong> de cada sub-camada 
+                    (Pre-LN), não depois (Post-LN). Isso melhora a estabilidade do treinamento 
+                    e permite treinar modelos mais profundos.
+                </p>
+            </div>
+        </section>
+
+        <!-- Comparação com Batch Norm -->
+        <section class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚔️ Layer Norm vs Batch Norm</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-purple-800 mb-2">⚖️ Layer Normalization</h3>
+                    <ul class="list-disc list-inside space-y-1 text-purple-700 text-sm">
+                        <li>Normaliza <strong>dentro de cada exemplo</strong></li>
+                        <li>Independente do tamanho do batch</li>
+                        <li>Ideal para sequências (NLP)</li>
+                        <li>Comportamento consistente entre treino/inferência</li>
+                        <li>Usado em Transformers</li>
+                    </ul>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-orange-800 mb-2">📦 Batch Normalization</h3>
+                    <ul class="list-disc list-inside space-y-1 text-orange-700 text-sm">
+                        <li>Normaliza <strong>entre exemplos do batch</strong></li>
+                        <li>Dependente do tamanho do batch</li>
+                        <li>Ideal para visão computacional (CNNs)</li>
+                        <li>Comportamento diferente entre treino/inferência</li>
+                        <li>Usado em ResNets, etc.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Variáveis globais
+        let currentVectorDim = 8;
+        let currentDataVariability = 5;
+        let currentEpsilon = 1e-5;
+
+        // Elementos DOM
+        const vectorDimSlider = document.getElementById('vectorDim');
+        const dataVariabilitySlider = document.getElementById('dataVariability');
+        const epsilonSlider = document.getElementById('epsilon');
+        const vectorDimValue = document.getElementById('vectorDimValue');
+        const dataVariabilityValue = document.getElementById('dataVariabilityValue');
+        const epsilonValue = document.getElementById('epsilonValue');
+
+        // Função para gerar dados aleatórios com variabilidade controlada
+        function generateRandomData(dim, variability) {
+            const data = [];
+            const baseValue = Math.random() * 10 - 5; // Valor base entre -5 e 5
+            
+            for (let i = 0; i < dim; i++) {
+                // Adiciona variabilidade controlada
+                const noise = (Math.random() - 0.5) * variability;
+                data.push(baseValue + noise);
+            }
+            
+            return data;
+        }
+
+        // Função para calcular estatísticas
+        function calculateStats(data) {
+            const n = data.length;
+            const mean = data.reduce((sum, x) => sum + x, 0) / n;
+            const variance = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            
+            return { mean, variance, stdDev, min, max, n };
+        }
+
+        // Função para aplicar Layer Normalization
+        function applyLayerNorm(data, epsilon = 1e-5) {
+            const stats = calculateStats(data);
+            const normalized = data.map(x => (x - stats.mean) / Math.sqrt(stats.variance + epsilon));
+            
+            // Aplicar parâmetros aprendíveis (γ=1, β=0 para simplicidade)
+            const gamma = 1.0;
+            const beta = 0.0;
+            const output = normalized.map(x => gamma * x + beta);
+            
+            return { normalized: output, originalStats: stats, normalizedStats: calculateStats(output) };
+        }
+
+        // Função para renderizar vetor
+        function renderVector(containerId, data, title) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<h4 class="text-sm font-semibold mb-2">${title}</h4>`;
+            
+            const vectorDiv = document.createElement('div');
+            vectorDiv.className = 'flex flex-wrap justify-center';
+            
+            data.forEach((value, index) => {
+                const element = document.createElement('div');
+                element.className = 'vector-element';
+                element.textContent = value.toFixed(2);
+                element.title = `Posição ${index}: ${value.toFixed(4)}`;
+                
+                // Colorir baseado no valor
+                const intensity = Math.min(Math.abs(value) / 3, 1); // Normalizar para [0,1]
+                const hue = value >= 0 ? 120 : 0; // Verde para positivo, vermelho para negativo
+                element.style.backgroundColor = `hsla(${hue}, 70%, 50%, ${0.3 + intensity * 0.7})`;
+                
+                vectorDiv.appendChild(element);
+            });
+            
+            container.appendChild(vectorDiv);
+        }
+
+        // Função para renderizar estatísticas
+        function renderStats(containerId, stats, title) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <h4 class="text-sm font-semibold mb-2">${title}</h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div><strong>Média (μ):</strong> ${stats.mean.toFixed(3)}</div>
+                    <div><strong>Desvio Padrão (σ):</strong> ${stats.stdDev.toFixed(3)}</div>
+                    <div><strong>Variância (σ²):</strong> ${stats.variance.toFixed(3)}</div>
+                    <div><strong>Amplitude:</strong> ${(stats.max - stats.min).toFixed(3)}</div>
+                    <div><strong>Mínimo:</strong> ${stats.min.toFixed(3)}</div>
+                    <div><strong>Máximo:</strong> ${stats.max.toFixed(3)}</div>
+                </div>
+            `;
+        }
+
+        // Função para renderizar distribuição
+        function renderDistribution(containerId, data, title, color) {
+            const trace = {
+                x: data,
+                type: 'histogram',
+                nbinsx: 10,
+                name: title,
+                marker: { color: color, opacity: 0.7 },
+                histnorm: 'probability density'
+            };
+
+            const layout = {
+                title: title,
+                xaxis: { title: 'Valor' },
+                yaxis: { title: 'Densidade' },
+                showlegend: false,
+                height: 200,
+                margin: { t: 40, b: 40, l: 60, r: 20 }
+            };
+
+            Plotly.newPlot(containerId, [trace], layout, {responsive: true});
+        }
+
+        // Função para atualizar todas as visualizações
+        function updateVisualization() {
+            // Gerar dados originais
+            const originalData = generateRandomData(currentVectorDim, currentDataVariability);
+            
+            // Aplicar Layer Normalization
+            const result = applyLayerNorm(originalData, currentEpsilon);
+            
+            // Renderizar vetores
+            renderVector('beforeVector', originalData, 'Vetor Original');
+            renderVector('afterVector', result.normalized, 'Vetor Normalizado');
+            
+            // Renderizar estatísticas
+            renderStats('beforeStats', result.originalStats, 'Estatísticas Originais');
+            renderStats('afterStats', result.normalizedStats, 'Estatísticas Normalizadas');
+            
+            // Renderizar distribuições
+            renderDistribution('beforeDistribution', originalData, 'Distribuição Original', '#ef4444');
+            renderDistribution('afterDistribution', result.normalized, 'Distribuição Normalizada', '#10b981');
+        }
+
+        // Event listeners
+        vectorDimSlider.addEventListener('input', (e) => {
+            currentVectorDim = parseInt(e.target.value);
+            vectorDimValue.textContent = currentVectorDim;
+            updateVisualization();
+        });
+
+        dataVariabilitySlider.addEventListener('input', (e) => {
+            currentDataVariability = parseInt(e.target.value);
+            dataVariabilityValue.textContent = currentDataVariability;
+            updateVisualization();
+        });
+
+        epsilonSlider.addEventListener('input', (e) => {
+            const epsilonPower = parseInt(e.target.value);
+            currentEpsilon = Math.pow(10, -epsilonPower / 10);
+            epsilonValue.textContent = currentEpsilon.toExponential(0);
+            updateVisualization();
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateVisualization();
+        });
+
+        // Atualizar a cada 3 segundos para mostrar diferentes exemplos
+        setInterval(() => {
+            updateVisualization();
+        }, 3000);
+    </script>
+</body>
+</html>

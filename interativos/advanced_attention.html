@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atenção Avançada - Visualização Completa</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <style>
+        .advanced-attention-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .attention-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .attention-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .attention-heatmap {
+            display: grid;
+            gap: 2px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            margin: 20px 0;
+        }
+        
+        .attention-cell {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+        
+        .attention-cell:hover {
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+        
+        .attention-cell::after {
+            content: attr(data-value);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        .attention-cell:hover::after {
+            opacity: 1;
+        }
+        
+        .token-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--surface-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .token-item {
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        
+        .token-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .token-selected {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .token-attending {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            animation: pulse-attention 2s infinite;
+        }
+        
+        @keyframes pulse-attention {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+        
+        .control-panel {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .control-group {
+            margin: 20px 0;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .value-display {
+            min-width: 80px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .attention-type-selector {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .type-button {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .type-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .type-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        
+        .metrics-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .comparison-section {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .comparison-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .action-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .action-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .action-button.secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.secondary:hover {
+            background: #ccc;
+        }
+        
+        .visualization-canvas {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .attention-flow {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .flow-step {
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+        
+        .flow-step:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .flow-arrow {
+            font-size: 2em;
+            color: var(--primary-color);
+            margin: 0 10px;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .step-description {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+        
+        .mathematical-details {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .math-title {
+            color: #388e3c;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+        }
+        
+        .formula-box {
+            background: white;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, var(--primary-color)20, transparent);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .visualization-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .attention-type-selector {
+                justify-content: center;
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="advanced-attention-container">
+        <header class="hero-section">
+            <h1>🧠 Atenção Avançada - Visualização Completa</h1>
+            <p class="hero-description">
+                Explore o mecanismo de atenção em profundidade com visualizações interativas avançadas, 
+                controles de temperatura, comparações entre tipos de atenção e análise matemática detalhada.
+            </p>
+        </header>
+
+        <section class="control-panel">
+            <h2>🎛️ Controles Avançados</h2>
+            
+            <div class="attention-type-selector">
+                <button class="type-button active" onclick="setAttentionType('self')">🔄 Self-Attention</button>
+                <button class="type-button" onclick="setAttentionType('cross')">🔀 Cross-Attention</button>
+                <button class="type-button" onclick="setAttentionType('masked')">🎭 Masked Attention</button>
+                <button class="type-button" onclick="setAttentionType('sparse')">⚡ Sparse Attention</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Temperatura da Atenção: <span id="temperature-value">1.0</span></label>
+                <div class="slider-container">
+                    <input type="range" id="temperature-slider" class="slider" min="0.1" max="3.0" step="0.1" value="1.0">
+                    <div class="value-display" id="temperature-display">1.0</div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Número de Heads: <span id="heads-value">8</span></label>
+                <div class="slider-container">
+                    <input type="range" id="heads-slider" class="slider" min="1" max="16" step="1" value="8">
+                    <div class="value-display" id="heads-display">8</div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Dimensão do Modelo: <span id="model-dim-value">512</span></label>
+                <div class="slider-container">
+                    <input type="range" id="model-dim-slider" class="slider" min="128" max="1024" step="64" value="512">
+                    <div class="value-display" id="model-dim-display">512</div>
+                </div>
+            </div>
+            
+            <button class="action-button" onclick="generateNewSequence()">🎲 Nova Sequência</button>
+            <button class="action-button" onclick="animateAttention()">▶️ Animar Atenção</button>
+            <button class="action-button secondary" onclick="resetVisualization()">↩️ Reset</button>
+        </section>
+
+        <section class="visualization-grid">
+            <div class="attention-panel">
+                <div class="panel-title">
+                    🎯 Matriz de Atenção
+                </div>
+                <div class="attention-heatmap" id="attention-heatmap">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+                <div class="token-sequence" id="token-sequence">
+                    <!-- Será preenchido dinamicamente -->
+                </div>
+            </div>
+            
+            <div class="attention-panel">
+                <div class="panel-title">
+                    📊 Distribuição de Atenção
+                </div>
+                <canvas id="attention-distribution" class="visualization-canvas" width="400" height="300"></canvas>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="entropy-value">2.45</div>
+                        <div class="metric-label">Entropia</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="max-attention">0.85</div>
+                        <div class="metric-label">Atenção Máxima</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="attention-flow">
+            <h2>🔄 Fluxo de Processamento</h2>
+            
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="step-title">Input Embeddings</div>
+                    <div class="step-description">Tokens → Vetores</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-title">Q, K, V</div>
+                    <div class="step-description">Projeções Lineares</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-title">Attention Scores</div>
+                    <div class="step-description">Q × K^T / √d</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-title">Softmax</div>
+                    <div class="step-description">Normalização</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-title">Output</div>
+                    <div class="step-description">Attention × V</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="comparison-section">
+            <h2>⚖️ Comparação de Tipos de Atenção</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-title">🔄 Self-Attention</div>
+                    <div class="attention-heatmap" id="self-attention-demo" style="grid-template-columns: repeat(6, 1fr);">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                    <p><strong>Características:</strong> Cada token atende a todos os outros tokens na sequência.</p>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">🎭 Masked Attention</div>
+                    <div class="attention-heatmap" id="masked-attention-demo" style="grid-template-columns: repeat(6, 1fr);">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                    <p><strong>Características:</strong> Tokens só podem atender a posições anteriores (causal).</p>
+                </div>
+                
+                <div class="comparison-item">
+                    <div class="comparison-title">⚡ Sparse Attention</div>
+                    <div class="attention-heatmap" id="sparse-attention-demo" style="grid-template-columns: repeat(6, 1fr);">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                    <p><strong>Características:</strong> Atenção limitada a padrões específicos para eficiência.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics-panel">
+            <h2>📈 Métricas Avançadas</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="sparsity-metric">15%</div>
+                    <div class="metric-label">Esparsidade</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="concentration-metric">0.72</div>
+                    <div class="metric-label">Concentração</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="diversity-metric">3.2</div>
+                    <div class="metric-label">Diversidade</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="efficiency-metric">89%</div>
+                    <div class="metric-label">Eficiência</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mathematical-details">
+            <div class="math-title">
+                🧮 Detalhes Matemáticos
+            </div>
+            
+            <h3>Fórmulas Fundamentais</h3>
+            
+            <div class="formula-box">
+                <strong>Attention Score:</strong><br>
+                Attention(Q, K, V) = softmax(QK^T / √d_k)V
+            </div>
+            
+            <div class="formula-box">
+                <strong>Multi-Head Attention:</strong><br>
+                MultiHead(Q, K, V) = Concat(head₁, ..., head_h)W^O<br>
+                onde head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
+            </div>
+            
+            <div class="formula-box">
+                <strong>Scaled Dot-Product:</strong><br>
+                score_ij = (q_i · k_j) / √d_k<br>
+                α_ij = exp(score_ij) / Σ_k exp(score_ik)
+            </div>
+            
+            <h3>Complexidade Computacional</h3>
+            <ul>
+                <li><strong>Tempo:</strong> O(n² × d) onde n é o comprimento da sequência</li>
+                <li><strong>Espaço:</strong> O(n² + n × d) para armazenar scores e embeddings</li>
+                <li><strong>Parâmetros:</strong> 4 × d × d_model (para Q, K, V, O)</li>
+            </ul>
+        </section>
+
+        <section class="implementation-details">
+            <h2>💻 Implementação em Rust</h2>
+            
+            <div class="mathematical-details">
+                <div class="math-title">
+                    🦀 Código Rust
+                </div>
+                
+                <div class="formula-box" style="text-align: left; font-family: 'Courier New', monospace;">
+                    <strong>fn scaled_dot_product_attention(</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;q: &Tensor, // [batch, seq_len, d_k]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;k: &Tensor, // [batch, seq_len, d_k]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;v: &Tensor, // [batch, seq_len, d_v]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;mask: Option<&Tensor>,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;temperature: f32<br>
+                    <strong>) -> Tensor {</strong><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;let d_k = q.size(-1) as f32;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;let scores = q.matmul(&k.transpose(-2, -1)) / (d_k.sqrt() * temperature);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;let scores = if let Some(mask) = mask {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;scores.masked_fill(&mask, f32::NEG_INFINITY)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;} else { scores };<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;let attention_weights = scores.softmax(-1);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;attention_weights.matmul(v)<br>
+                    <strong>}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentAttentionType = 'self';
+        let currentTemperature = 1.0;
+        let currentHeads = 8;
+        let currentModelDim = 512;
+        let animationRunning = false;
+        
+        // Sequências de exemplo
+        const sequences = [
+            ['O', 'gato', 'subiu', 'no', 'telhado', '.'],
+            ['Eu', 'amo', 'programar', 'em', 'Rust', '!'],
+            ['A', 'IA', 'está', 'revolucionando', 'o', 'mundo'],
+            ['Transformers', 'mudaram', 'o', 'processamento', 'de', 'linguagem']
+        ];
+        
+        let currentSequence = sequences[0];
+        
+        // Elementos DOM
+        const temperatureSlider = document.getElementById('temperature-slider');
+        const headsSlider = document.getElementById('heads-slider');
+        const modelDimSlider = document.getElementById('model-dim-slider');
+        const attentionCanvas = document.getElementById('attention-distribution');
+        const ctx = attentionCanvas.getContext('2d');
+        
+        // Event listeners
+        temperatureSlider.addEventListener('input', (e) => {
+            currentTemperature = parseFloat(e.target.value);
+            document.getElementById('temperature-display').textContent = currentTemperature.toFixed(1);
+            updateVisualization();
+        });
+        
+        headsSlider.addEventListener('input', (e) => {
+            currentHeads = parseInt(e.target.value);
+            document.getElementById('heads-display').textContent = currentHeads;
+            updateVisualization();
+        });
+        
+        modelDimSlider.addEventListener('input', (e) => {
+            currentModelDim = parseInt(e.target.value);
+            document.getElementById('model-dim-display').textContent = currentModelDim;
+            updateVisualization();
+        });
+        
+        function setAttentionType(type) {
+            currentAttentionType = type;
+            
+            // Atualizar botões
+            document.querySelectorAll('.type-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateVisualization();
+        }
+        
+        function generateAttentionMatrix(sequence, type, temperature) {
+            const len = sequence.length;
+            const matrix = [];
+            
+            for (let i = 0; i < len; i++) {
+                const row = [];
+                for (let j = 0; j < len; j++) {
+                    let score;
+                    
+                    switch (type) {
+                        case 'self':
+                            // Self-attention: todos podem atender a todos
+                            score = Math.random() * 0.8 + 0.1;
+                            break;
+                        case 'masked':
+                            // Masked: só pode atender a posições anteriores
+                            score = j <= i ? Math.random() * 0.8 + 0.1 : 0;
+                            break;
+                        case 'cross':
+                            // Cross-attention: padrão diferente
+                            score = Math.abs(i - j) <= 2 ? Math.random() * 0.8 + 0.1 : Math.random() * 0.3;
+                            break;
+                        case 'sparse':
+                            // Sparse: atenção limitada
+                            score = (Math.abs(i - j) <= 1 || Math.random() < 0.1) ? Math.random() * 0.8 + 0.1 : 0;
+                            break;
+                        default:
+                            score = Math.random();
+                    }
+                    
+                    row.push(score);
+                }
+                
+                // Aplicar temperatura e normalizar (softmax)
+                const scaledRow = row.map(s => s / temperature);
+                const maxScore = Math.max(...scaledRow);
+                const expScores = scaledRow.map(s => Math.exp(s - maxScore));
+                const sumExp = expScores.reduce((a, b) => a + b, 0);
+                const normalizedRow = expScores.map(s => s / sumExp);
+                
+                matrix.push(normalizedRow);
+            }
+            
+            return matrix;
+        }
+        
+        function getAttentionColor(value) {
+            // Gradiente de azul (baixo) para vermelho (alto)
+            const intensity = Math.min(value * 2, 1);
+            const r = Math.floor(intensity * 255);
+            const g = Math.floor((1 - intensity) * 100);
+            const b = Math.floor((1 - intensity) * 255);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        
+        function updateVisualization() {
+            const matrix = generateAttentionMatrix(currentSequence, currentAttentionType, currentTemperature);
+            
+            // Atualizar heatmap principal
+            updateHeatmap('attention-heatmap', matrix, currentSequence);
+            
+            // Atualizar sequência de tokens
+            updateTokenSequence();
+            
+            // Atualizar gráfico de distribuição
+            updateDistributionChart(matrix);
+            
+            // Atualizar métricas
+            updateMetrics(matrix);
+            
+            // Atualizar comparações
+            updateComparisons();
+        }
+        
+        function updateHeatmap(containerId, matrix, sequence) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${sequence.length}, 1fr)`;
+            
+            matrix.forEach((row, i) => {
+                row.forEach((value, j) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    cell.style.backgroundColor = getAttentionColor(value);
+                    cell.style.color = value > 0.5 ? 'white' : 'black';
+                    cell.textContent = value.toFixed(2);
+                    cell.setAttribute('data-value', `${sequence[i]} → ${sequence[j]}: ${value.toFixed(3)}`);
+                    
+                    cell.addEventListener('click', () => {
+                        highlightAttention(i, j, matrix);
+                    });
+                    
+                    container.appendChild(cell);
+                });
+            });
+        }
+        
+        function updateTokenSequence() {
+            const container = document.getElementById('token-sequence');
+            container.innerHTML = '';
+            
+            currentSequence.forEach((token, i) => {
+                const tokenElement = document.createElement('div');
+                tokenElement.className = 'token-item';
+                tokenElement.textContent = token;
+                tokenElement.style.backgroundColor = `hsl(${i * 60}, 70%, 85%)`;
+                
+                tokenElement.addEventListener('click', () => {
+                    selectToken(i);
+                });
+                
+                container.appendChild(tokenElement);
+            });
+        }
+        
+        function updateDistributionChart(matrix) {
+            ctx.clearRect(0, 0, attentionCanvas.width, attentionCanvas.height);
+            
+            const width = attentionCanvas.width;
+            const height = attentionCanvas.height;
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Calcular distribuição média
+            const avgAttention = matrix[0].map((_, j) => {
+                const sum = matrix.reduce((acc, row) => acc + row[j], 0);
+                return sum / matrix.length;
+            });
+            
+            const maxValue = Math.max(...avgAttention);
+            
+            // Desenhar eixos
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin, margin + chartHeight);
+            ctx.lineTo(margin + chartWidth, margin + chartHeight);
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, margin + chartHeight);
+            ctx.stroke();
+            
+            // Desenhar barras
+            const barWidth = chartWidth / avgAttention.length;
+            avgAttention.forEach((value, i) => {
+                const barHeight = (value / maxValue) * chartHeight;
+                const x = margin + i * barWidth;
+                const y = margin + chartHeight - barHeight;
+                
+                ctx.fillStyle = getAttentionColor(value / maxValue);
+                ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
+                
+                // Labels
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(currentSequence[i], x + barWidth/2, margin + chartHeight + 20);
+            });
+            
+            // Título
+            ctx.fillStyle = '#333';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Distribuição Média de Atenção', width/2, 25);
+        }
+        
+        function updateMetrics(matrix) {
+            // Calcular entropia
+            const entropy = calculateEntropy(matrix);
+            document.getElementById('entropy-value').textContent = entropy.toFixed(2);
+            
+            // Atenção máxima
+            const maxAttention = Math.max(...matrix.flat());
+            document.getElementById('max-attention').textContent = maxAttention.toFixed(2);
+            
+            // Esparsidade
+            const sparsity = calculateSparsity(matrix);
+            document.getElementById('sparsity-metric').textContent = `${(sparsity * 100).toFixed(0)}%`;
+            
+            // Concentração
+            const concentration = calculateConcentration(matrix);
+            document.getElementById('concentration-metric').textContent = concentration.toFixed(2);
+            
+            // Diversidade
+            const diversity = calculateDiversity(matrix);
+            document.getElementById('diversity-metric').textContent = diversity.toFixed(1);
+            
+            // Eficiência
+            const efficiency = calculateEfficiency(matrix);
+            document.getElementById('efficiency-metric').textContent = `${(efficiency * 100).toFixed(0)}%`;
+        }
+        
+        function calculateEntropy(matrix) {
+            let totalEntropy = 0;
+            matrix.forEach(row => {
+                let entropy = 0;
+                row.forEach(p => {
+                    if (p > 0) {
+                        entropy -= p * Math.log2(p);
+                    }
+                });
+                totalEntropy += entropy;
+            });
+            return totalEntropy / matrix.length;
+        }
+        
+        function calculateSparsity(matrix) {
+            const threshold = 0.01;
+            let sparseCount = 0;
+            let totalCount = 0;
+            
+            matrix.forEach(row => {
+                row.forEach(value => {
+                    if (value < threshold) sparseCount++;
+                    totalCount++;
+                });
+            });
+            
+            return sparseCount / totalCount;
+        }
+        
+        function calculateConcentration(matrix) {
+            let totalConcentration = 0;
+            matrix.forEach(row => {
+                const maxValue = Math.max(...row);
+                totalConcentration += maxValue;
+            });
+            return totalConcentration / matrix.length;
+        }
+        
+        function calculateDiversity(matrix) {
+            // Número efetivo de tokens atendidos
+            let totalDiversity = 0;
+            matrix.forEach(row => {
+                const entropy = -row.reduce((sum, p) => sum + (p > 0 ? p * Math.log(p) : 0), 0);
+                totalDiversity += Math.exp(entropy);
+            });
+            return totalDiversity / matrix.length;
+        }
+        
+        function calculateEfficiency(matrix) {
+            // Baseado na distribuição de atenção
+            const idealEntropy = Math.log2(matrix.length);
+            const actualEntropy = calculateEntropy(matrix);
+            return Math.min(actualEntropy / idealEntropy, 1);
+        }
+        
+        function updateComparisons() {
+            // Self-attention demo
+            const selfMatrix = generateAttentionMatrix(['A', 'B', 'C', 'D', 'E', 'F'], 'self', 1.0);
+            updateComparisonHeatmap('self-attention-demo', selfMatrix);
+            
+            // Masked attention demo
+            const maskedMatrix = generateAttentionMatrix(['A', 'B', 'C', 'D', 'E', 'F'], 'masked', 1.0);
+            updateComparisonHeatmap('masked-attention-demo', maskedMatrix);
+            
+            // Sparse attention demo
+            const sparseMatrix = generateAttentionMatrix(['A', 'B', 'C', 'D', 'E', 'F'], 'sparse', 1.0);
+            updateComparisonHeatmap('sparse-attention-demo', sparseMatrix);
+        }
+        
+        function updateComparisonHeatmap(containerId, matrix) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            matrix.forEach(row => {
+                row.forEach(value => {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    cell.style.backgroundColor = getAttentionColor(value);
+                    cell.style.color = value > 0.5 ? 'white' : 'black';
+                    cell.style.width = '30px';
+                    cell.style.height = '30px';
+                    cell.style.fontSize = '10px';
+                    cell.textContent = value.toFixed(1);
+                    container.appendChild(cell);
+                });
+            });
+        }
+        
+        function highlightAttention(fromIndex, toIndex, matrix) {
+            // Destacar conexão específica
+            const tokens = document.querySelectorAll('.token-item');
+            tokens.forEach((token, i) => {
+                token.classList.remove('token-selected', 'token-attending');
+                if (i === fromIndex) {
+                    token.classList.add('token-selected');
+                } else if (i === toIndex) {
+                    token.classList.add('token-attending');
+                }
+            });
+        }
+        
+        function selectToken(index) {
+            const tokens = document.querySelectorAll('.token-item');
+            tokens.forEach((token, i) => {
+                token.classList.remove('token-selected');
+                if (i === index) {
+                    token.classList.add('token-selected');
+                }
+            });
+        }
+        
+        function generateNewSequence() {
+            const randomIndex = Math.floor(Math.random() * sequences.length);
+            currentSequence = sequences[randomIndex];
+            updateVisualization();
+        }
+        
+        function animateAttention() {
+            if (animationRunning) return;
+            
+            animationRunning = true;
+            let step = 0;
+            const maxSteps = currentSequence.length;
+            
+            const animationInterval = setInterval(() => {
+                highlightAttention(step, (step + 1) % currentSequence.length, []);
+                step++;
+                
+                if (step >= maxSteps) {
+                    clearInterval(animationInterval);
+                    animationRunning = false;
+                }
+            }, 800);
+        }
+        
+        function resetVisualization() {
+            currentAttentionType = 'self';
+            currentTemperature = 1.0;
+            currentHeads = 8;
+            currentModelDim = 512;
+            currentSequence = sequences[0];
+            
+            // Reset sliders
+            document.getElementById('temperature-slider').value = 1.0;
+            document.getElementById('heads-slider').value = 8;
+            document.getElementById('model-dim-slider').value = 512;
+            
+            // Reset displays
+            document.getElementById('temperature-display').textContent = '1.0';
+            document.getElementById('heads-display').textContent = '8';
+            document.getElementById('model-dim-display').textContent = '512';
+            
+            // Reset buttons
+            document.querySelectorAll('.type-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.type-button').classList.add('active');
+            
+            updateVisualization();
+        }
+        
+        // Inicialização
+        updateVisualization();
+    </script>
+</body>
+</html>

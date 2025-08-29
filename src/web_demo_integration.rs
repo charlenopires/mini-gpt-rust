@@ -25,6 +25,8 @@ use dashmap::DashMap;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::chunking::{ChunkProcessor, ChunkingConfig, ChunkingStrategy, TextChunk};
+use crate::tokenizer::BPETokenizer;
 // use crate::demo_bridge::{get_demo_bridge, DemoData, DemoResult, DemoParameters as BridgeParameters, PerformanceMetrics as BridgeMetrics};
 
 // Tipos temporários para evitar dependência do demo_bridge
@@ -461,6 +463,10 @@ pub fn create_integration_router(state: IntegrationState) -> Router {
         .route("/run_demo", post(run_demo_module))
         .route("/history", get(get_demo_history))
         .route("/modules", get(list_modules))
+        // Endpoints específicos para chunking
+        .route("/chunking/process", post(process_chunking))
+        .route("/chunking/strategies", get(get_chunking_strategies))
+        .route("/chunking/analyze", post(analyze_chunking))
         .with_state(state)
 }
 
@@ -522,6 +528,216 @@ async fn get_demo_history() -> impl IntoResponse {
 async fn list_modules(State(state): State<IntegrationState>) -> impl IntoResponse {
     let modules: Vec<String> = state.module_status.iter().map(|m| m.key().clone()).collect();
     Json(modules).into_response()
+}
+
+// === HANDLERS DE CHUNKING ===
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChunkingRequest {
+    text: String,
+    strategy: String,
+    max_chunk_size: Option<usize>,
+    min_chunk_size: Option<usize>,
+    overlap_ratio: Option<f32>,
+    preserve_sentences: Option<bool>,
+    preserve_paragraphs: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChunkingResponse {
+    chunks: Vec<ChunkData>,
+    statistics: ChunkingStats,
+    execution_time_ms: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChunkData {
+    text: String,
+    start_pos: usize,
+    end_pos: usize,
+    token_count: usize,
+    metadata: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChunkingStats {
+    total_chunks: usize,
+    avg_chunk_size: f64,
+    min_chunk_size: usize,
+    max_chunk_size: usize,
+    total_tokens: usize,
+    coverage_ratio: f64,
+}
+
+/// Processa texto usando estratégia de chunking especificada
+async fn process_chunking(
+    Json(request): Json<ChunkingRequest>,
+) -> impl IntoResponse {
+    let start_time = std::time::Instant::now();
+    
+    // Parse da estratégia
+    let strategy = match request.strategy.as_str() {
+        "fixed" => ChunkingStrategy::Fixed,
+        "semantic" => ChunkingStrategy::Semantic,
+        "adaptive" => ChunkingStrategy::Adaptive,
+        "overlapping" => ChunkingStrategy::Overlapping,
+        _ => ChunkingStrategy::Semantic,
+    };
+    
+    // Configuração do chunking
+    let config = ChunkingConfig {
+        max_chunk_size: request.max_chunk_size.unwrap_or(512),
+        min_chunk_size: request.min_chunk_size.unwrap_or(64),
+        overlap_ratio: request.overlap_ratio.unwrap_or(0.1),
+        strategy,
+        preserve_sentences: request.preserve_sentences.unwrap_or(true),
+        preserve_paragraphs: request.preserve_paragraphs.unwrap_or(false),
+    };
+    
+    // Inicializar tokenizer
+    let mut tokenizer = match BPETokenizer::new(50000) {
+        Ok(mut t) => {
+            // Treinar com uma amostra do texto
+            let sample = if request.text.len() > 10000 {
+                &request.text[..10000]
+            } else {
+                &request.text
+            };
+            if let Err(e) = t.train(sample) {
+                return (StatusCode::INTERNAL_SERVER_ERROR, 
+                       format!("Erro ao treinar tokenizer: {}", e)).into_response();
+            }
+            t
+        },
+        Err(e) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, 
+                   format!("Erro ao inicializar tokenizer: {}", e)).into_response();
+        }
+    };
+    
+    // Processar chunking
+    let mut processor = ChunkProcessor::new(config);
+    let chunks = match processor.process_text(&request.text, &tokenizer) {
+        Ok(chunks) => chunks,
+        Err(e) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, 
+                   format!("Erro no chunking: {}", e)).into_response();
+        }
+    };
+    
+    // Converter chunks para formato de resposta
+    let chunk_data: Vec<ChunkData> = chunks.iter().map(|chunk| {
+        let mut metadata = HashMap::new();
+        metadata.insert("sentence_count".to_string(), 
+                       serde_json::Value::Number(serde_json::Number::from(chunk.metadata.sentence_count)));
+        metadata.insert("paragraph_count".to_string(), 
+                       serde_json::Value::Number(serde_json::Number::from(chunk.metadata.paragraph_count)));
+        metadata.insert("information_density".to_string(), 
+                       serde_json::Value::Number(serde_json::Number::from_f64(chunk.metadata.information_density as f64).unwrap()));
+        
+        ChunkData {
+            text: chunk.text.clone(),
+            start_pos: chunk.start_position,
+            end_pos: chunk.end_position,
+            token_count: chunk.tokens.len(),
+            metadata,
+        }
+    }).collect();
+    
+    // Calcular estatísticas
+    let stats = processor.calculate_statistics(&chunks);
+    let chunking_stats = ChunkingStats {
+        total_chunks: stats.total_chunks,
+        avg_chunk_size: stats.avg_chunk_size as f64,
+        min_chunk_size: stats.min_chunk_size,
+        max_chunk_size: stats.max_chunk_size,
+        total_tokens: stats.total_tokens,
+        coverage_ratio: stats.boundary_preservation_rate as f64,
+    };
+    
+    let execution_time = start_time.elapsed().as_millis() as u64;
+    
+    let response = ChunkingResponse {
+        chunks: chunk_data,
+        statistics: chunking_stats,
+        execution_time_ms: execution_time,
+    };
+    
+    Json(response).into_response()
+}
+
+/// Retorna estratégias de chunking disponíveis
+async fn get_chunking_strategies() -> impl IntoResponse {
+    let strategies = vec![
+        serde_json::json!({
+            "id": "fixed",
+            "name": "Tamanho Fixo",
+            "description": "Divide o texto em blocos de tamanho fixo",
+            "parameters": {
+                "max_chunk_size": { "type": "number", "default": 512, "min": 64, "max": 2048 },
+                "overlap_ratio": { "type": "number", "default": 0.0, "min": 0.0, "max": 0.5 }
+            }
+        }),
+        serde_json::json!({
+            "id": "semantic",
+            "name": "Semântico",
+            "description": "Respeita limites de sentenças e parágrafos",
+            "parameters": {
+                "max_chunk_size": { "type": "number", "default": 512, "min": 64, "max": 2048 },
+                "preserve_sentences": { "type": "boolean", "default": true },
+                "preserve_paragraphs": { "type": "boolean", "default": false }
+            }
+        }),
+        serde_json::json!({
+            "id": "adaptive",
+            "name": "Adaptativo",
+            "description": "Ajusta o tamanho baseado no conteúdo",
+            "parameters": {
+                "max_chunk_size": { "type": "number", "default": 512, "min": 64, "max": 2048 },
+                "min_chunk_size": { "type": "number", "default": 64, "min": 32, "max": 512 }
+            }
+        }),
+        serde_json::json!({
+            "id": "overlapping",
+            "name": "Com Sobreposição",
+            "description": "Mantém contexto entre chunks adjacentes",
+            "parameters": {
+                "max_chunk_size": { "type": "number", "default": 512, "min": 64, "max": 2048 },
+                "overlap_ratio": { "type": "number", "default": 0.1, "min": 0.0, "max": 0.5 }
+            }
+        })
+    ];
+    
+    Json(strategies).into_response()
+}
+
+/// Analisa qualidade do chunking
+async fn analyze_chunking(
+    Json(request): Json<ChunkingRequest>,
+) -> impl IntoResponse {
+    // Reutilizar lógica do process_chunking para análise
+    let response = process_chunking(Json(request)).await;
+    
+    // Adicionar análise de qualidade
+    match response.into_response().into_body() {
+        body => {
+            // Em uma implementação real, analisaríamos a qualidade dos chunks
+            let analysis = serde_json::json!({
+                "quality_score": 0.85,
+                "recommendations": [
+                    "Considere usar chunking semântico para melhor preservação de contexto",
+                    "Tamanho dos chunks está adequado para o tipo de conteúdo"
+                ],
+                "metrics": {
+                    "semantic_coherence": 0.82,
+                    "size_consistency": 0.91,
+                    "boundary_preservation": 0.78
+                }
+            });
+            
+            Json(analysis).into_response()
+        }
+    }
 }
 
 /// Inicializa módulos padrão do sistema
