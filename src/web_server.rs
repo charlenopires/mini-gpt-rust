@@ -280,7 +280,27 @@ impl WebServer {
             // Interativo específico
             .route("/interactive/:id", get(move |path| {
                 interactive_handler(path, interativos_dir.clone())
-            }))
+            }));
+        
+        // Adicionar rotas diretas para cada interativo
+        let interactive_routes = [
+            "chunking", "attention", "tokenization", "embeddings", "positional_encoding",
+            "layer_normalization", "multi_head_attention", "advanced_attention", "transformer",
+            "advanced_transformer", "sampling_strategies", "advanced_sampling", "feed_forward",
+            "advanced_feedforward", "residual_connections", "loss_function", "training",
+            "inference", "model_comparison"
+        ];
+        
+        for route in interactive_routes {
+            let route_path = format!("/{}", route);
+            let route_id = route.to_string();
+            let dir_clone = self.config.interativos_dir.clone();
+            app = app.route(&route_path, get(move || {
+                interactive_handler(Path(route_id.clone()), dir_clone.clone())
+            }));
+        }
+        
+        app = app
             // Servir arquivos estáticos do diretório interativos
             .nest_service("/static", ServeDir::new(&self.config.interativos_dir))
             // Servir arquivos JavaScript específicos
