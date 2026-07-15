@@ -1,631 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tokenização - Mini-GPT Rust</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/design-system.css">
-    <style>
-        .token-item {
-            display: inline-block;
-            margin: 2px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        .token-word {
-            background-color: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-        .token-subword {
-            background-color: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fcd34d;
-        }
-        .token-special {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-        }
-        .token-punctuation {
-            background-color: #f3e8ff;
-            color: #7c3aed;
-            border: 1px solid #c4b5fd;
-        }
-        .token-item:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .scanner-line {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: #ef4444;
-            z-index: 10;
-            transition: left 0.5s ease;
-        }
-        .token-highlight {
-            background-color: #fef08a !important;
-            border-color: #eab308 !important;
-            transform: scale(1.1);
-        }
-        .tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #1f2937;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 20;
-        }
-        .tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 4px solid transparent;
-            border-top-color: #1f2937;
-        }
-        .token-item:hover .tooltip {
-            opacity: 1;
-        }
-        .algorithm-option {
-            transition: all 0.3s ease;
-        }
-        .algorithm-option:hover {
-            background-color: #f3f4f6;
-        }
-        .algorithm-option.selected {
-            background-color: #dbeafe;
-            border-color: #3b82f6;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corpus &amp; Tokenização — mini-gpt-rust</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="page-header">
-            <a href="index.html" class="back-button">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Voltar
-            </a>
-            <h1 class="page-title">
-                <span class="page-icon">🔤</span>
-                Tokenização
-            </h1>
-            <p class="page-subtitle">Como o texto é convertido em tokens processáveis</p>
-        </header>
+  <header class="topbar">
+    <a class="topbar__mark" href="/"><span class="dot">▸</span>mini-gpt-rust</a>
+    <nav class="topbar__nav">
+      <a href="/">início</a>
+      <a href="/tokenization.html" aria-current="page">corpus &amp; tokenização</a>
+      <a href="/attention.html">atenção</a>
+      <a href="/embeddings.html">embeddings</a>
+      <a href="/training.html">treinamento</a>
+      <a href="/inference.html">inferência</a>
+    </nav>
+    <span class="status-pill" data-status-pill data-state="off">
+      <span class="status-pill__dot"></span>
+      <span data-status-text>verificando…</span>
+    </span>
+  </header>
 
-        <!-- Main Content -->
-        <main class="grid-layout">
-            <!-- Control Panel -->
-            <section class="control-panel">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span class="section-icon">🎮</span>
-                        Painel de Controle
-                    </h2>
-                </div>
-                
-                <!-- Text Input -->
-                <div class="form-group">
-                    <label for="input-text" class="form-label">
-                        Texto para Tokenizar:
-                    </label>
-                    <textarea 
-                        id="input-text" 
-                        class="form-textarea"
-                        rows="4"
-                        placeholder="Digite ou cole o texto que você quer tokenizar..."
-                    >Olá mundo! Como você está hoje? Espero que esteja bem. 😊</textarea>
-                </div>
-
-                <!-- Algorithm Selection -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <span class="label-icon">🔧</span>
-                        Algoritmo de Tokenização:
-                    </label>
-                    <div class="radio-grid">
-                        <div class="radio-option algorithm-option selected" data-algorithm="word">
-                            <input type="radio" name="algorithm" value="word" class="radio-input" checked>
-                            <label class="radio-label">
-                                <span class="radio-icon">📝</span>
-                                <div class="radio-content">
-                                    <span class="radio-title">Por Palavras</span>
-                                    <span class="radio-description">Divide o texto em palavras completas</span>
-                                </div>
-                            </label>
-                        </div>
-                        <div class="radio-option algorithm-option" data-algorithm="subword">
-                            <input type="radio" name="algorithm" value="subword" class="radio-input">
-                            <label class="radio-label">
-                                <span class="radio-icon">🔤</span>
-                                <div class="radio-content">
-                                    <span class="radio-title">Subpalavras (BPE)</span>
-                                    <span class="radio-description">Divide em subunidades menores</span>
-                                </div>
-                            </label>
-                        </div>
-                        <div class="radio-option algorithm-option" data-algorithm="character">
-                            <input type="radio" name="algorithm" value="character" class="radio-input">
-                            <label class="radio-label">
-                                <span class="radio-icon">🔡</span>
-                                <div class="radio-content">
-                                    <span class="radio-title">Por Caracteres</span>
-                                    <span class="radio-description">Cada caractere é um token</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-            </div>
-
-                <!-- Parameters -->
-                <div class="form-group" id="parameters-section">
-                    <label class="form-label">
-                        <span class="label-icon">⚙️</span>
-                        Parâmetros
-                    </label>
-                    <div class="param-grid" id="parameters-container">
-                        <!-- Parâmetros serão inseridos dinamicamente -->
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                <button 
-                    id="tokenize-btn" 
-                    class="btn btn-primary btn-full"
-                >
-                    <span class="btn-icon">🚀</span>
-                    Visualizar Tokenização
-                </button>
-            </section>
-
-            <!-- Results Section -->
-            <section class="results-area">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span class="section-icon">📊</span>
-                        Resultado da Tokenização
-                    </h2>
-                </div>
-            
-                <!-- Visualization Area -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <span class="section-icon">🎬</span>
-                            Processo de Tokenização
-                        </h3>
-                    </div>
-                    <div class="visualization-container" id="visualization-area">
-                        <div class="empty-state">
-                            Clique em "Visualizar Tokenização" para ver o processo em ação
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tokens Display -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <span class="section-icon">🔤</span>
-                            Tokens Gerados
-                        </h3>
-                    </div>
-                    <div class="tokens-container" id="tokens-display">
-                        <div class="empty-state">
-                            Os tokens aparecerão aqui após a tokenização
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-                <!-- Statistics -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <span class="section-icon">📈</span>
-                            Estatísticas
-                        </h3>
-                    </div>
-                    <div class="stats-grid" id="stats-container">
-                        <div class="stat-card">
-                            <div class="stat-value" id="total-tokens">-</div>
-                            <div class="stat-label">Total de Tokens</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="unique-tokens">-</div>
-                            <div class="stat-label">Tokens Únicos</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="avg-length">-</div>
-                            <div class="stat-label">Comprimento Médio</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="compression-ratio">-</div>
-                            <div class="stat-label">Taxa de Compressão</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Educational Content -->
-            <section class="glass-card">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span class="section-icon">📚</span>
-                        Conceitos Fundamentais
-                    </h2>
-                </div>
-            
-            <div class="grid md:grid-cols-2 gap-8">
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">🤔 Por que Tokenizar?</h3>
-                    <ul class="space-y-2 text-gray-600">
-                        <li class="flex items-start">
-                            <span class="text-blue-500 mr-2">•</span>
-                            <span>Modelos de IA processam números, não texto diretamente</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-blue-500 mr-2">•</span>
-                            <span>Tokens são unidades básicas de processamento</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-blue-500 mr-2">•</span>
-                            <span>Cada token é mapeado para um número único (ID)</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-blue-500 mr-2">•</span>
-                            <span>Permite processamento eficiente em lotes</span>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">⚖️ Trade-offs dos Algoritmos</h3>
-                    <div class="space-y-4">
-                        <div class="border-l-4 border-blue-500 pl-4">
-                            <h4 class="font-semibold text-blue-700">Por Palavras</h4>
-                            <p class="text-sm text-gray-600">✅ Simples ❌ Vocabulário limitado</p>
-                        </div>
-                        <div class="border-l-4 border-yellow-500 pl-4">
-                            <h4 class="font-semibold text-yellow-700">Subpalavras (BPE)</h4>
-                            <p class="text-sm text-gray-600">✅ Flexível ✅ Vocabulário eficiente</p>
-                        </div>
-                        <div class="border-l-4 border-purple-500 pl-4">
-                            <h4 class="font-semibold text-purple-700">Por Caracteres</h4>
-                            <p class="text-sm text-gray-600">✅ Sem OOV ❌ Sequências longas</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        // Elementos DOM
-        const inputText = document.getElementById('input-text');
-        const tokenizeBtn = document.getElementById('tokenize-btn');
-        const visualizationArea = document.getElementById('visualization-area');
-        const tokensDisplay = document.getElementById('tokens-display');
-        const parametersContainer = document.getElementById('parameters-container');
-        const algorithmOptions = document.querySelectorAll('.algorithm-option');
-        
-        // Estado da aplicação
-        let currentAlgorithm = 'word';
-        let isTokenizing = false;
-        
-        // Parâmetros para cada algoritmo
-        const ALGORITHM_PARAMS = {
-            word: {
-                case_sensitive: { label: 'Sensível a maiúsculas', type: 'checkbox', default: false },
-                remove_punctuation: { label: 'Remover pontuação', type: 'checkbox', default: false }
-            },
-            subword: {
-                vocab_size: { label: 'Tamanho do vocabulário', type: 'range', min: 1000, max: 50000, default: 10000 },
-                merge_operations: { label: 'Operações de merge', type: 'range', min: 100, max: 5000, default: 1000 }
-            },
-            character: {
-                include_spaces: { label: 'Incluir espaços', type: 'checkbox', default: true },
-                include_punctuation: { label: 'Incluir pontuação', type: 'checkbox', default: true }
-            }
-        };
-        
-        // Tokenizadores
-        function wordTokenizer(text, params) {
-            let processedText = text;
-            
-            if (!params.case_sensitive) {
-                processedText = processedText.toLowerCase();
-            }
-            
-            if (params.remove_punctuation) {
-                processedText = processedText.replace(/[^\w\s]/g, '');
-            }
-            
-            const tokens = processedText.split(/\s+/).filter(token => token.length > 0);
-            
-            return tokens.map((token, index) => ({
-                text: token,
-                type: 'word',
-                id: index,
-                start: text.indexOf(token),
-                end: text.indexOf(token) + token.length
-            }));
-        }
-        
-        function subwordTokenizer(text, params) {
-            // Simulação simplificada do BPE
-            const tokens = [];
-            let currentPos = 0;
-            
-            // Primeiro, divide em palavras
-            const words = text.split(/\s+/);
-            
-            words.forEach((word, wordIndex) => {
-                if (word.length === 0) return;
-                
-                // Simula BPE dividindo palavras longas
-                if (word.length > 6) {
-                    // Divide em subpalavras
-                    const subwords = [];
-                    let remaining = word;
-                    
-                    while (remaining.length > 0) {
-                        if (remaining.length <= 3) {
-                            subwords.push(remaining);
-                            break;
-                        }
-                        
-                        const subwordLength = Math.min(4, remaining.length);
-                        subwords.push(remaining.substring(0, subwordLength));
-                        remaining = remaining.substring(subwordLength);
-                    }
-                    
-                    subwords.forEach((subword, subIndex) => {
-                        tokens.push({
-                            text: subword + (subIndex < subwords.length - 1 ? '##' : ''),
-                            type: 'subword',
-                            id: tokens.length,
-                            start: currentPos,
-                            end: currentPos + subword.length
-                        });
-                        currentPos += subword.length;
-                    });
-                } else {
-                    tokens.push({
-                        text: word,
-                        type: 'word',
-                        id: tokens.length,
-                        start: currentPos,
-                        end: currentPos + word.length
-                    });
-                    currentPos += word.length;
-                }
-                
-                // Adiciona espaço se não for a última palavra
-                if (wordIndex < words.length - 1) {
-                    currentPos += 1;
-                }
-            });
-            
-            return tokens;
-        }
-        
-        function characterTokenizer(text, params) {
-            const tokens = [];
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                
-                if (!params.include_spaces && char === ' ') continue;
-                if (!params.include_punctuation && /[^\w\s]/.test(char)) continue;
-                
-                let type = 'character';
-                if (/\s/.test(char)) type = 'space';
-                else if (/[^\w\s]/.test(char)) type = 'punctuation';
-                
-                tokens.push({
-                    text: char === ' ' ? '␣' : char,
-                    type: type,
-                    id: tokens.length,
-                    start: i,
-                    end: i + 1
-                });
-            }
-            
-            return tokens;
-        }
-        
-        // Atualiza parâmetros baseado no algoritmo selecionado
-        function updateParameters() {
-            const params = ALGORITHM_PARAMS[currentAlgorithm];
-            parametersContainer.innerHTML = '';
-            
-            Object.entries(params).forEach(([key, config]) => {
-                const div = document.createElement('div');
-                
-                if (config.type === 'checkbox') {
-                    div.innerHTML = `
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" id="param-${key}" ${config.default ? 'checked' : ''} class="rounded">
-                            <span class="text-sm font-medium text-gray-700">${config.label}</span>
-                        </label>
-                    `;
-                } else if (config.type === 'range') {
-                    div.innerHTML = `
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">${config.label}</label>
-                            <input type="range" id="param-${key}" min="${config.min}" max="${config.max}" value="${config.default}" class="w-full">
-                            <div class="text-xs text-gray-500 mt-1">Valor: <span id="param-${key}-value">${config.default}</span></div>
-                        </div>
-                    `;
-                    
-                    // Adiciona listener para atualizar o valor exibido
-                    setTimeout(() => {
-                        const slider = document.getElementById(`param-${key}`);
-                        const valueDisplay = document.getElementById(`param-${key}-value`);
-                        slider.addEventListener('input', () => {
-                            valueDisplay.textContent = slider.value;
-                        });
-                    }, 0);
-                }
-                
-                parametersContainer.appendChild(div);
-            });
-        }
-        
-        // Coleta parâmetros atuais
-        function getCurrentParams() {
-            const params = {};
-            const paramConfigs = ALGORITHM_PARAMS[currentAlgorithm];
-            
-            Object.keys(paramConfigs).forEach(key => {
-                const element = document.getElementById(`param-${key}`);
-                if (element) {
-                    if (element.type === 'checkbox') {
-                        params[key] = element.checked;
-                    } else {
-                        params[key] = parseFloat(element.value);
-                    }
-                }
-            });
-            
-            return params;
-        }
-        
-        // Executa tokenização
-        function performTokenization() {
-            const text = inputText.value.trim();
-            if (!text) {
-                alert('Por favor, insira algum texto para tokenizar.');
-                return;
-            }
-            
-            const params = getCurrentParams();
-            let tokens = [];
-            
-            switch (currentAlgorithm) {
-                case 'word':
-                    tokens = wordTokenizer(text, params);
-                    break;
-                case 'subword':
-                    tokens = subwordTokenizer(text, params);
-                    break;
-                case 'character':
-                    tokens = characterTokenizer(text, params);
-                    break;
-            }
-            
-            displayTokens(tokens);
-            updateStatistics(tokens, text);
-            runVisualization(text, tokens);
-        }
-        
-        // Exibe tokens
-        function displayTokens(tokens) {
-            tokensDisplay.innerHTML = '';
-            
-            tokens.forEach((token, index) => {
-                const tokenElement = document.createElement('span');
-                tokenElement.className = `token-item token-${token.type}`;
-                tokenElement.textContent = token.text;
-                
-                const tooltip = document.createElement('div');
-                tooltip.className = 'tooltip';
-                tooltip.textContent = `ID: ${token.id} | Tipo: ${token.type} | Posição: ${token.start}-${token.end}`;
-                tokenElement.appendChild(tooltip);
-                
-                tokensDisplay.appendChild(tokenElement);
-            });
-        }
-        
-        // Atualiza estatísticas
-        function updateStatistics(tokens, originalText) {
-            const totalTokens = tokens.length;
-            const uniqueTokens = new Set(tokens.map(t => t.text)).size;
-            const avgLength = tokens.reduce((sum, t) => sum + t.text.length, 0) / totalTokens;
-            const compressionRatio = (originalText.length / totalTokens).toFixed(1);
-            
-            document.getElementById('total-tokens').textContent = totalTokens;
-            document.getElementById('unique-tokens').textContent = uniqueTokens;
-            document.getElementById('avg-length').textContent = avgLength.toFixed(1);
-            document.getElementById('compression-ratio').textContent = compressionRatio + 'x';
-        }
-        
-        // Visualização animada
-        function runVisualization(text, tokens) {
-            visualizationArea.innerHTML = `
-                <div class="relative">
-                    <div class="text-lg leading-relaxed" id="text-display">${text}</div>
-                    <div class="scanner-line" id="scanner"></div>
-                </div>
-                <div class="mt-4 text-sm text-gray-600">
-                    <span id="current-token-info">Preparando para tokenizar...</span>
-                </div>
-            `;
-            
-            const scanner = document.getElementById('scanner');
-            const tokenInfo = document.getElementById('current-token-info');
-            
-            let currentTokenIndex = 0;
-            
-            function animateToken() {
-                if (currentTokenIndex >= tokens.length) {
-                    tokenInfo.textContent = 'Tokenização concluída!';
-                    scanner.style.display = 'none';
-                    return;
-                }
-                
-                const token = tokens[currentTokenIndex];
-                const progress = (token.start / text.length) * 100;
-                
-                scanner.style.left = `${progress}%`;
-                tokenInfo.textContent = `Token ${currentTokenIndex + 1}/${tokens.length}: "${token.text}" (${token.type})`;
-                
-                currentTokenIndex++;
-                setTimeout(animateToken, 800);
-            }
-            
-            setTimeout(animateToken, 500);
-        }
-        
-        // Event listeners
-        algorithmOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                algorithmOptions.forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                currentAlgorithm = option.dataset.algorithm;
-                updateParameters();
-            });
-        });
-        
-        tokenizeBtn.addEventListener('click', performTokenization);
-        
-        // Inicialização
-        updateParameters();
-    </script>
-        </main>
+  <main>
+    <div class="page-header">
+      <div class="eyebrow">Pré-processamento — passo 1</div>
+      <h1>Corpus &amp; Tokenização</h1>
+      <p>
+        O corpus real (<code>data/corpus_pt_br.txt</code>) e o tokenizador BPE treinado a partir dele
+        no boot do servidor. Digite qualquer texto para ver exatamente os tokens que o modelo veria.
+      </p>
     </div>
+
+    <div class="stat-row">
+      <div class="readout">
+        <span class="readout__label">Caracteres</span>
+        <span class="readout__value" id="c-chars">—</span>
+      </div>
+      <div class="readout">
+        <span class="readout__label">Linhas</span>
+        <span class="readout__value" id="c-lines">—</span>
+      </div>
+      <div class="readout">
+        <span class="readout__label">Palavras</span>
+        <span class="readout__value" id="c-words">—</span>
+      </div>
+      <div class="readout">
+        <span class="readout__label">Tokens (corpus)</span>
+        <span class="readout__value" id="c-tokens">—</span>
+      </div>
+    </div>
+
+    <div class="layout-split">
+      <div class="panel panel--rail">
+        <div class="field">
+          <label for="input-text">Texto para tokenizar</label>
+          <textarea id="input-text" rows="6">O gato subiu no telhado.</textarea>
+        </div>
+        <button class="primary" id="btn-tokenize">Tokenizar</button>
+        <p class="hint" style="margin:0">BPE real — o mesmo algoritmo usado para preparar o corpus de treino.</p>
+      </div>
+
+      <div class="panel">
+        <h3>Tokens resultantes</h3>
+        <div id="result-area">
+          <div class="empty-hint">Digite um texto e clique em "Tokenizar"</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>mini-gpt-rust · Rust + Candle + Metal · servido localmente por Axum</footer>
+
+  <script type="module" src="/js/tokenization.js"></script>
 </body>
 </html>

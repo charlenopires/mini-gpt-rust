@@ -1,1155 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demonstração Interativa do Treinamento de GPT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/design-system.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-            min-height: 100vh;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .training-step {
-            position: relative;
-            border: 2px solid #3b82f6;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 8px 0;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .training-step:hover {
-            border-color: #60a5fa;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-        }
-        .training-step.active {
-            border-color: #fbbf24;
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
-        }
-        .training-step.completed {
-            border-color: #10b981;
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
-        }
-        .gradient-flow {
-            position: relative;
-            height: 40px;
-            background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
-            border-radius: 20px;
-            margin: 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            overflow: hidden;
-        }
-        .gradient-flow::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: backprop 3s infinite;
-        }
-        .gradient-flow.active::before {
-            animation: backprop 1.5s infinite;
-        }
-        @keyframes backprop {
-            0% { left: 100%; }
-            100% { left: -100%; }
-        }
-        .loss-visualization {
-            background: linear-gradient(135deg, #7c3aed, #8b5cf6);
-            border-radius: 12px;
-            padding: 16px;
-            color: white;
-            text-align: center;
-            font-weight: 600;
-            position: relative;
-            overflow: hidden;
-        }
-        .loss-visualization::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-            animation: shimmer 2s infinite;
-        }
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .parameter-update {
-            background: linear-gradient(135deg, #059669, #10b981);
-            border-radius: 8px;
-            padding: 12px;
-            margin: 4px 0;
-            color: white;
-            font-weight: 600;
-            position: relative;
-            overflow: hidden;
-        }
-        .parameter-update::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            animation: update 1s infinite;
-        }
-        @keyframes update {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .batch-item {
-            background: linear-gradient(135deg, #0891b2, #0e7490);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin: 4px;
-            font-weight: 600;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        .batch-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-        }
-        .batch-item.processing {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-            animation: process 1s infinite;
-        }
-        @keyframes process {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        .metric-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-        }
-        .progress-bar {
-            background: #374151;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-        .progress-fill {
-            background: linear-gradient(90deg, #3b82f6, #60a5fa);
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-            position: relative;
-        }
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: progress-shine 2s infinite;
-        }
-        @keyframes progress-shine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .optimizer-visualization {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            border: 2px solid #3b82f6;
-            border-radius: 50%;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.3));
-        }
-        .optimizer-point {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #fbbf24;
-            border-radius: 50%;
-            transition: all 0.5s ease;
-        }
-        .learning-curve {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 16px;
-            height: 300px;
-        }
-        .step-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(59, 130, 246, 0.9);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .equation {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 8px 0;
-            border-left: 4px solid #3b82f6;
-        }
-        .hyperparameter {
-            background: rgba(139, 92, 246, 0.2);
-            border: 1px solid rgba(139, 92, 246, 0.4);
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin: 4px;
-            display: inline-block;
-            font-size: 14px;
-            font-weight: 600;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treinamento — mini-gpt-rust</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-5);
+    }
+    .pipeline__stage {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: var(--sp-2) var(--sp-3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--ink-faint);
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+    }
+    .pipeline__stage[data-state="done"] { color: var(--ink-dim); border-color: var(--border-strong); }
+    .pipeline__stage[data-state="active"] {
+      color: var(--bg);
+      background: var(--signal);
+      border-color: var(--signal);
+    }
+    .pipeline__arrow { color: var(--ink-faint); align-self: center; }
+    .loss-chart-wrap { margin-bottom: var(--sp-5); }
+  </style>
 </head>
-<body class="text-white">
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="page-header">
-            <!-- Botão de Voltar -->
-            <a href="index.html" class="back-button">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Voltar
-            </a>
-            
-            <h1 class="page-title">
-                <span class="page-icon">🎯</span>
-                Treinamento de Modelos GPT
-            </h1>
-            <p class="page-subtitle">Explore o processo completo de treinamento de um modelo de linguagem</p>
-        </header>
+<body>
+  <header class="topbar">
+    <a class="topbar__mark" href="/"><span class="dot">▸</span>mini-gpt-rust</a>
+    <nav class="topbar__nav">
+      <a href="/">início</a>
+      <a href="/tokenization.html">corpus &amp; tokenização</a>
+      <a href="/attention.html">atenção</a>
+      <a href="/embeddings.html">embeddings</a>
+      <a href="/training.html" aria-current="page">treinamento</a>
+      <a href="/inference.html">inferência</a>
+    </nav>
+    <span class="status-pill" data-status-pill data-state="off">
+      <span class="status-pill__dot"></span>
+      <span data-status-text>verificando…</span>
+    </span>
+  </header>
 
-        <main class="grid-layout">
-            <!-- Painel de Controle -->
-            <div class="control-panel">
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">⚙️</span>
-                            Configurações de Treinamento
-                        </h2>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">📝</span>
-                                Dados de Treinamento
-                            </label>
-                            <textarea id="trainingData" class="form-input h-20 resize-none" placeholder="Digite o texto de treinamento...">
-O gato subiu no telhado. O cão ficou no quintal. A criança brincava no parque.</textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">📦</span>
-                                Tamanho do Batch
-                            </label>
-                            <input type="range" id="batchSize" min="1" max="8" value="4" class="form-range">
-                            <span id="batchSizeValue" class="range-value">4 sequências</span>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">📈</span>
-                                Taxa de Aprendizado
-                            </label>
-                            <input type="range" id="learningRate" min="1" max="100" value="30" class="form-range">
-                            <span id="learningRateValue" class="range-value">3e-4</span>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">🔄</span>
-                                Épocas
-                            </label>
-                            <input type="range" id="epochs" min="1" max="10" value="3" class="form-range">
-                            <span id="epochsValue" class="range-value">3 épocas</span>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">⚡</span>
-                                Otimizador
-                            </label>
-                            <select id="optimizer" class="form-input">
-                                <option value="adam">Adam</option>
-                                <option value="sgd">SGD</option>
-                                <option value="adamw">AdamW</option>
-                                <option value="rmsprop">RMSprop</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="label-icon">📊</span>
-                                Função de Loss
-                            </label>
-                            <select id="lossFunction" class="form-input">
-                                <option value="cross-entropy">Cross-Entropy</option>
-                                <option value="mse">Mean Squared Error</option>
-                                <option value="focal">Focal Loss</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="useScheduler" class="form-checkbox" checked>
-                                <span class="checkbox-text">Learning Rate Scheduler</span>
-                            </label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="showGradients" class="form-checkbox">
-                                <span class="checkbox-text">Mostrar Gradientes</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <button id="startTraining" class="btn-full btn-icon">
-                        <span>🚀</span>
-                        Iniciar Treinamento
-                    </button>
-                    
-                    <button id="stopTraining" class="btn-full btn-outline btn-icon" disabled>
-                        <span>⏹️</span>
-                        Parar Treinamento
-                    </button>
-                </div>
-                
-                <!-- Etapas do Treinamento -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">📋</span>
-                            Etapas
-                        </h2>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="step-item" data-step="forward">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Forward Pass</h3>
-                                <p class="step-description">Propagação para frente</p>
-                            </div>
-                        </div>
-                        <div class="step-item" data-step="loss">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Cálculo do Loss</h3>
-                                <p class="step-description">Medir erro das predições</p>
-                            </div>
-                        </div>
-                        <div class="step-item" data-step="backward">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Backward Pass</h3>
-                                <p class="step-description">Calcular gradientes</p>
-                            </div>
-                        </div>
-                        <div class="step-item" data-step="optimize">
-                            <div class="step-number">4</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Otimização</h3>
-                                <p class="step-description">Atualizar parâmetros</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Visualização Principal -->
-            <div class="lg:col-span-3 space-y-6">
-                <!-- Status do Treinamento -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">📊</span>
-                            Status do Treinamento
-                        </h2>
-                    </div>
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Época Atual</div>
-                            <div id="currentEpoch" class="metric-value">0</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Batch Atual</div>
-                            <div id="currentBatch" class="metric-value">0</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Loss Atual</div>
-                            <div id="currentLoss" class="metric-value">0.000</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Acurácia</div>
-                            <div id="currentAccuracy" class="metric-value">0%</div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-section">
-                        <div class="progress-header">
-                            <span class="progress-label">Progresso da Época</span>
-                            <span id="epochProgress" class="progress-value">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div id="epochProgressBar" class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Batch Atual -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">📦</span>
-                            Batch Atual
-                        </h2>
-                    </div>
-                    <div id="currentBatchData" class="grid-layout">
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">📝</span>
-                                    Sequências de Entrada
-                                </h3>
-                            </div>
-                            <div id="batchSequences" class="space-y-2">
-                                <!-- Será preenchido dinamicamente -->
-                            </div>
-                        </div>
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">🎯</span>
-                                    Targets Esperados
-                                </h3>
-                            </div>
-                            <div id="batchTargets" class="space-y-2">
-                                <!-- Será preenchido dinamicamente -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Visualização do Loss -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">📉</span>
-                            Função de Loss
-                        </h2>
-                    </div>
-                    <div class="grid-layout">
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">🧮</span>
-                                    Equação
-                                </h3>
-                            </div>
-                            <div id="lossEquation" class="equation">
-                                L = -∑ y_true * log(y_pred)
-                            </div>
-                            <div class="visualization-container">
-                                <div id="lossValue" class="metric-value">Loss: 0.000</div>
-                                <div class="metric-description">Cross-Entropy Loss</div>
-                            </div>
-                        </div>
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">📈</span>
-                                    Curva de Aprendizado
-                                </h3>
-                            </div>
-                            <div class="visualization-container">
-                                <canvas id="lossChart" width="400" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Gradientes e Otimização -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">⚡</span>
-                            Gradientes e Otimização
-                        </h2>
-                    </div>
-                    <div class="grid-layout">
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">🔄</span>
-                                    Backpropagation
-                                </h3>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="gradient-flow">
-                                    ∂L/∂W_output
-                                </div>
-                                <div class="gradient-flow">
-                                    ∂L/∂W_hidden
-                                </div>
-                                <div class="gradient-flow">
-                                    ∂L/∂W_embedding
-                                </div>
-                            </div>
-                            
-                            <div id="gradientInfo" class="glass-card">
-                                <div class="section-header">
-                                    <h4 class="section-subtitle">Informações dos Gradientes</h4>
-                                </div>
-                                <div class="metrics-grid">
-                                    <div class="metric-card">
-                                        <div class="metric-label">Norma do Gradiente</div>
-                                        <div id="gradNorm" class="metric-value">0.000</div>
-                                    </div>
-                                    <div class="metric-card">
-                                        <div class="metric-label">Gradiente Máximo</div>
-                                        <div id="gradMax" class="metric-value">0.000</div>
-                                    </div>
-                                    <div class="metric-card">
-                                        <div class="metric-label">Gradiente Mínimo</div>
-                                        <div id="gradMin" class="metric-value">0.000</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="glass-card">
-                            <div class="section-header">
-                                <h3 class="section-subtitle">
-                                    <span class="section-icon">🎯</span>
-                                    Otimizador
-                                </h3>
-                            </div>
-                            <div class="visualization-container">
-                                <div class="optimizer-point" id="optimizerPoint"></div>
-                                <div class="text-center">
-                                    <div class="metric-value">Convergência</div>
-                                    <div class="metric-description">Direção do gradiente</div>
-                                </div>
-                            </div>
-                            
-                            <div class="glass-card">
-                                <div class="section-header">
-                                    <h4 class="section-subtitle">Hiperparâmetros</h4>
-                                </div>
-                                <div class="metrics-grid">
-                                    <div class="metric-card">
-                                        <div class="metric-label">LR</div>
-                                        <div id="currentLR" class="metric-value">3e-4</div>
-                                    </div>
-                                    <div class="metric-card">
-                                        <div class="metric-label">β₁</div>
-                                        <div class="metric-value">0.9</div>
-                                    </div>
-                                    <div class="metric-card">
-                                        <div class="metric-label">β₂</div>
-                                        <div class="metric-value">0.999</div>
-                                    </div>
-                                    <div class="metric-card">
-                                        <div class="metric-label">ε</div>
-                                        <div class="metric-value">1e-8</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Atualizações de Parâmetros -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">🔄</span>
-                            Atualizações de Parâmetros
-                        </h2>
-                    </div>
-                    <div id="parameterUpdates" class="space-y-2">
-                        <!-- Será preenchido dinamicamente -->
-                    </div>
-                </div>
-                
-                <!-- Log de Treinamento -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="section-icon">📝</span>
-                            Log de Treinamento
-                        </h2>
-                    </div>
-                    <div id="trainingLog" class="code-block">
-                        <div class="text-green-400">[INFO] Sistema de treinamento inicializado</div>
-                        <div class="text-blue-400">[INFO] Aguardando início do treinamento...</div>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <main>
+    <div class="page-header">
+      <div class="eyebrow">O fluxo completo, ao vivo</div>
+      <h1>Treinamento</h1>
+      <p>
+        Isso dispara um treinamento real do zero: um novo tokenizador BPE é treinado a partir de
+        <code>data/corpus_pt_br.txt</code>, um modelo é inicializado com pesos aleatórios, e o laço
+        de treinamento roda de verdade — forward pass, cross-entropy loss, backward pass com Adam —
+        na GPU Metal quando disponível. Cada evento abaixo vem do treinador real, não de uma simulação.
+      </p>
     </div>
 
-    <script>
-        // --- ELEMENTOS DO DOM ---
-        const trainingData = document.getElementById('trainingData');
-        const batchSize = document.getElementById('batchSize');
-        const batchSizeValue = document.getElementById('batchSizeValue');
-        const learningRate = document.getElementById('learningRate');
-        const learningRateValue = document.getElementById('learningRateValue');
-        const epochs = document.getElementById('epochs');
-        const epochsValue = document.getElementById('epochsValue');
-        const optimizer = document.getElementById('optimizer');
-        const lossFunction = document.getElementById('lossFunction');
-        const useScheduler = document.getElementById('useScheduler');
-        const showGradients = document.getElementById('showGradients');
-        const startTraining = document.getElementById('startTraining');
-        const stopTraining = document.getElementById('stopTraining');
-        
-        const currentEpoch = document.getElementById('currentEpoch');
-        const currentBatch = document.getElementById('currentBatch');
-        const currentLoss = document.getElementById('currentLoss');
-        const currentAccuracy = document.getElementById('currentAccuracy');
-        const epochProgress = document.getElementById('epochProgress');
-        const epochProgressBar = document.getElementById('epochProgressBar');
-        
-        const batchSequences = document.getElementById('batchSequences');
-        const batchTargets = document.getElementById('batchTargets');
-        const lossEquation = document.getElementById('lossEquation');
-        const lossValue = document.getElementById('lossValue');
-        const gradNorm = document.getElementById('gradNorm');
-        const gradMax = document.getElementById('gradMax');
-        const gradMin = document.getElementById('gradMin');
-        const currentLR = document.getElementById('currentLR');
-        const parameterUpdates = document.getElementById('parameterUpdates');
-        const trainingLog = document.getElementById('trainingLog');
-        const stepItems = document.querySelectorAll('.step-item');
-        
-        // --- ESTADO DA APLICAÇÃO ---
-        let isTraining = false;
-        let trainingInterval;
-        let currentEpochNum = 0;
-        let currentBatchNum = 0;
-        let lossHistory = [];
-        let accuracyHistory = [];
-        let lossChart;
-        let sequences = [];
-        let totalBatches = 0;
-        
-        // --- FUNÇÕES UTILITÁRIAS ---
-        
-        /**
-         * Prepara os dados de treinamento
-         */
-        function prepareTrainingData() {
-            const text = trainingData.value.trim();
-            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-            
-            sequences = sentences.map(sentence => {
-                const tokens = sentence.trim().split(/\s+/);
-                return {
-                    input: tokens.slice(0, -1),
-                    target: tokens.slice(1)
-                };
-            }).filter(seq => seq.input.length > 0);
-            
-            totalBatches = Math.ceil(sequences.length / parseInt(batchSize.value));
-            
-            logMessage(`[INFO] Preparados ${sequences.length} sequências em ${totalBatches} batches`, 'blue');
-        }
-        
-        /**
-         * Simula forward pass
-         */
-        function simulateForwardPass(batch) {
-            return batch.map(seq => {
-                // Simula predições do modelo
-                return seq.target.map(() => Math.random());
-            });
-        }
-        
-        /**
-         * Calcula loss simulado
-         */
-        function calculateLoss(predictions, targets, lossType) {
-            let totalLoss = 0;
-            let totalSamples = 0;
-            
-            predictions.forEach((pred, i) => {
-                const target = targets[i];
-                pred.forEach((p, j) => {
-                    if (j < target.length) {
-                        switch (lossType) {
-                            case 'cross-entropy':
-                                totalLoss += -Math.log(Math.max(p, 1e-7));
-                                break;
-                            case 'mse':
-                                totalLoss += Math.pow(p - 1, 2);
-                                break;
-                            case 'focal':
-                                const alpha = 0.25;
-                                const gamma = 2;
-                                totalLoss += -alpha * Math.pow(1 - p, gamma) * Math.log(Math.max(p, 1e-7));
-                                break;
-                        }
-                        totalSamples++;
-                    }
-                });
-            });
-            
-            return totalSamples > 0 ? totalLoss / totalSamples : 0;
-        }
-        
-        /**
-         * Simula gradientes
-         */
-        function simulateGradients() {
-            const gradients = [];
-            for (let i = 0; i < 100; i++) {
-                gradients.push((Math.random() - 0.5) * 2);
-            }
-            
-            const norm = Math.sqrt(gradients.reduce((sum, g) => sum + g * g, 0));
-            const max = Math.max(...gradients);
-            const min = Math.min(...gradients);
-            
-            return { gradients, norm, max, min };
-        }
-        
-        /**
-         * Atualiza learning rate com scheduler
-         */
-        function updateLearningRate(epoch, batch) {
-            if (!useScheduler.checked) return;
-            
-            const baseLR = parseFloat(learningRateValue.textContent.replace('e-', 'e-'));
-            const decayRate = 0.95;
-            const newLR = baseLR * Math.pow(decayRate, epoch);
-            
-            currentLR.textContent = newLR.toExponential(1);
-        }
-        
-        /**
-         * Adiciona mensagem ao log
-         */
-        function logMessage(message, color = 'white') {
-            const logDiv = document.createElement('div');
-            logDiv.className = `text-${color}-400`;
-            logDiv.textContent = message;
-            trainingLog.appendChild(logDiv);
-            trainingLog.scrollTop = trainingLog.scrollHeight;
-        }
-        
-        // --- FUNÇÕES DE VISUALIZAÇÃO ---
-        
-        /**
-         * Atualiza valores dos sliders
-         */
-        function updateSliderValues() {
-            batchSizeValue.textContent = `${batchSize.value} sequências`;
-            
-            const lr = parseInt(learningRate.value);
-            const lrValue = (lr / 10000).toExponential(0);
-            learningRateValue.textContent = lrValue;
-            currentLR.textContent = lrValue;
-            
-            epochsValue.textContent = `${epochs.value} épocas`;
-        }
-        
-        /**
-         * Atualiza equação do loss
-         */
-        function updateLossEquation() {
-            const lossType = lossFunction.value;
-            let equation = '';
-            
-            switch (lossType) {
-                case 'cross-entropy':
-                    equation = 'L = -∑ y_true * log(y_pred)';
-                    break;
-                case 'mse':
-                    equation = 'L = (1/n) * ∑(y_true - y_pred)²';
-                    break;
-                case 'focal':
-                    equation = 'L = -α(1-p)^γ * log(p)';
-                    break;
-            }
-            
-            lossEquation.textContent = equation;
-        }
-        
-        /**
-         * Inicializa gráfico de loss
-         */
-        function initializeLossChart() {
-            const ctx = document.getElementById('lossChart').getContext('2d');
-            
-            lossChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Loss',
-                        data: [],
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Acurácia',
-                        data: [],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4,
-                        yAxisID: 'y1'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: 'white'
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            ticks: { color: 'white' },
-                            grid: { drawOnChartArea: false }
-                        }
-                    }
-                }
-            });
-        }
-        
-        /**
-         * Exibe batch atual
-         */
-        function displayCurrentBatch(batchData) {
-            batchSequences.innerHTML = '';
-            batchTargets.innerHTML = '';
-            
-            batchData.forEach((seq, index) => {
-                // Sequência de entrada
-                const seqDiv = document.createElement('div');
-                seqDiv.className = 'batch-item';
-                seqDiv.textContent = seq.input.join(' ');
-                batchSequences.appendChild(seqDiv);
-                
-                // Target esperado
-                const targetDiv = document.createElement('div');
-                targetDiv.className = 'batch-item';
-                targetDiv.textContent = seq.target.join(' ');
-                batchTargets.appendChild(targetDiv);
-            });
-        }
-        
-        /**
-         * Destaca etapa atual
-         */
-        function highlightStep(stepName) {
-            stepItems.forEach(item => {
-                item.classList.remove('active', 'completed');
-                if (item.dataset.step === stepName) {
-                    item.classList.add('active');
-                } else {
-                    const steps = ['forward', 'loss', 'backward', 'optimize'];
-                    const currentIndex = steps.indexOf(stepName);
-                    const itemIndex = steps.indexOf(item.dataset.step);
-                    if (itemIndex < currentIndex) {
-                        item.classList.add('completed');
-                    }
-                }
-            });
-        }
-        
-        /**
-         * Atualiza visualização de parâmetros
-         */
-        function updateParameterVisualization(gradientInfo) {
-            parameterUpdates.innerHTML = '';
-            
-            const layers = ['Embedding', 'Attention', 'Feed-Forward', 'Output'];
-            
-            layers.forEach((layer, index) => {
-                const updateDiv = document.createElement('div');
-                updateDiv.className = 'parameter-update';
-                
-                const change = (Math.random() - 0.5) * 0.01;
-                const changeStr = change >= 0 ? `+${change.toFixed(6)}` : change.toFixed(6);
-                
-                updateDiv.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-semibold">${layer} Layer</span>
-                        <span class="font-mono text-sm">${changeStr}</span>
-                    </div>
-                `;
-                
-                parameterUpdates.appendChild(updateDiv);
-            });
-        }
-        
-        /**
-         * Atualiza posição do otimizador
-         */
-        function updateOptimizerVisualization(step) {
-            const point = document.getElementById('optimizerPoint');
-            const angle = (step * 0.1) % (2 * Math.PI);
-            const radius = 80 - (step * 0.5) % 60; // Converge para o centro
-            
-            const x = 100 + radius * Math.cos(angle);
-            const y = 100 + radius * Math.sin(angle);
-            
-            point.style.left = `${x}px`;
-            point.style.top = `${y}px`;
-        }
-        
-        // --- FUNÇÕES DE TREINAMENTO ---
-        
-        /**
-         * Inicia o treinamento
-         */
-        function startTrainingProcess() {
-            if (isTraining) return;
-            
-            isTraining = true;
-            startTraining.disabled = true;
-            stopTraining.disabled = false;
-            
-            // Prepara dados
-            prepareTrainingData();
-            
-            if (sequences.length === 0) {
-                logMessage('[ERROR] Nenhuma sequência válida encontrada', 'red');
-                stopTrainingProcess();
-                return;
-            }
-            
-            // Reset estado
-            currentEpochNum = 0;
-            currentBatchNum = 0;
-            lossHistory = [];
-            accuracyHistory = [];
-            
-            logMessage('[INFO] Iniciando treinamento...', 'green');
-            
-            // Inicia loop de treinamento
-            trainingInterval = setInterval(trainStep, 2000);
-        }
-        
-        /**
-         * Para o treinamento
-         */
-        function stopTrainingProcess() {
-            isTraining = false;
-            startTraining.disabled = false;
-            stopTraining.disabled = true;
-            
-            if (trainingInterval) {
-                clearInterval(trainingInterval);
-            }
-            
-            stepItems.forEach(item => item.classList.remove('active', 'completed'));
-            
-            logMessage('[INFO] Treinamento interrompido', 'yellow');
-        }
-        
-        /**
-         * Executa um passo de treinamento
-         */
-        function trainStep() {
-            const totalEpochs = parseInt(epochs.value);
-            const batchSizeNum = parseInt(batchSize.value);
-            
-            if (currentEpochNum >= totalEpochs) {
-                logMessage('[INFO] Treinamento concluído!', 'green');
-                stopTrainingProcess();
-                return;
-            }
-            
-            // Pega batch atual
-            const startIdx = currentBatchNum * batchSizeNum;
-            const endIdx = Math.min(startIdx + batchSizeNum, sequences.length);
-            const currentBatchData = sequences.slice(startIdx, endIdx);
-            
-            // Atualiza display
-            currentEpoch.textContent = currentEpochNum + 1;
-            currentBatch.textContent = currentBatchNum + 1;
-            
-            // Calcula progresso
-            const progress = ((currentBatchNum + 1) / totalBatches) * 100;
-            epochProgress.textContent = `${Math.round(progress)}%`;
-            epochProgressBar.style.width = `${progress}%`;
-            
-            displayCurrentBatch(currentBatchData);
-            
-            // Simula etapas de treinamento
-            setTimeout(() => {
-                highlightStep('forward');
-                logMessage(`[TRAIN] Forward pass - Batch ${currentBatchNum + 1}/${totalBatches}`, 'blue');
-                
-                setTimeout(() => {
-                    highlightStep('loss');
-                    const predictions = simulateForwardPass(currentBatchData);
-                    const targets = currentBatchData.map(seq => seq.target);
-                    const loss = calculateLoss(predictions, targets, lossFunction.value);
-                    
-                    currentLoss.textContent = loss.toFixed(3);
-                    lossValue.textContent = `Loss: ${loss.toFixed(3)}`;
-                    
-                    // Simula acurácia
-                    const accuracy = Math.max(0, 100 - loss * 20 + Math.random() * 10);
-                    currentAccuracy.textContent = `${Math.round(accuracy)}%`;
-                    
-                    logMessage(`[TRAIN] Loss calculado: ${loss.toFixed(3)}`, 'purple');
-                    
-                    setTimeout(() => {
-                        highlightStep('backward');
-                        const gradientInfo = simulateGradients();
-                        
-                        gradNorm.textContent = gradientInfo.norm.toFixed(3);
-                        gradMax.textContent = gradientInfo.max.toFixed(3);
-                        gradMin.textContent = gradientInfo.min.toFixed(3);
-                        
-                        logMessage(`[TRAIN] Gradientes calculados - Norma: ${gradientInfo.norm.toFixed(3)}`, 'orange');
-                        
-                        setTimeout(() => {
-                            highlightStep('optimize');
-                            updateParameterVisualization(gradientInfo);
-                            updateOptimizerVisualization(currentBatchNum);
-                            updateLearningRate(currentEpochNum, currentBatchNum);
-                            
-                            logMessage(`[TRAIN] Parâmetros atualizados - LR: ${currentLR.textContent}`, 'green');
-                            
-                            // Atualiza gráfico
-                            const step = currentEpochNum * totalBatches + currentBatchNum;
-                            lossHistory.push(loss);
-                            accuracyHistory.push(accuracy);
-                            
-                            lossChart.data.labels.push(step + 1);
-                            lossChart.data.datasets[0].data.push(loss);
-                            lossChart.data.datasets[1].data.push(accuracy);
-                            lossChart.update('none');
-                            
-                            // Próximo batch
-                            currentBatchNum++;
-                            if (currentBatchNum >= totalBatches) {
-                                currentBatchNum = 0;
-                                currentEpochNum++;
-                                logMessage(`[INFO] Época ${currentEpochNum} concluída`, 'cyan');
-                            }
-                        }, 500);
-                    }, 500);
-                }, 500);
-            }, 500);
-        }
-        
-        // --- EVENT LISTENERS ---
-        
-        // Sliders
-        batchSize.addEventListener('input', updateSliderValues);
-        learningRate.addEventListener('input', updateSliderValues);
-        epochs.addEventListener('input', updateSliderValues);
-        
-        // Seletores
-        lossFunction.addEventListener('change', updateLossEquation);
-        
-        // Botões
-        startTraining.addEventListener('click', startTrainingProcess);
-        stopTraining.addEventListener('click', stopTrainingProcess);
-        
-        // Etapas clicáveis
-        stepItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const step = item.dataset.step;
-                highlightStep(step);
-                
-                let message = '';
-                switch (step) {
-                    case 'forward':
-                        message = 'Forward Pass: Os dados passam pela rede neural, camada por camada, gerando predições.';
-                        break;
-                    case 'loss':
-                        message = 'Cálculo do Loss: Compara as predições com os valores esperados usando a função de loss.';
-                        break;
-                    case 'backward':
-                        message = 'Backward Pass: Calcula os gradientes usando backpropagation para cada parâmetro.';
-                        break;
-                    case 'optimize':
-                        message = 'Otimização: Atualiza os parâmetros do modelo usando os gradientes e o otimizador.';
-                        break;
-                }
-                
-                logMessage(`[INFO] ${message}`, 'cyan');
-            });
-        });
-        
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            updateSliderValues();
-            updateLossEquation();
-            initializeLossChart();
-        });
-    </script>
+    <div class="panel" style="margin-bottom: var(--sp-5)">
+      <div class="select-row" style="align-items: end">
+        <div class="field" style="max-width: 160px">
+          <label for="epochs">Épocas</label>
+          <input type="number" id="epochs" value="30" min="1" max="500">
+        </div>
+        <div class="field" style="flex: 3">
+          <button class="primary" id="btn-start">Iniciar treinamento</button>
+        </div>
+      </div>
+      <p class="hint" style="margin:0">Ao concluir, o checkpoint é salvo em <code>models/mini_gpt.safetensors</code> e carregado automaticamente para as páginas de Atenção/Embeddings/Inferência.</p>
+    </div>
+
+    <div class="pipeline" id="pipeline">
+      <span class="pipeline__stage" data-stage="corpus">corpus &amp; tokenização</span>
+      <span class="pipeline__arrow">→</span>
+      <span class="pipeline__stage" data-stage="batches">batching</span>
+      <span class="pipeline__arrow">→</span>
+      <span class="pipeline__stage" data-stage="step">forward → loss → backward → update</span>
+      <span class="pipeline__arrow">→</span>
+      <span class="pipeline__stage" data-stage="epoch">época concluída</span>
+      <span class="pipeline__arrow">→</span>
+      <span class="pipeline__stage" data-stage="finished">checkpoint salvo</span>
+    </div>
+
+    <div class="stat-row">
+      <div class="readout readout--live" id="ro-epoch">
+        <span class="readout__label">Época</span>
+        <span class="readout__value">—</span>
+      </div>
+      <div class="readout readout--live" id="ro-step">
+        <span class="readout__label">Step</span>
+        <span class="readout__value">—</span>
+      </div>
+      <div class="readout readout--live" id="ro-loss">
+        <span class="readout__label">Loss</span>
+        <span class="readout__value">—</span>
+      </div>
+      <div class="readout readout--live" id="ro-best">
+        <span class="readout__label">Melhor loss</span>
+        <span class="readout__value">—</span>
+      </div>
+      <div class="readout readout--live" id="ro-ppl">
+        <span class="readout__label">Perplexidade</span>
+        <span class="readout__value">—</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel loss-chart-wrap">
+        <h3>Loss ao longo do treinamento</h3>
+        <div id="chart-area">
+          <div class="empty-hint">Inicie um treinamento para ver o loss em tempo real</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Eventos reais do treinador</h3>
+        <div class="event-log" id="event-log"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>mini-gpt-rust · Rust + Candle + Metal · servido localmente por Axum</footer>
+
+  <script type="module" src="/js/training.js"></script>
 </body>
 </html>
