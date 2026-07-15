@@ -1,0 +1,17 @@
+{
+  "config": {
+    "vocab_size": 1000,
+    "n_embd": 128,
+    "n_head": 4,
+    "n_layer": 4,
+    "block_size": 64,
+    "dropout": 0.1
+  },
+  "timestamp": "2026-07-15T01:19:06.756847+00:00",
+  "version": "0.1.0",
+  "training_step": 1125,
+  "loss": 5.586491,
+  "learning_rate": 0.0003,
+  "model_hash": null,
+  "description": "Mini-GPT checkpoint - 1052928 parâmetros, best loss: 5.3567"
+}

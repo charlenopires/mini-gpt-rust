@@ -76,20 +76,16 @@ cargo run -- demo --benchmark
 ### Web Interface
 
 ```bash
-# Start basic web server for interactive demonstrations
-cargo run -- web --host 127.0.0.1 --port 8080 --dir interativos
+# Start the web server (serves interativos/ + the real API at /api)
+cargo run -- web --host 127.0.0.1 --port 3000 --dir interativos
 
-# Start advanced web server with WebSocket integration
-cargo run -- web --integration --port 3001
-
-# Web interface with educational interactives accessible at:
-# - Tokenization: /tokenization
-# - Attention: /attention
-# - Embeddings: /embeddings
-# - Transformer: /transformer
-# - Training: /training
-# - Inference: /inference
-# - Chunking: /chunking
+# Pages (all backed by the real model/tokenizer/trainer, no simulated data):
+# - /                    index, live corpus/model status
+# - /tokenization.html   real corpus stats + BPE tokenization
+# - /attention.html      real attention heatmap (layer/head selectable)
+# - /embeddings.html     real embeddings + 2D PCA projection
+# - /training.html       triggers and streams a real training run (WebSocket)
+# - /inference.html      real token-by-token generation (SSE)
 ```
 
 ### Performance and Benchmarking
@@ -165,11 +161,10 @@ cargo run --example memory_management
    - Performance benchmarking tools
    - Adaptive execution strategies
 
-3. **Web Server (`src/web_server.rs`)**
-   - Axum-based async web server
-   - WebSocket support for real-time communication
-   - Interactive educational demonstrations
-   - REST API for parameter control
+3. **Web Server (`src/web_server.rs`) + API (`src/api.rs`)**
+   - Axum-based async web server; `web_server.rs` bootstraps state and serves `interativos/` as static files
+   - `api.rs` holds every real route: corpus stats, tokenize, attention, embeddings, SSE generation, and the WebSocket-streamed training run
+   - Device selection (Metal → CPU) is centralized in `src/device.rs::resolve_device()`, used by both the CLI and the web server
 
 4. **Text Chunking (`src/chunking.rs`)**
    - Multiple chunking strategies (fixed, semantic, adaptive, overlapping)
