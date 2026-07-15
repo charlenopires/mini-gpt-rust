@@ -12,6 +12,14 @@ O tokenizador (BPE), a atenção, os blocos Transformer, o modelo e o laço de t
 
 A demonstração web em `interativos/` não simula nada: cada página chama a API real do servidor (`src/api.rs`), que por sua vez chama o tokenizador, o modelo carregado ou o treinador de verdade. A página de Treinamento dispara um treinamento real e transmite cada evento (loss, perplexidade, época, checkpoint salvo) via WebSocket conforme ele acontece.
 
+### 🎬 Demonstração
+
+A página **Previsão** (`interativos/previsao.html`) decompõe um único *forward pass* em 7 estágios — dos tokens aos embeddings, pela atenção e pelo MLP, até os logits virarem uma distribuição de probabilidade — e o slider de **temperatura** remodela a distribuição do próximo token ao vivo, recomputada no navegador (sem nova ida ao servidor):
+
+![Walkthrough da página Previsão](docs/previsao-walkthrough.gif)
+
+As 6 páginas em `interativos/` formam um *explainer* interativo do treino de um LLM (no espírito do [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)), compartilhando um toolkit didático (`js/stepper.js`, `explain.js`, `glossary.js`, `prompts.js`, `trace.js`) e o mesmo design system — tudo em HTML/CSS/JS vanilla, sem build.
+
 ### 🏗️ Arquitetura do projeto
 
 ```
@@ -30,15 +38,16 @@ mini-gpt-rust/
 │   ├── educational_logger.rs # Logs educacionais verbosos
 │   ├── api.rs                # API web real (REST + WebSocket + SSE)
 │   └── web_server.rs         # Bootstrap do servidor Axum + arquivos estáticos
-├── interativos/               # As 5 páginas de demonstração + design system
+├── interativos/               # As 6 páginas do explainer + toolkit didático + design system
 │   ├── index.html
 │   ├── tokenization.html      # Corpus & Tokenização
 │   ├── attention.html         # Heatmap de atenção real
 │   ├── embeddings.html        # Projeção 2D (PCA) dos embeddings reais
 │   ├── training.html          # Treinamento real ao vivo (WebSocket)
-│   ├── inference.html         # Geração de texto real (SSE)
+│   ├── inference.html         # Geração de texto real (SSE) + top-k por passo
+│   ├── previsao.html          # Forward pass passo a passo + slider de temperatura
 │   ├── css/style.css
-│   └── js/
+│   └── js/                    # api + toolkit (stepper, explain, glossary, prompts, trace) + 1 módulo por página
 ├── examples/educational/      # Exemplos autônomos (cargo run --example ...)
 ├── models/                    # Checkpoints (.safetensors + .json + .tokenizer.json)
 └── data/corpus_pt_br.txt      # Corpus de treinamento em português
@@ -75,7 +84,7 @@ cargo run --release -- web
 # http://127.0.0.1:3000
 ```
 
-Abre as 5 páginas reais: Corpus & Tokenização, Atenção, Embeddings, Treinamento (inicia um treinamento de verdade e mostra tudo ao vivo) e Inferência (geração via SSE). Se já existir um checkpoint em `models/`, ele é carregado automaticamente no boot.
+Abre as 6 páginas reais: Corpus & Tokenização, Atenção, Embeddings, Treinamento (inicia um treinamento de verdade e mostra tudo ao vivo), Inferência (geração via SSE) e Previsão (um forward pass passo a passo, com a distribuição do próximo token remodelada ao vivo pela temperatura). Se já existir um checkpoint em `models/`, ele é carregado automaticamente no boot.
 
 Flags: `--host`, `--port`, `--dir <interativos>`, `--corpus <data/corpus_pt_br.txt>`, `--models-dir <models>`.
 
@@ -108,9 +117,10 @@ cargo test
 | `GET /api/checkpoints` | Lista checkpoints em `models/` |
 | `POST /api/model/load` | Carrega um checkpoint (o mais recente, se nenhum for especificado) |
 | `GET /api/model/status` | Config e métricas do modelo carregado |
-| `POST /api/attention` | Pesos de atenção reais de um forward pass, por camada/cabeça |
-| `POST /api/embeddings` | Embeddings reais + projeção 2D (PCA) |
-| `GET /api/generate` | Geração de texto via Server-Sent Events |
+| `POST /api/predict` | Logits crus do próximo token + top-k (o cliente aplica a temperatura) |
+| `POST /api/attention` | Pesos de atenção reais de um forward pass — todas as camadas × cabeças |
+| `POST /api/embeddings` | Embeddings reais + projeção 2D (PCA) + similaridade e vizinhos de vocabulário |
+| `GET /api/generate` | Geração de texto via SSE — cada token traz o top-k daquele passo |
 | `POST /api/train/start` | Inicia um treinamento real em background |
 | `GET /api/train/ws` | WebSocket com os eventos reais do treinamento |
 | `GET /api/train/status` | Snapshot do estado do treinamento (rodando? eventos recentes) |

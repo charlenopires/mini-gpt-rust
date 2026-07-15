@@ -1518,20 +1518,29 @@ impl MiniGPT {
             .map_err(|e| format!("Erro na decodificação final: {}", e))?)
     }
 
-    /// 🌊 **GERAÇÃO COM STREAMING DE TOKENS**
+    /// 🌊📊 **GERAÇÃO COM STREAMING + DISTRIBUIÇÃO POR PASSO**
     ///
-    /// Mesmo algoritmo de `generate`, mas chama `on_token` a cada token
-    /// gerado (em vez de só devolver o texto completo no final) — usado
-    /// pela API de demonstração para transmitir a geração via SSE conforme
-    /// ela acontece de verdade, token a token.
-    pub fn generate_stream(
+    /// Geração autoregressiva token a token que, a cada passo, entrega ao
+    /// callback também os `top_k` candidatos mais prováveis daquele passo —
+    /// os pares `(id, probabilidade)` da distribuição softmax de fato
+    /// amostrada (já com a temperatura aplicada). Assim a API mostra, ao
+    /// vivo, entre quais tokens o modelo hesitou e qual foi o escolhido.
+    /// Com `top_k = 0` a lista não é computada (é por onde passa o atalho
+    /// `generate_stream`).
+    ///
+    /// A temperatura é limitada a um mínimo de 0.05 para evitar divisão por
+    /// zero (e o `NaN` resultante) quando o cliente pede temperatura 0.
+    pub fn generate_stream_with_probs(
         &self,
         prompt: &str,
         max_tokens: usize,
         tokenizer: &BPETokenizer,
         temperature: f32,
-        mut on_token: impl FnMut(usize, &str),
+        top_k: usize,
+        mut on_step: impl FnMut(usize, &str, &[(usize, f32)]),
     ) -> Result<String> {
+        // Temperatura 0 causaria divisão por zero (→ NaN); limita a 0.05.
+        let temperature = temperature.max(0.05);
         let mut tokens = tokenizer.encode(prompt)
             .map_err(|e| format!("Erro na tokenização do prompt: {}", e))?;
         let mut generated_tokens = Vec::new();
@@ -1567,8 +1576,21 @@ impl MiniGPT {
             tokens.push(next_token);
             generated_tokens.push(next_token);
 
+            // 📊 Top-k da distribuição real deste passo — pares (id, prob),
+            // ordenados do mais provável ao menos. Só computa se solicitado.
+            let top: Vec<(usize, f32)> = if top_k > 0 {
+                let probs_vec: Vec<f32> = probs.to_vec1()
+                    .map_err(|e| format!("Erro ao converter probabilidades no passo {}: {}", step, e))?;
+                let mut indexed: Vec<(usize, f32)> = probs_vec.into_iter().enumerate().collect();
+                indexed.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                indexed.truncate(top_k);
+                indexed
+            } else {
+                Vec::new()
+            };
+
             let token_text = tokenizer.decode(&[next_token]).unwrap_or_default();
-            on_token(next_token, &token_text);
+            on_step(next_token, &token_text, &top);
 
             if tokenizer.is_eos_token(next_token) {
                 break;
@@ -1577,6 +1599,29 @@ impl MiniGPT {
 
         Ok(tokenizer.decode(&generated_tokens)
             .map_err(|e| format!("Erro na decodificação final: {}", e))?)
+    }
+
+    /// 🌊 **GERAÇÃO COM STREAMING (ATALHO)**
+    ///
+    /// Encaminha para [`generate_stream_with_probs`] com `top_k = 0`, para
+    /// quem só precisa do token gerado (sem a distribuição por passo).
+    /// Mantém a assinatura usada por `generate()`/SSE, então nada quebra.
+    pub fn generate_stream(
+        &self,
+        prompt: &str,
+        max_tokens: usize,
+        tokenizer: &BPETokenizer,
+        temperature: f32,
+        mut on_token: impl FnMut(usize, &str),
+    ) -> Result<String> {
+        self.generate_stream_with_probs(
+            prompt,
+            max_tokens,
+            tokenizer,
+            temperature,
+            0,
+            |id, text, _| on_token(id, text),
+        )
     }
 
     /// 🎲 **AMOSTRAGEM PROBABILÍSTICA**

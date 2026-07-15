@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Previsão · Mini-GPT-Rust</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__mark" href="/"><span class="dot">▸</span>mini-gpt-rust</a>
+    <nav class="topbar__nav">
+      <a href="/">início</a>
+      <a href="/tokenization.html">corpus &amp; tokenização</a>
+      <a href="/attention.html">atenção</a>
+      <a href="/embeddings.html">embeddings</a>
+      <a href="/training.html">treinamento</a>
+      <a href="/inference.html">inferência</a>
+      <a href="/previsao.html" aria-current="page">previsão</a>
+    </nav>
+    <span class="status-pill" data-status-pill data-state="off">
+      <span class="status-pill__dot"></span>
+      <span data-status-text>verificando…</span>
+    </span>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <div class="eyebrow">06 · o forward pass, passo a passo</div>
+      <h1>Como o modelo escolhe o próximo token</h1>
+      <p>
+        Digite um começo de frase e percorra o caminho que um único
+        <span class="glossary-term" data-term="forward" tabindex="0" role="button">forward pass</span>
+        faz: dos tokens aos <span class="glossary-term" data-term="embedding" tabindex="0" role="button">embeddings</span>,
+        pela <span class="glossary-term" data-term="atencao" tabindex="0" role="button">atenção</span> e pelo MLP,
+        até os <span class="glossary-term" data-term="logits" tabindex="0" role="button">logits</span> virarem
+        uma distribuição de probabilidade. Arraste a
+        <span class="glossary-term" data-term="temperatura" tabindex="0" role="button">temperatura</span>
+        e veja a distribuição do próximo token se remodelar ao vivo — sem nova ida ao servidor.
+      </p>
+    </div>
+
+    <div class="layout-split">
+      <aside class="panel panel--rail">
+        <div id="notice"></div>
+        <div class="field">
+          <label for="prompt">prompt</label>
+          <textarea id="prompt" rows="3">A inteligência artificial</textarea>
+        </div>
+        <div id="prompt-chips"></div>
+        <div class="field">
+          <label for="temp">temperatura · <span id="temp-val">0.8</span></label>
+          <input type="range" id="temp" min="0.1" max="2.0" step="0.1" value="0.8">
+          <div class="hint" id="preview">—</div>
+        </div>
+        <button id="btn-calc" class="primary">Calcular</button>
+        <div class="hint">
+          Um forward pass real no modelo carregado. As probabilidades vêm do
+          <span class="glossary-term" data-term="softmax" tabindex="0" role="button">softmax</span>
+          sobre os logits de verdade — nada é simulado.
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div id="stepper"></div>
+        <div class="stage-flow" id="flow"></div>
+        <div id="viz" class="stage-viz">
+          <div class="empty-hint">Clique em <strong>Calcular</strong> para rodar um forward pass e começar o passo a passo.</div>
+        </div>
+        <div id="explain"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>mini-gpt-rust · Rust + Candle + Metal · servido localmente por Axum</footer>
+  <script type="module" src="/js/previsao.js"></script>
+</body>
+</html>

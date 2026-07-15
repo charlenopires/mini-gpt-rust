@@ -16,6 +16,7 @@
       <a href="/embeddings.html" aria-current="page">embeddings</a>
       <a href="/training.html">treinamento</a>
       <a href="/inference.html">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -28,20 +29,26 @@
       <div class="eyebrow">Representação</div>
       <h1>Embeddings</h1>
       <p>
-        Cada token vira um vetor de <code>n_embd</code> dimensões dentro do modelo. Para poder olhar
-        para isso, projetamos os vetores reais em 2D via PCA (power iteration sobre a matriz de
-        covariância, calculado no servidor — sem nenhum número aleatório).
+        Cada token vira um <span class="glossary-term" data-term="embedding" tabindex="0" role="button">vetor</span>
+        de 128 dimensões dentro do modelo. Projetamos os vetores reais em 2D via
+        <span class="glossary-term" data-term="pca" tabindex="0" role="button">PCA</span> para poder olhar — proximidade ≈
+        vetores parecidos. Passe o mouse sobre um ponto para ver seus vizinhos mais próximos
+        (<span class="glossary-term" data-term="cosseno" tabindex="0" role="button">cosseno</span>) em todo o vocabulário.
       </p>
     </div>
 
     <div class="layout-split">
       <div class="panel panel--rail">
+        <div id="notice"></div>
         <div class="field">
-          <label for="input-text">Texto</label>
-          <textarea id="input-text" rows="5">gato cachorro casa carro Brasil tecnologia inteligência rápido devagar grande pequeno</textarea>
+          <label for="input-text">texto</label>
+          <textarea id="input-text" rows="4">modelo rede neurônio dados atenção token Brasil linguagem</textarea>
         </div>
+        <div id="prompt-chips"></div>
         <button class="primary" id="btn-run">Projetar embeddings</button>
-        <p class="hint" style="margin:0">Requer um modelo carregado — treine em /treinamento ou carregue um checkpoint.</p>
+        <div id="neighbors" style="margin-top: var(--sp-5)">
+          <p class="hint" style="margin:0">Passe o mouse sobre um ponto para ver os vizinhos do vocabulário aqui.</p>
+        </div>
       </div>
 
       <div class="panel">
@@ -49,6 +56,7 @@
         <div id="result-area">
           <div class="empty-hint">Digite algumas palavras e clique em "Projetar embeddings"</div>
         </div>
+        <div id="explain"></div>
       </div>
     </div>
   </main>

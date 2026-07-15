@@ -527,3 +527,123 @@ footer {
   font-size: 0.75rem;
   border-top: 1px solid var(--border);
 }
+
+/* ==========================================================================
+   Toolkit didático — componentes compartilhados pelas páginas-explainer:
+   stepper, callouts explicativos, fórmulas (HTML/CSS, sem MathJax), glossário,
+   chips de prompt, barras de probabilidade, fluxo de estágios, tooltip de viz.
+   Só usa os tokens definidos no :root acima — nada fora da paleta.
+   ========================================================================== */
+
+/* ── Stepper (passo-a-passo) ─────────────────────────────────────────── */
+.stepper { margin-bottom: var(--sp-4); }
+.stepper__bar { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.stepper__controls { display: flex; gap: var(--sp-2); }
+.stepper__btn { font-family: var(--font-mono); font-size: 0.8rem; padding: var(--sp-1) var(--sp-3); min-width: 36px; }
+.stepper__btn[data-playing="true"] { border-color: var(--signal); color: var(--signal); }
+.stepper__dots { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; flex: 1; flex-wrap: wrap; }
+.stepper__dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  cursor: pointer; transition: background 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.stepper__dot:hover { transform: scale(1.25); }
+.stepper__dot[data-state="done"] { background: var(--ink-faint); border-color: var(--ink-faint); }
+.stepper__dot[data-state="current"] { background: var(--ember); border-color: var(--ember); transform: scale(1.3); }
+.stepper__count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
+.stepper__label { font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink); margin-top: var(--sp-2); min-height: 1.4em; }
+
+/* ── Callout explicativo ─────────────────────────────────────────────── */
+.explain {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 2px solid var(--violet); border-radius: var(--radius-sm); margin: var(--sp-3) 0;
+}
+.explain__summary {
+  cursor: pointer; list-style: none; padding: var(--sp-3) var(--sp-4);
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-dim);
+  display: flex; align-items: center; gap: var(--sp-2);
+}
+.explain__summary::-webkit-details-marker { display: none; }
+.explain__summary::after { content: '+'; margin-left: auto; color: var(--ink-faint); font-size: 1rem; }
+.explain[open] .explain__summary::after { content: '\2212'; }
+.explain__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--violet);
+  color: var(--bg); font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+}
+.explain[open] .explain__summary { color: var(--ink); border-bottom: 1px solid var(--border); }
+.explain__body { padding: var(--sp-3) var(--sp-4) var(--sp-4); font-family: var(--font-sans); font-size: 0.88rem; color: var(--ink-dim); line-height: 1.6; }
+.explain__body p { margin: 0 0 var(--sp-2); }
+.explain__body p:last-child { margin-bottom: 0; }
+
+/* ── Fórmulas (HTML/CSS, sem MathJax/KaTeX) ──────────────────────────── */
+.m {
+  font-family: var(--font-mono); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 2px 6px; display: inline-block;
+}
+.m sub, .m sup { font-size: 0.75em; }
+.m-frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 3px; }
+.m-num { padding: 0 5px; }
+.m-den { padding: 0 5px; border-top: 1px solid var(--ink-dim); }
+
+/* ── Glossário ───────────────────────────────────────────────────────── */
+.glossary-term { border-bottom: 1px dashed var(--violet); cursor: help; color: var(--ink); }
+.glossary-term:hover, .glossary-term:focus-visible { color: var(--violet-bright); outline: none; }
+.glossary-pop {
+  position: fixed; z-index: 60; max-width: 300px;
+  background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  padding: var(--sp-3); font-family: var(--font-sans); font-size: 0.82rem; line-height: 1.5; color: var(--ink-dim);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0; pointer-events: none; transition: opacity 0.12s var(--ease);
+}
+.glossary-pop[data-visible="true"] { opacity: 1; pointer-events: auto; }
+.glossary-pop__term { display: block; font-family: var(--font-mono); color: var(--violet-bright); font-size: 0.8rem; margin-bottom: var(--sp-1); }
+
+/* ── Chips de prompt-exemplo ─────────────────────────────────────────── */
+.prompt-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.prompt-chips__label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); }
+.prompt-chip {
+  font-family: var(--font-mono); font-size: 0.75rem; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 8px; color: var(--ink-dim);
+  max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.prompt-chip:hover { border-color: var(--ember); color: var(--ink); }
+
+/* ── Barras de probabilidade (previsão / inferência) ─────────────────── */
+.prob-bars { display: flex; flex-direction: column; gap: var(--sp-2); }
+.prob-bar { display: grid; grid-template-columns: 96px 1fr 58px; align-items: center; gap: var(--sp-3); font-family: var(--font-mono); font-size: 0.82rem; }
+.prob-bar__token { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.prob-bar__track { height: 14px; background: var(--surface-2); border-radius: var(--radius-sm); overflow: hidden; }
+.prob-bar__fill { height: 100%; background: var(--violet); border-radius: var(--radius-sm); transition: width 0.25s var(--ease); }
+.prob-bar__val { color: var(--ink-dim); font-variant-numeric: tabular-nums; text-align: right; }
+.prob-bar[data-chosen="true"] .prob-bar__fill { background: var(--ember); }
+.prob-bar[data-chosen="true"] .prob-bar__token { color: var(--ember-bright); }
+
+/* ── Fluxo de estágios (breadcrumb do pipeline) ──────────────────────── */
+.stage-flow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-1); font-family: var(--font-mono); font-size: 0.72rem; margin-bottom: var(--sp-4); }
+.stage-flow__item {
+  padding: var(--sp-1) var(--sp-3); border: 1px solid var(--border); border-radius: 999px;
+  color: var(--ink-faint); background: var(--surface-2); white-space: nowrap;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.stage-flow__item[data-state="done"] { color: var(--ink-dim); border-color: var(--border-strong); }
+.stage-flow__item[data-state="active"] { color: var(--signal-bright); border-color: var(--signal); background: rgba(47, 168, 107, 0.08); }
+.stage-flow__arrow { color: var(--ink-faint); }
+
+/* ── Tooltip de visualização (canvas) ────────────────────────────────── */
+.viz-tooltip {
+  position: fixed; z-index: 60; pointer-events: none;
+  background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-3); font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink);
+  opacity: 0; transition: opacity 0.1s var(--ease); white-space: nowrap;
+}
+.viz-tooltip[data-visible="true"] { opacity: 1; }
+
+/* ── Notice (fluxo precisa de um modelo carregado) ───────────────────── */
+.notice {
+  background: rgba(123, 132, 232, 0.08); border: 1px solid var(--violet); color: var(--ink-dim);
+  border-radius: var(--radius-sm); padding: var(--sp-3) var(--sp-4);
+  font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: var(--sp-4);
+}
+.notice a { color: var(--violet-bright); }

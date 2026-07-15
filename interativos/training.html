@@ -5,31 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Treinamento — mini-gpt-rust</title>
   <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .pipeline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--sp-2);
-      margin-bottom: var(--sp-5);
-    }
-    .pipeline__stage {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      padding: var(--sp-2) var(--sp-3);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      color: var(--ink-faint);
-      transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
-    }
-    .pipeline__stage[data-state="done"] { color: var(--ink-dim); border-color: var(--border-strong); }
-    .pipeline__stage[data-state="active"] {
-      color: var(--bg);
-      background: var(--signal);
-      border-color: var(--signal);
-    }
-    .pipeline__arrow { color: var(--ink-faint); align-self: center; }
-    .loss-chart-wrap { margin-bottom: var(--sp-5); }
-  </style>
 </head>
 <body>
   <header class="topbar">
@@ -41,6 +16,7 @@
       <a href="/embeddings.html">embeddings</a>
       <a href="/training.html" aria-current="page">treinamento</a>
       <a href="/inference.html">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -53,10 +29,12 @@
       <div class="eyebrow">O fluxo completo, ao vivo</div>
       <h1>Treinamento</h1>
       <p>
-        Isso dispara um treinamento real do zero: um novo tokenizador BPE é treinado a partir de
-        <code>data/corpus_pt_br.txt</code>, um modelo é inicializado com pesos aleatórios, e o laço
-        de treinamento roda de verdade — forward pass, cross-entropy loss, backward pass com Adam —
-        na GPU Metal quando disponível. Cada evento abaixo vem do treinador real, não de uma simulação.
+        Isso dispara um treinamento real do zero: um novo tokenizador BPE, pesos aleatórios, e o laço
+        rodando de verdade — <span class="glossary-term" data-term="forward" tabindex="0" role="button">forward pass</span>,
+        <span class="glossary-term" data-term="cross-entropy" tabindex="0" role="button">cross-entropy loss</span>,
+        <span class="glossary-term" data-term="backprop" tabindex="0" role="button">backward pass</span> com
+        <span class="glossary-term" data-term="adam" tabindex="0" role="button">Adam</span> —
+        na GPU Metal quando disponível. Cada evento abaixo vem do treinador real.
       </p>
     </div>
 
@@ -70,20 +48,22 @@
           <button class="primary" id="btn-start">Iniciar treinamento</button>
         </div>
       </div>
-      <p class="hint" style="margin:0">Ao concluir, o checkpoint é salvo em <code>models/mini_gpt.safetensors</code> e carregado automaticamente para as páginas de Atenção/Embeddings/Inferência.</p>
+      <p class="hint" style="margin:0">Ao concluir, o <span class="glossary-term" data-term="checkpoint" tabindex="0" role="button">checkpoint</span> é salvo em <code>models/mini_gpt.safetensors</code> e carregado automaticamente nas outras páginas.</p>
     </div>
 
-    <div class="pipeline" id="pipeline">
-      <span class="pipeline__stage" data-stage="corpus">corpus &amp; tokenização</span>
-      <span class="pipeline__arrow">→</span>
-      <span class="pipeline__stage" data-stage="batches">batching</span>
-      <span class="pipeline__arrow">→</span>
-      <span class="pipeline__stage" data-stage="step">forward → loss → backward → update</span>
-      <span class="pipeline__arrow">→</span>
-      <span class="pipeline__stage" data-stage="epoch">época concluída</span>
-      <span class="pipeline__arrow">→</span>
-      <span class="pipeline__stage" data-stage="finished">checkpoint salvo</span>
+    <div class="stage-flow" id="pipeline">
+      <span class="stage-flow__item" data-stage="corpus">corpus &amp; tokenização</span>
+      <span class="stage-flow__arrow">→</span>
+      <span class="stage-flow__item" data-stage="batches">batching</span>
+      <span class="stage-flow__arrow">→</span>
+      <span class="stage-flow__item" data-stage="step">forward → loss → backward → update</span>
+      <span class="stage-flow__arrow">→</span>
+      <span class="stage-flow__item" data-stage="epoch">época concluída</span>
+      <span class="stage-flow__arrow">→</span>
+      <span class="stage-flow__item" data-stage="finished">checkpoint salvo</span>
     </div>
+
+    <div id="pipeline-explain"></div>
 
     <div class="stat-row">
       <div class="readout readout--live" id="ro-epoch">
@@ -95,7 +75,7 @@
         <span class="readout__value">—</span>
       </div>
       <div class="readout readout--live" id="ro-loss">
-        <span class="readout__label">Loss</span>
+        <span class="readout__label"><span class="glossary-term" data-term="cross-entropy" tabindex="0" role="button">Loss</span></span>
         <span class="readout__value">—</span>
       </div>
       <div class="readout readout--live" id="ro-best">
@@ -103,13 +83,13 @@
         <span class="readout__value">—</span>
       </div>
       <div class="readout readout--live" id="ro-ppl">
-        <span class="readout__label">Perplexidade</span>
+        <span class="readout__label"><span class="glossary-term" data-term="perplexidade" tabindex="0" role="button">Perplexidade</span></span>
         <span class="readout__value">—</span>
       </div>
     </div>
 
     <div class="grid-2">
-      <div class="panel loss-chart-wrap">
+      <div class="panel">
         <h3>Loss ao longo do treinamento</h3>
         <div id="chart-area">
           <div class="empty-hint">Inicie um treinamento para ver o loss em tempo real</div>
@@ -119,6 +99,14 @@
       <div class="panel">
         <h3>Eventos reais do treinador</h3>
         <div class="event-log" id="event-log"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: var(--sp-5)">
+      <h3>Amostras ao longo do tempo</h3>
+      <p class="hint">A cada 10 épocas o modelo gera a partir de <code>"O Brasil é"</code>. Acompanhe o texto sair de puro ruído para algo um pouco menos aleatório — é o aprendizado ficando visível.</p>
+      <div id="samples">
+        <div class="empty-hint">As amostras aparecem aqui conforme o treino avança.</div>
       </div>
     </div>
   </main>

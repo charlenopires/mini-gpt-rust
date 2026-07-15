@@ -60,3 +60,40 @@ export function showError(container, message) {
   div.textContent = message;
   container.appendChild(div);
 }
+
+/** Escapa texto para interpolação segura em innerHTML (tokens/prompts do usuário). */
+export function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+/**
+ * Garante que há um modelo carregado antes de habilitar um fluxo que depende
+ * dele (atenção, embeddings, previsão, inferência). Se não houver, mostra um
+ * aviso ligando para /training.html e desabilita o botão de ação.
+ * @returns {Promise<boolean>} true se um modelo está carregado.
+ */
+export async function requireModel(noticeEl, runButton) {
+  try {
+    const status = await apiGet('/model/status');
+    if (status.loaded) {
+      if (noticeEl) noticeEl.textContent = '';
+      if (runButton) runButton.disabled = false;
+      return true;
+    }
+  } catch { /* tratado como "não carregado" abaixo */ }
+
+  if (runButton) runButton.disabled = true;
+  if (noticeEl) {
+    noticeEl.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'notice';
+    div.innerHTML =
+      'Nenhum modelo carregado ainda. Treine um em ' +
+      '<a href="/training.html">treinamento</a> (leva menos de um minuto) e volte — ' +
+      'ele é carregado automaticamente aqui.';
+    noticeEl.appendChild(div);
+  }
+  return false;
+}

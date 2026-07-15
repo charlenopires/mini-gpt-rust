@@ -155,6 +155,7 @@ pub fn router(state: AppState) -> Router {
         .route("/checkpoints", get(list_checkpoints_handler))
         .route("/model/load", post(load_model))
         .route("/model/status", get(model_status))
+        .route("/predict", post(predict))
         .route("/attention", post(attention))
         .route("/embeddings", post(embeddings))
         .route("/generate", get(generate_sse))
@@ -312,8 +313,6 @@ async fn model_status(State(state): State<AppState>) -> Response {
 #[derive(Deserialize)]
 struct AttentionRequest {
     prompt: String,
-    layer: Option<usize>,
-    head: Option<usize>,
 }
 
 async fn attention(State(state): State<AppState>, Json(req): Json<AttentionRequest>) -> Response {
@@ -349,40 +348,18 @@ async fn attention(State(state): State<AppState>, Json(req): Json<AttentionReque
         Err(e) => return err_response(500, format!("Erro no forward pass: {}", e)),
     };
 
-    let n_layers = layer_weights.len();
-    let layer_idx = req
-        .layer
-        .unwrap_or(n_layers.saturating_sub(1))
-        .min(n_layers.saturating_sub(1));
-
-    let heads: Vec<Vec<Vec<f32>>> = match layer_weights[layer_idx]
-        .squeeze(0)
-        .and_then(|t| t.to_vec3())
-    {
-        Ok(h) => h,
-        Err(e) => return err_response(500, format!("{}", e)),
-    };
-    let n_heads = heads.len().max(1);
-    let seq_len = heads.first().map(|h| h.len()).unwrap_or(0);
-
-    let matrix = if let Some(h) = req.head {
-        heads[h.min(n_heads - 1)].clone()
-    } else {
-        let mut avg = vec![vec![0f32; seq_len]; seq_len];
-        for head in &heads {
-            for i in 0..seq_len {
-                for j in 0..seq_len {
-                    avg[i][j] += head[i][j];
-                }
-            }
+    // Devolve TODAS as camadas × cabeças numa resposta só — o cliente faz o
+    // scrub de camada/cabeça (e a média entre cabeças) sem novos round-trips.
+    // Cada tensor de camada é [1, H, T, T] pós-softmax → [H][T][T].
+    let mut layers: Vec<Vec<Vec<Vec<f32>>>> = Vec::with_capacity(layer_weights.len());
+    for w in &layer_weights {
+        match w.squeeze(0).and_then(|t| t.to_vec3::<f32>()) {
+            Ok(heads) => layers.push(heads),
+            Err(e) => return err_response(500, format!("{}", e)),
         }
-        for row in avg.iter_mut() {
-            for v in row.iter_mut() {
-                *v /= n_heads as f32;
-            }
-        }
-        avg
-    };
+    }
+    let num_layers = layers.len();
+    let num_heads = layers.first().map(|h| h.len()).unwrap_or(0);
 
     let tokens: Vec<String> = ids
         .iter()
@@ -391,10 +368,106 @@ async fn attention(State(state): State<AppState>, Json(req): Json<AttentionReque
 
     Json(serde_json::json!({
         "tokens": tokens,
-        "layer": layer_idx,
-        "num_layers": n_layers,
-        "num_heads": n_heads,
-        "weights": matrix,
+        "num_layers": num_layers,
+        "num_heads": num_heads,
+        "layers": layers,
+    }))
+    .into_response()
+}
+
+// ── Previsão do próximo token (forward pass, logits crus) ────────────────
+
+#[derive(Deserialize)]
+struct PredictRequest {
+    prompt: String,
+    #[serde(default = "default_predict_top_k")]
+    top_k: usize,
+}
+fn default_predict_top_k() -> usize {
+    40
+}
+const MAX_PREDICT_TOP_K: usize = 100;
+
+/// Roda um forward pass no prompt e devolve os **logits crus** do próximo
+/// token na última posição, mais os `top_k` candidatos rotulados. O cliente
+/// reaplica a temperatura no navegador (softmax sobre estes logits), então o
+/// slider remodela a distribuição sem novo round-trip. O conjunto top-k é
+/// invariante à temperatura (que é monotônica), então rotular por logit já
+/// cobre qualquer posição do slider.
+async fn predict(State(state): State<AppState>, Json(req): Json<PredictRequest>) -> Response {
+    if req.prompt.len() > MAX_INPUT_TEXT_LEN {
+        return err_response(413, format!("Prompt muito longo (máximo {} caracteres)", MAX_INPUT_TEXT_LEN));
+    }
+    let guard = state.model.lock().unwrap();
+    let Some(loaded) = guard.as_ref() else {
+        return err_response(503, "Nenhum modelo carregado — treine ou carregue um checkpoint primeiro");
+    };
+
+    let ids = match loaded.tokenizer.encode(&req.prompt) {
+        Ok(ids) if !ids.is_empty() => ids,
+        Ok(_) => return err_response(400, "Prompt vazio"),
+        Err(e) => return err_response(400, format!("Erro ao tokenizar: {}", e)),
+    };
+
+    let block_size = loaded.model.block_size();
+    let ids: Vec<usize> = if ids.len() > block_size {
+        ids[ids.len() - block_size..].to_vec()
+    } else {
+        ids
+    };
+    let ids_i64: Vec<i64> = ids.iter().map(|&x| x as i64).collect();
+
+    let idx = match Tensor::from_slice(&ids_i64, &[1, ids.len()], &state.device) {
+        Ok(t) => t,
+        Err(e) => return err_response(500, format!("{}", e)),
+    };
+
+    // logits [1, T, vocab] → última posição = a "opinião" sobre o próximo token.
+    let logits3: Vec<Vec<Vec<f32>>> = match loaded
+        .model
+        .forward(&idx, None)
+        .map_err(|e| e.to_string())
+        .and_then(|(l, _)| l.to_vec3::<f32>().map_err(|e| e.to_string()))
+    {
+        Ok(l) => l,
+        Err(e) => return err_response(500, format!("Erro no forward pass: {}", e)),
+    };
+    let last_pos = ids.len() - 1;
+    let logits: Vec<f32> = match logits3.first().and_then(|b| b.get(last_pos)) {
+        Some(row) => row.clone(),
+        None => return err_response(500, "Forma inesperada dos logits"),
+    };
+    let vocab_size = logits.len();
+
+    let top_k = req.top_k.clamp(1, MAX_PREDICT_TOP_K).min(vocab_size.max(1));
+    let mut indexed: Vec<(usize, f32)> = logits.iter().copied().enumerate().collect();
+    indexed.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    indexed.truncate(top_k);
+    let top: Vec<_> = indexed
+        .into_iter()
+        .map(|(id, logit)| {
+            serde_json::json!({
+                "id": id,
+                "token": loaded.tokenizer.token_string(id).unwrap_or("?").to_string(),
+                "logit": logit,
+            })
+        })
+        .collect();
+
+    let tokens: Vec<TokenInfo> = ids
+        .iter()
+        .map(|&id| TokenInfo {
+            id,
+            text: loaded.tokenizer.token_string(id).unwrap_or("?").to_string(),
+        })
+        .collect();
+
+    Json(serde_json::json!({
+        "tokens": tokens,
+        "vocab_size": vocab_size,
+        "position": last_pos,
+        "logits": logits,
+        "top": top,
     }))
     .into_response()
 }
@@ -438,12 +511,67 @@ async fn embeddings(State(state): State<AppState>, Json(req): Json<EmbeddingsReq
         .collect();
 
     let items: Vec<_> = tokens
-        .into_iter()
-        .zip(points)
+        .iter()
+        .zip(&points)
         .map(|(token, [x, y])| serde_json::json!({ "token": token, "x": x, "y": y }))
         .collect();
 
-    Json(serde_json::json!({ "points": items })).into_response()
+    // Similaridade de cosseno entre os tokens do prompt (T×T) — habilita o
+    // hover-para-destacar-vizinhos no scatter.
+    let normed: Vec<Vec<f32>> = vectors.iter().map(|v| l2_normalize(v)).collect();
+    let similarity: Vec<Vec<f32>> = normed
+        .iter()
+        .map(|a| normed.iter().map(|b| dot(a, b)).collect())
+        .collect();
+
+    // Vizinhos mais próximos no vocabulário inteiro ("o que o modelo acha
+    // parecido"). Calcula a matriz de embedding do vocab uma vez; se falhar,
+    // devolve lista vazia (o resto da resposta ainda é útil).
+    let neighbors = match loaded
+        .model
+        .embedding_for_tokens(&(0..loaded.tokenizer.vocab_size()).collect::<Vec<_>>())
+        .map_err(|e| e.to_string())
+        .and_then(|t| t.to_vec2::<f32>().map_err(|e| e.to_string()))
+    {
+        Ok(vocab_vecs) => {
+            let vocab_normed: Vec<Vec<f32>> = vocab_vecs.iter().map(|v| l2_normalize(v)).collect();
+            ids.iter()
+                .zip(&normed)
+                .map(|(&tid, tvec)| {
+                    let mut sims: Vec<(usize, f32)> = vocab_normed
+                        .iter()
+                        .enumerate()
+                        .filter(|(vid, _)| *vid != tid)
+                        .map(|(vid, vvec)| (vid, dot(tvec, vvec)))
+                        .collect();
+                    sims.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                    sims.truncate(8);
+                    let nearest: Vec<_> = sims
+                        .into_iter()
+                        .map(|(vid, sim)| {
+                            serde_json::json!({
+                                "id": vid,
+                                "token": loaded.tokenizer.token_string(vid).unwrap_or("?").to_string(),
+                                "sim": sim,
+                            })
+                        })
+                        .collect();
+                    serde_json::json!({
+                        "token": loaded.tokenizer.token_string(tid).unwrap_or("?").to_string(),
+                        "nearest": nearest,
+                    })
+                })
+                .collect::<Vec<_>>()
+        }
+        Err(_) => Vec::new(),
+    };
+
+    Json(serde_json::json!({
+        "points": items,
+        "similarity": similarity,
+        "neighbors": neighbors,
+    }))
+    .into_response()
 }
 
 /// Projeção 2D via PCA (power iteration sobre a matriz de covariância) —
@@ -511,6 +639,17 @@ fn pca_2d(vectors: &[Vec<f32>]) -> Vec<[f32; 2]> {
         .collect()
 }
 
+/// Normaliza um vetor para norma L2 = 1 (base da similaridade de cosseno).
+fn l2_normalize(v: &[f32]) -> Vec<f32> {
+    let norm = v.iter().map(|x| x * x).sum::<f32>().sqrt().max(1e-8);
+    v.iter().map(|x| x / norm).collect()
+}
+
+/// Produto escalar entre dois vetores (cosseno, quando ambos normalizados).
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    a.iter().zip(b).map(|(x, y)| x * y).sum()
+}
+
 // ── Geração real via SSE ─────────────────────────────────────────────────
 
 #[derive(Deserialize)]
@@ -520,6 +659,8 @@ struct GenerateParams {
     max_tokens: usize,
     #[serde(default = "default_temperature")]
     temperature: f32,
+    #[serde(default = "default_generate_top_k")]
+    top_k: usize,
 }
 fn default_max_tokens() -> usize {
     60
@@ -527,6 +668,10 @@ fn default_max_tokens() -> usize {
 fn default_temperature() -> f32 {
     0.8
 }
+fn default_generate_top_k() -> usize {
+    10
+}
+const MAX_GENERATE_TOP_K: usize = 20;
 
 const MAX_GENERATE_TOKENS: usize = 500;
 const MAX_TRAIN_EPOCHS: usize = 1000;
@@ -539,6 +684,7 @@ async fn generate_sse(State(state): State<AppState>, Query(params): Query<Genera
         return err_response(503, "Nenhum modelo carregado — treine ou carregue um checkpoint primeiro");
     }
     let max_tokens = params.max_tokens.min(MAX_GENERATE_TOKENS);
+    let top_k = params.top_k.min(MAX_GENERATE_TOP_K);
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
     let model_arc = state.model.clone();
@@ -546,13 +692,35 @@ async fn generate_sse(State(state): State<AppState>, Query(params): Query<Genera
     tokio::task::spawn_blocking(move || {
         let guard = model_arc.lock().unwrap();
         if let Some(loaded) = guard.as_ref() {
-            let _ = loaded.model.generate_stream(
+            let _ = loaded.model.generate_stream_with_probs(
                 &params.prompt,
                 max_tokens,
                 &loaded.tokenizer,
                 params.temperature,
-                |id, text| {
-                    let _ = tx.send(serde_json::json!({ "id": id, "text": text }).to_string());
+                top_k,
+                |id, text, top| {
+                    // `top`: candidatos (id, prob) deste passo, já ordenados.
+                    // `chosen` = id amostrado, mesmo quando não é o mais provável
+                    // (mostra que amostragem ≠ argmax).
+                    let top_json: Vec<_> = top
+                        .iter()
+                        .map(|(tid, p)| {
+                            serde_json::json!({
+                                "id": *tid,
+                                "token": loaded.tokenizer.token_string(*tid).unwrap_or("?").to_string(),
+                                "prob": *p,
+                            })
+                        })
+                        .collect();
+                    let _ = tx.send(
+                        serde_json::json!({
+                            "id": id,
+                            "text": text,
+                            "chosen": id,
+                            "top": top_json,
+                        })
+                        .to_string(),
+                    );
                 },
             );
         }
