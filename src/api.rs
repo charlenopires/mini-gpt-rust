@@ -43,6 +43,10 @@ const DEFAULT_N_LAYER: usize = 4;
 const DEFAULT_BLOCK_SIZE: usize = 64;
 const DEFAULT_DROPOUT: f32 = 0.1;
 const MAX_RECENT_EVENTS: usize = 200;
+/// Limite de tamanho para qualquer campo de texto enviado pelo cliente
+/// (tokenização, atenção, embeddings) — evita que uma requisição gigante
+/// prenda a thread do servidor processando texto arbitrariamente grande.
+const MAX_INPUT_TEXT_LEN: usize = 20_000;
 
 /// Um modelo + tokenizer efetivamente carregados na memória, prontos para
 /// atenção/embeddings/geração real.
@@ -204,6 +208,9 @@ struct TokenInfo {
 }
 
 async fn tokenize(State(state): State<AppState>, Json(req): Json<TokenizeRequest>) -> Response {
+    if req.text.len() > MAX_INPUT_TEXT_LEN {
+        return err_response(413, format!("Texto muito longo (máximo {} caracteres)", MAX_INPUT_TEXT_LEN));
+    }
     let Some(tokenizer) = state.demo_tokenizer.as_ref() else {
         return err_response(503, "Tokenizer de demonstração indisponível (corpus não encontrado no boot)");
     };
@@ -255,14 +262,30 @@ async fn load_model(
     State(state): State<AppState>,
     body: Option<Json<LoadModelRequest>>,
 ) -> Response {
-    let checkpoint = body.and_then(|b| b.0.checkpoint);
+    let requested = body.and_then(|b| b.0.checkpoint);
 
-    let path = match checkpoint {
-        Some(p) => p,
-        None => match MiniGPT::list_checkpoints(&state.models_dir) {
-            Ok(mut cps) if !cps.is_empty() => cps.remove(0).0,
-            Ok(_) => return err_response(404, "Nenhum checkpoint encontrado"),
-            Err(e) => return err_response(500, format!("{}", e)),
+    // Nunca usa um caminho vindo do cliente diretamente — só aceita um valor
+    // que já esteja na lista de checkpoints que o próprio servidor enumerou
+    // em `models_dir`. Isso fecha a porta para path traversal (ex.:
+    // `{"checkpoint": "../../../../etc/passwd"}`).
+    let checkpoints = match MiniGPT::list_checkpoints(&state.models_dir) {
+        Ok(cps) => cps,
+        Err(e) => return err_response(500, format!("{}", e)),
+    };
+    if checkpoints.is_empty() {
+        return err_response(404, "Nenhum checkpoint encontrado");
+    }
+
+    let path = match requested {
+        None => checkpoints[0].0.clone(),
+        Some(requested) => match checkpoints.iter().find(|(p, _)| *p == requested) {
+            Some((p, _)) => p.clone(),
+            None => {
+                return err_response(
+                    400,
+                    "Checkpoint desconhecido — use um caminho retornado por GET /api/checkpoints",
+                )
+            }
         },
     };
 
@@ -294,6 +317,9 @@ struct AttentionRequest {
 }
 
 async fn attention(State(state): State<AppState>, Json(req): Json<AttentionRequest>) -> Response {
+    if req.prompt.len() > MAX_INPUT_TEXT_LEN {
+        return err_response(413, format!("Prompt muito longo (máximo {} caracteres)", MAX_INPUT_TEXT_LEN));
+    }
     let guard = state.model.lock().unwrap();
     let Some(loaded) = guard.as_ref() else {
         return err_response(503, "Nenhum modelo carregado — treine ou carregue um checkpoint primeiro");
@@ -381,6 +407,9 @@ struct EmbeddingsRequest {
 }
 
 async fn embeddings(State(state): State<AppState>, Json(req): Json<EmbeddingsRequest>) -> Response {
+    if req.text.len() > MAX_INPUT_TEXT_LEN {
+        return err_response(413, format!("Texto muito longo (máximo {} caracteres)", MAX_INPUT_TEXT_LEN));
+    }
     let guard = state.model.lock().unwrap();
     let Some(loaded) = guard.as_ref() else {
         return err_response(503, "Nenhum modelo carregado — treine ou carregue um checkpoint primeiro");
@@ -499,10 +528,17 @@ fn default_temperature() -> f32 {
     0.8
 }
 
+const MAX_GENERATE_TOKENS: usize = 500;
+const MAX_TRAIN_EPOCHS: usize = 1000;
+
 async fn generate_sse(State(state): State<AppState>, Query(params): Query<GenerateParams>) -> Response {
+    if params.prompt.len() > MAX_INPUT_TEXT_LEN {
+        return err_response(413, format!("Prompt muito longo (máximo {} caracteres)", MAX_INPUT_TEXT_LEN));
+    }
     if state.model.lock().unwrap().is_none() {
         return err_response(503, "Nenhum modelo carregado — treine ou carregue um checkpoint primeiro");
     }
+    let max_tokens = params.max_tokens.min(MAX_GENERATE_TOKENS);
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
     let model_arc = state.model.clone();
@@ -512,7 +548,7 @@ async fn generate_sse(State(state): State<AppState>, Query(params): Query<Genera
         if let Some(loaded) = guard.as_ref() {
             let _ = loaded.model.generate_stream(
                 &params.prompt,
-                params.max_tokens,
+                max_tokens,
                 &loaded.tokenizer,
                 params.temperature,
                 |id, text| {
@@ -557,7 +593,7 @@ async fn train_start(
         return err_response(409, "Já existe um treinamento em andamento");
     }
 
-    let epochs = body.map(|b| b.0.epochs).unwrap_or_else(default_epochs);
+    let epochs = body.map(|b| b.0.epochs).unwrap_or_else(default_epochs).min(MAX_TRAIN_EPOCHS).max(1);
     let corpus_path = state.corpus_path.clone();
     let device = state.device.clone();
     let models_dir = state.models_dir.clone();

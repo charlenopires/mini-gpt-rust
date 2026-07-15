@@ -9,7 +9,7 @@ use std::{net::SocketAddr, path::PathBuf};
 use anyhow::Result;
 use axum::Router;
 use candle_core::Device;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::services::ServeDir;
 
 use crate::api;
 
@@ -41,10 +41,14 @@ impl Default for WebServerConfig {
 pub async fn start_web_server(config: WebServerConfig, device: Device) -> Result<()> {
     let state = api::AppState::new(device, config.corpus_path.clone(), config.models_dir.clone());
 
+    // Sem CORS: o frontend é servido pelo mesmo servidor/origem que a API,
+    // então nenhuma requisição legítima é cross-origin. Habilitar CORS
+    // permissivo aqui abriria as rotas que alteram estado (POST
+    // /api/train/start, /api/model/load) a CSRF a partir de qualquer site
+    // que o usuário visitasse enquanto este servidor estivesse rodando.
     let app = Router::new()
         .nest("/api", api::router(state))
-        .fallback_service(ServeDir::new(&config.interativos_dir))
-        .layer(CorsLayer::permissive());
+        .fallback_service(ServeDir::new(&config.interativos_dir));
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
 
