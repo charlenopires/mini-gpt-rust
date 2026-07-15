@@ -16,6 +16,7 @@
       <a href="/embeddings.html">embeddings</a>
       <a href="/training.html">treinamento</a>
       <a href="/inference.html">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -28,38 +29,46 @@
       <div class="eyebrow">Arquitetura — self-attention</div>
       <h1>Atenção</h1>
       <p>
-        Forward pass real no modelo carregado: para cada par de tokens do prompt, o peso de
-        atenção pós-softmax mostra o quanto um token "olha" para o outro naquela camada/cabeça.
+        Forward pass real no modelo carregado. Para cada par de tokens, o peso de
+        <span class="glossary-term" data-term="atencao" tabindex="0" role="button">atenção</span>
+        pós-<span class="glossary-term" data-term="softmax" tabindex="0" role="button">softmax</span>
+        mostra o quanto um token "olha" para o outro. Deslize por
+        <span class="glossary-term" data-term="cabeca" tabindex="0" role="button">camadas e cabeças</span>,
+        passe o mouse para ler cada peso e clique numa linha para fixá-la.
       </p>
     </div>
 
     <div class="layout-split">
       <div class="panel panel--rail">
+        <div id="notice"></div>
         <div class="field">
-          <label for="prompt">Prompt</label>
-          <textarea id="prompt" rows="3">O Brasil é um país</textarea>
+          <label for="prompt">prompt</label>
+          <textarea id="prompt" rows="3">A inteligência artificial aprende com dados.</textarea>
         </div>
-        <div class="select-row">
-          <div class="field">
-            <label for="layer">Camada</label>
-            <select id="layer"><option>—</option></select>
-          </div>
-          <div class="field">
-            <label for="head">Cabeça</label>
-            <select id="head">
-              <option value="avg">média</option>
-            </select>
-          </div>
-        </div>
+        <div id="prompt-chips"></div>
         <button class="primary" id="btn-run">Calcular atenção</button>
-        <p class="hint" style="margin:0">Requer um modelo carregado — treine em /treinamento ou carregue um checkpoint.</p>
+
+        <div class="field" style="margin-top: var(--sp-5)">
+          <label for="layer">camada · <span id="layer-val">—</span></label>
+          <input type="range" id="layer" min="0" max="0" value="0" disabled>
+        </div>
+        <div class="field">
+          <label>
+            <input type="checkbox" id="avg" checked> média das cabeças
+          </label>
+          <label for="head" style="margin-top: var(--sp-2)">cabeça · <span id="head-val">—</span></label>
+          <input type="range" id="head" min="0" max="0" value="0" disabled>
+        </div>
+        <p class="hint">Linha = <em>query</em> (quem olha) · coluna = <em>key</em> (olhado). O triângulo inferior vem da máscara causal: nenhum token vê o futuro.</p>
       </div>
 
       <div class="panel">
-        <h3>Mapa de atenção</h3>
-        <div id="result-area">
-          <div class="empty-hint">Digite um prompt e clique em "Calcular atenção"</div>
+        <div id="stepper"></div>
+        <div id="viz" class="stage-viz">
+          <div class="empty-hint">Digite um prompt e clique em "Calcular atenção".</div>
         </div>
+        <div id="pinned"></div>
+        <div id="explain"></div>
       </div>
     </div>
   </main>

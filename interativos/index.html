@@ -16,6 +16,7 @@
       <a href="/embeddings.html">embeddings</a>
       <a href="/training.html">treinamento</a>
       <a href="/inference.html">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -80,6 +81,24 @@
         <h2>Inferência</h2>
         <p>Geração autoregressiva de texto, token a token, transmitida em tempo real via SSE.</p>
       </a>
+      <a class="nav-card" href="/previsao.html">
+        <div class="eyebrow">06 · o forward pass</div>
+        <h2>Previsão</h2>
+        <p>Um único forward pass, decomposto passo a passo, com o slider de temperatura remodelando a distribuição do próximo token ao vivo.</p>
+      </a>
+    </div>
+
+    <div class="panel" style="margin-top: var(--sp-6)">
+      <h3>Comece por aqui</h3>
+      <p>Uma ordem sugerida, do texto cru ao modelo que gera:</p>
+      <p class="hint" style="line-height:1.9">
+        tokenização → embeddings → atenção → <strong>previsão</strong> (o forward pass) → treinamento → inferência
+      </p>
+      <div class="legend" style="margin-top: var(--sp-4); gap: var(--sp-4); flex-wrap: wrap">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--signal);vertical-align:middle;margin-right:6px"></span>verde · dado vivo</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ember);vertical-align:middle;margin-right:6px"></span>laranja · ação</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--violet);vertical-align:middle;margin-right:6px"></span>violeta · estrutura</span>
+      </div>
     </div>
   </main>
 

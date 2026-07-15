@@ -16,6 +16,7 @@
       <a href="/embeddings.html">embeddings</a>
       <a href="/training.html">treinamento</a>
       <a href="/inference.html" aria-current="page">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -28,34 +29,46 @@
       <div class="eyebrow">Geração autoregressiva</div>
       <h1>Inferência</h1>
       <p>
-        Geração real, token a token: a cada passo o modelo calcula probabilidades sobre todo o
-        vocabulário, amostra um token com a temperatura escolhida, e o resultado é transmitido
-        via Server-Sent Events assim que é gerado — sem espera até o final.
+        Geração real, token a token. A cada passo o modelo calcula
+        <span class="glossary-term" data-term="logits" tabindex="0" role="button">logits</span> sobre todo o vocabulário,
+        aplica a <span class="glossary-term" data-term="temperatura" tabindex="0" role="button">temperatura</span> e o
+        <span class="glossary-term" data-term="softmax" tabindex="0" role="button">softmax</span>, e
+        <span class="glossary-term" data-term="autoregressivo" tabindex="0" role="button">amostra</span> um token —
+        que é transmitido via SSE. Veja abaixo, a cada passo, entre quais tokens ele hesitou e qual foi sorteado.
       </p>
     </div>
 
     <div class="layout-split">
       <div class="panel panel--rail">
+        <div id="notice"></div>
         <div class="field">
-          <label for="prompt">Prompt</label>
-          <textarea id="prompt" rows="3">O Brasil é</textarea>
+          <label for="prompt">prompt</label>
+          <textarea id="prompt" rows="3">A inteligência artificial está</textarea>
         </div>
+        <div id="prompt-chips"></div>
         <div class="field">
-          <label for="max-tokens">Máx. tokens: <span id="max-tokens-value">60</span></label>
+          <label for="max-tokens">máx. tokens · <span id="max-tokens-value">60</span></label>
           <input type="range" id="max-tokens" min="10" max="200" value="60">
         </div>
         <div class="field">
-          <label for="temperature">Temperatura: <span id="temperature-value">0.8</span></label>
+          <label for="temperature">temperatura · <span id="temperature-value">0.8</span></label>
           <input type="range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.8">
         </div>
         <button class="primary" id="btn-run">Gerar</button>
-        <p class="hint" style="margin:0">Requer um modelo carregado — treine em /treinamento ou carregue um checkpoint.</p>
+        <p class="hint" style="margin:0">
+          Amostragem ≠ pegar sempre o mais provável: com T &gt; 0 o token sorteado pode não ser o topo da lista.
+          <a href="/previsao.html">Entenda a temperatura →</a>
+        </p>
       </div>
 
       <div class="panel">
         <h3>Saída</h3>
         <div id="result-area">
           <div class="empty-hint">Digite um prompt e clique em "Gerar"</div>
+        </div>
+        <h3 style="margin-top: var(--sp-5)">Distribuição do passo atual</h3>
+        <div id="step-bars">
+          <div class="empty-hint">As opções (top-k) de cada token aparecem aqui durante a geração — o token sorteado fica em destaque.</div>
         </div>
       </div>
     </div>

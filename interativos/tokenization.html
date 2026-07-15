@@ -16,6 +16,7 @@
       <a href="/embeddings.html">embeddings</a>
       <a href="/training.html">treinamento</a>
       <a href="/inference.html">inferência</a>
+      <a href="/previsao.html">previsão</a>
     </nav>
     <span class="status-pill" data-status-pill data-state="off">
       <span class="status-pill__dot"></span>
@@ -28,8 +29,11 @@
       <div class="eyebrow">Pré-processamento — passo 1</div>
       <h1>Corpus &amp; Tokenização</h1>
       <p>
-        O corpus real (<code>data/corpus_pt_br.txt</code>) e o tokenizador BPE treinado a partir dele
-        no boot do servidor. Digite qualquer texto para ver exatamente os tokens que o modelo veria.
+        O corpus real (<code>data/corpus_pt_br.txt</code>) e o
+        <span class="glossary-term" data-term="bpe" tabindex="0" role="button">tokenizador BPE</span>
+        treinado a partir dele no boot. Digite um texto e percorra o caminho de letras a
+        <span class="glossary-term" data-term="token" tabindex="0" role="button">tokens</span> —
+        exatamente a sequência de números que o modelo veria.
       </p>
     </div>
 
@@ -56,17 +60,19 @@
       <div class="panel panel--rail">
         <div class="field">
           <label for="input-text">Texto para tokenizar</label>
-          <textarea id="input-text" rows="6">O gato subiu no telhado.</textarea>
+          <textarea id="input-text" rows="5">A inteligência artificial aprende com dados.</textarea>
         </div>
+        <div id="prompt-chips"></div>
         <button class="primary" id="btn-tokenize">Tokenizar</button>
         <p class="hint" style="margin:0">BPE real — o mesmo algoritmo usado para preparar o corpus de treino.</p>
       </div>
 
       <div class="panel">
-        <h3>Tokens resultantes</h3>
+        <div id="stepper"></div>
         <div id="result-area">
           <div class="empty-hint">Digite um texto e clique em "Tokenizar"</div>
         </div>
+        <div id="explain"></div>
       </div>
     </div>
   </main>
