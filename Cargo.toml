@@ -35,15 +35,7 @@ candle-optimisers = "0.8"     # Otimizadores (Adam, SGD, etc.)
 # Servidor web para interativos
 axum = { version = "0.7", features = ["ws", "macros"] } # Framework web async com WebSockets
 tokio = { version = "1.0", features = ["full"] } # Runtime async
-tower = "0.4"                # Middleware
-tower-http = { version = "0.5", features = ["fs", "cors"] } # Servir arquivos estáticos
-mime_guess = "2.0"           # Detecção de MIME types
-axum-extra = { version = "0.9", features = ["typed-header"] } # Extensões Axum
-futures-util = "0.3"         # Utilitários para futures
-tokio-tungstenite = "0.21"   # WebSocket implementation
-uuid = { version = "1.0", features = ["v4", "serde"] } # IDs únicos
-dashmap = "5.5"              # HashMap thread-safe
-broadcast = "0.1"            # Canal de broadcast
+tower-http = { version = "0.5", features = ["fs", "cors"] } # Servir arquivos estáticos + CORS
 
 # Suporte condicional para Metal (macOS)
 [target.'cfg(target_os = "macos")'.dependencies]

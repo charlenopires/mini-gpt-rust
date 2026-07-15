@@ -518,10 +518,33 @@ impl TransformerBlock {
             self.feed_forward.forward(&norm2)?
         };
         let output = (x + ffn_out)?;  // Conexão residual final
-        
+
         Ok(output)
     }
-    
+
+    /// 🔎 **FORWARD COM PESOS DE ATENÇÃO EXPOSTOS**
+    ///
+    /// Mesmo cálculo de `forward`, mas sempre passa pelo caminho de atenção
+    /// padrão (não fusionado) para poder retornar a matriz de pesos junto —
+    /// o kernel fusionado nunca materializa essa matriz separadamente. Só é
+    /// chamado pela API de demonstração em prompts curtos, nunca no loop de
+    /// treino.
+    pub fn forward_with_attention(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<(Tensor, Tensor)> {
+        let norm1 = self.ln1.forward(x)?;
+        let (attn_out, weights) = self.attention.forward_with_attention(&norm1, mask)?;
+        let x = (x + attn_out)?;
+
+        let norm2 = self.ln2.forward(&x)?;
+        let ffn_out = if let Some(ref fused_ff) = self.fused_feedforward {
+            fused_ff.forward(&norm2)?
+        } else {
+            self.feed_forward.forward(&norm2)?
+        };
+        let output = (x + ffn_out)?;
+
+        Ok((output, weights))
+    }
+
     /// 📊 **ESTATÍSTICAS DE PERFORMANCE**
     /// 
     /// Retorna informações sobre o uso de kernels fusionados

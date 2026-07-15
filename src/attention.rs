@@ -324,7 +324,44 @@ impl SelfAttention {
         // Permite que o modelo "misture" informações das diferentes cabeças
         self.w_out.forward(&attention) // [B, T, C]
     }
-    
+
+    /// 🔎 **FORWARD COM PESOS DE ATENÇÃO EXPOSTOS**
+    ///
+    /// Mesmo cálculo de `forward`, mas também retorna a matriz de pesos de
+    /// atenção `[B, H, T, T]` (pós-softmax) para visualização — usado pela
+    /// API de demonstração para desenhar heatmaps reais a partir de um
+    /// prompt, nunca no loop de treino (que continua chamando `forward`
+    /// normalmente, sem nenhum custo extra).
+    pub fn forward_with_attention(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<(Tensor, Tensor)> {
+        let (batch_size, seq_len, _) = x.dims3()?;
+
+        let q = self.w_query.forward(x)?;
+        let k = self.w_key.forward(x)?;
+        let v = self.w_value.forward(x)?;
+
+        let q = self.split_heads(&q, batch_size, seq_len)?;
+        let k = self.split_heads(&k, batch_size, seq_len)?;
+        let v = self.split_heads(&v, batch_size, seq_len)?;
+
+        let scores = self.attention_scores(&q, &k)?;
+
+        let scores = if let Some(mask) = mask {
+            let expanded_mask = mask.unsqueeze(0)?.unsqueeze(0)?
+                .expand(&[batch_size, self.n_head, seq_len, seq_len])?;
+            let mask_value = -1e4;
+            (scores + expanded_mask * mask_value)?
+        } else {
+            scores
+        };
+
+        let weights = candle_nn::ops::softmax(&scores, 3)?; // [B, H, T, T]
+        let attention = weights.matmul(&v)?;
+        let attention = self.merge_heads(&attention, batch_size, seq_len)?;
+        let output = self.w_out.forward(&attention)?;
+
+        Ok((output, weights))
+    }
+
     /// 🔧 **EXTRAÇÃO DE TENSORES Q, K, V PARA KERNELS FUSIONADOS**
     /// 
     /// Extrai e processa os tensores Query, Key e Value sem aplicar
@@ -599,7 +636,13 @@ impl MultiHeadAttention {
     pub fn forward(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<Tensor> {
         self.attention.forward(x, mask)
     }
-    
+
+    /// 🔎 Mesmo que `forward`, mas também retorna os pesos de atenção
+    /// `[B, H, T, T]` — ver `SelfAttention::forward_with_attention`.
+    pub fn forward_with_attention(&self, x: &Tensor, mask: Option<&Tensor>) -> Result<(Tensor, Tensor)> {
+        self.attention.forward_with_attention(x, mask)
+    }
+
     /// 🔧 **EXTRAÇÃO DE TENSORES Q, K, V PARA KERNELS FUSIONADOS**
     /// 
     /// Extrai os tensores Query, Key e Value processados para uso
