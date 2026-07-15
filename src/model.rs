@@ -655,18 +655,38 @@ impl MiniGPT {
             .map_err(|e| format!("Erro ao deserializar SafeTensors: {}", e))?;
         
         // 📋 **EXTRAÇÃO DE METADADOS**
-        // Por enquanto, vamos criar metadados padrão já que SafeTensors não expõe metadata() publicamente
-        let config = GPTConfig {
-            vocab_size: 50257,
-            n_embd: 768,
-            n_head: 12,
-            n_layer: 12,
-            block_size: 1024,
-            dropout: 0.1,
+        // Lê a configuração real salva pelo `save_checkpoint` (sidecar `<path>.json`).
+        // Só cai no fallback genérico (GPT-2 defaults) se o checkpoint não tiver
+        // metadados — ex: arquivos legados salvos antes desse sidecar existir.
+        let metadata_path = path.with_extension("json");
+        let metadata = match fs::read_to_string(&metadata_path) {
+            Ok(json_str) => match serde_json::from_str::<CheckpointMetadata>(&json_str) {
+                Ok(meta) => meta,
+                Err(e) => {
+                    println!("⚠️  Metadados inválidos em {}: {} — usando configuração padrão", metadata_path.display(), e);
+                    CheckpointMetadata::new(GPTConfig {
+                        vocab_size: 50257,
+                        n_embd: 768,
+                        n_head: 12,
+                        n_layer: 12,
+                        block_size: 1024,
+                        dropout: 0.1,
+                    })
+                }
+            },
+            Err(_) => {
+                println!("⚠️  Sidecar de metadados não encontrado ({}) — usando configuração padrão", metadata_path.display());
+                CheckpointMetadata::new(GPTConfig {
+                    vocab_size: 50257,
+                    n_embd: 768,
+                    n_head: 12,
+                    n_layer: 12,
+                    block_size: 1024,
+                    dropout: 0.1,
+                })
+            }
         };
-        
-        let metadata = CheckpointMetadata::new(config);
-        
+
         println!("✅ Metadados carregados:");
         println!("   📅 Timestamp: {}", metadata.timestamp);
         println!("   🔢 Versão: {}", metadata.version);
@@ -701,20 +721,22 @@ impl MiniGPT {
         
         // 💾 **CARREGAMENTO DOS PESOS**
         println!("💾 Carregando pesos dos tensores...");
-        
-        // Carrega tensores do SafeTensors para o VarMap
-        for (name, _) in varmap.data().lock().unwrap().iter() {
-            if let Ok(tensor_view) = safetensors.tensor(name) {
-                let shape: Vec<usize> = tensor_view.shape().iter().map(|&x| x).collect();
-                let tensor = Tensor::from_raw_buffer(
-                    tensor_view.data(),
-                    DType::F32,
-                    &shape,
-                    device,
-                )?;
-                
-                // Atualiza o tensor no VarMap
-                if let Some(var_tensor) = varmap.data().lock().unwrap().get_mut(name) {
+
+        // Carrega tensores do SafeTensors para o VarMap.
+        // Um único lock, iterado mutavelmente — travar o Mutex de novo dentro
+        // do loop (como antes) causa deadlock, já que `std::sync::Mutex` não
+        // é reentrante na mesma thread.
+        {
+            let mut data = varmap.data().lock().unwrap();
+            for (name, var_tensor) in data.iter_mut() {
+                if let Ok(tensor_view) = safetensors.tensor(name) {
+                    let shape: Vec<usize> = tensor_view.shape().iter().map(|&x| x).collect();
+                    let tensor = Tensor::from_raw_buffer(
+                        tensor_view.data(),
+                        DType::F32,
+                        &shape,
+                        device,
+                    )?;
                     *var_tensor = Var::from_tensor(&tensor)?;
                 }
             }
@@ -794,8 +816,11 @@ impl MiniGPT {
                     // Se não existe arquivo de metadados, cria padrão
                     Self::create_default_metadata(&filename)
                 };
-                
-                checkpoints.push((filename, metadata));
+
+                // Guarda o caminho completo (não só o nome do arquivo) — quem
+                // chama esta função precisa conseguir abrir o arquivo depois,
+                // e `dir` pode não ser o diretório de trabalho atual.
+                checkpoints.push((path.to_string_lossy().to_string(), metadata));
             }
         }
         
@@ -1132,7 +1157,41 @@ impl MiniGPT {
         // loss: função de perda para otimização (opcional)
         Ok((logits, loss))
     }
-    
+
+    /// 🔎 **FORWARD COM PESOS DE ATENÇÃO EXPOSTOS**
+    ///
+    /// Roda o mesmo forward pass de inferência, mas também retorna a matriz
+    /// de pesos de atenção `[B, H, T, T]` de cada camada — usado pela API de
+    /// demonstração para desenhar um heatmap real a partir de um prompt do
+    /// usuário. Não é usado no loop de treino nem em `generate()`.
+    pub fn forward_with_attention(&self, idx: &Tensor) -> Result<(Tensor, Vec<Tensor>)> {
+        let (batch_size, seq_len) = idx.dims2()?;
+        assert!(seq_len <= self.config.block_size,
+                "Sequência muito longa! Max: {}, Atual: {}",
+                self.config.block_size, seq_len);
+
+        let tok_emb = self.token_embedding.forward(idx)?;
+        let pos = Tensor::arange(0, seq_len as i64, &self.device)?;
+        let pos_emb = self.position_embedding.forward(&pos)?;
+        let pos_emb = pos_emb.unsqueeze(0)?.expand(&[batch_size, seq_len, self.config.n_embd])?;
+        let mut x = (tok_emb + pos_emb)?;
+
+        let mask = self.create_causal_mask(seq_len)?;
+
+        let mut layer_weights = Vec::with_capacity(self.blocks.len());
+        for (i, block) in self.blocks.iter().enumerate() {
+            let (out, weights) = block.forward_with_attention(&x, Some(&mask))
+                .map_err(|e| format!("Erro no bloco {}: {}", i, e))?;
+            x = out;
+            layer_weights.push(weights);
+        }
+
+        let x = self.ln_final.forward(&x)?;
+        let logits = self.lm_head.forward(&x)?;
+
+        Ok((logits, layer_weights))
+    }
+
     /// 🔒 **CRIAÇÃO DA MÁSCARA CAUSAL**
     /// 
     /// Este método cria uma máscara triangular que implementa a "causalidade"
@@ -1458,7 +1517,68 @@ impl MiniGPT {
         Ok(tokenizer.decode(&generated_tokens)
             .map_err(|e| format!("Erro na decodificação final: {}", e))?)
     }
-    
+
+    /// 🌊 **GERAÇÃO COM STREAMING DE TOKENS**
+    ///
+    /// Mesmo algoritmo de `generate`, mas chama `on_token` a cada token
+    /// gerado (em vez de só devolver o texto completo no final) — usado
+    /// pela API de demonstração para transmitir a geração via SSE conforme
+    /// ela acontece de verdade, token a token.
+    pub fn generate_stream(
+        &self,
+        prompt: &str,
+        max_tokens: usize,
+        tokenizer: &BPETokenizer,
+        temperature: f32,
+        mut on_token: impl FnMut(usize, &str),
+    ) -> Result<String> {
+        let mut tokens = tokenizer.encode(prompt)
+            .map_err(|e| format!("Erro na tokenização do prompt: {}", e))?;
+        let mut generated_tokens = Vec::new();
+
+        for step in 0..max_tokens {
+            let context = if tokens.len() > self.config.block_size {
+                &tokens[tokens.len() - self.config.block_size..]
+            } else {
+                &tokens[..]
+            };
+
+            let context_i64: Vec<i64> = context.iter().map(|&x| x as i64).collect();
+            let idx = Tensor::from_slice(&context_i64, &[1, context.len()], &self.device)
+                .map_err(|e| format!("Erro ao criar tensor no passo {}: {}", step, e))?;
+
+            let (logits, _) = self.forward(&idx, None)
+                .map_err(|e| format!("Erro no forward pass no passo {}: {}", step, e))?;
+
+            let logits = logits.i((0, context.len() - 1, ..))
+                .map_err(|e| format!("Erro ao extrair logits no passo {}: {}", step, e))?;
+
+            let temperature_tensor = Tensor::new(&[temperature], &self.device)
+                .map_err(|e| format!("Erro ao criar tensor de temperatura no passo {}: {}", step, e))?;
+            let logits = logits.broadcast_div(&temperature_tensor)
+                .map_err(|e| format!("Erro ao aplicar temperatura no passo {}: {}", step, e))?;
+
+            let probs = candle_nn::ops::softmax(&logits, 0)
+                .map_err(|e| format!("Erro no softmax no passo {}: {}", step, e))?;
+
+            let next_token = self.sample_from_probs(&probs)
+                .map_err(|e| format!("Erro na amostragem no passo {}: {}", step, e))?;
+
+            tokens.push(next_token);
+            generated_tokens.push(next_token);
+
+            let token_text = tokenizer.decode(&[next_token]).unwrap_or_default();
+            on_token(next_token, &token_text);
+
+            if tokenizer.is_eos_token(next_token) {
+                break;
+            }
+        }
+
+        Ok(tokenizer.decode(&generated_tokens)
+            .map_err(|e| format!("Erro na decodificação final: {}", e))?)
+    }
+
     /// 🎲 **AMOSTRAGEM PROBABILÍSTICA**
     /// 
     /// Este método implementa amostragem baseada em probabilidades,
@@ -1646,5 +1766,16 @@ impl MiniGPT {
     /// Retorna uma referência à configuração do modelo
     pub fn config(&self) -> &GPTConfig {
         &self.config
+    }
+
+    /// 🔗 **EMBEDDINGS REAIS DE UM CONJUNTO DE TOKENS**
+    ///
+    /// Retorna as linhas da matriz de token embeddings correspondentes aos
+    /// IDs dados — usado pela API de demonstração para visualizar o espaço
+    /// de embeddings real do modelo (não valores aleatórios).
+    pub fn embedding_for_tokens(&self, token_ids: &[usize]) -> Result<Tensor> {
+        let ids: Vec<i64> = token_ids.iter().map(|&id| id as i64).collect();
+        let idx = Tensor::from_slice(&ids, &[ids.len()], &self.device)?;
+        Ok(self.token_embedding.forward(&idx)?)
     }
 }

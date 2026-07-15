@@ -187,7 +187,9 @@
 //! ```
 
 use std::collections::HashMap;
+use std::path::Path;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// 🔤 **TOKENIZADOR BPE: CONVERSOR INTELIGENTE DE TEXTO**
 /// 
@@ -213,6 +215,7 @@ use anyhow::Result;
 /// - `<UNK>` (ID: 1): Tokens desconhecidos (raramente usado em BPE)
 /// - `<BOS>` (ID: 2): Início de sequência (Begin of Sentence)
 /// - `<EOS>` (ID: 3): Fim de sequência (End of Sentence)
+#[derive(Serialize, Deserialize)]
 pub struct BPETokenizer {
     /// 📖 Mapeamento de tokens (strings) para IDs numéricos
     /// Usado durante a codificação: texto → números
@@ -752,6 +755,13 @@ impl BPETokenizer {
     pub fn vocab_size(&self) -> usize {
         self.vocab.len()
     }
+
+    /// 🔤 Devolve a string de um token individual pelo seu ID, se conhecido.
+    /// Usado pela API de demonstração para mostrar cada token separadamente
+    /// (em vez de só o texto decodificado inteiro).
+    pub fn token_string(&self, id: usize) -> Option<&str> {
+        self.reverse_vocab.get(&id).map(|s| s.as_str())
+    }
     
     /// 🏁 **DETECTOR DE FIM DE SEQUÊNCIA**
     /// 
@@ -769,5 +779,19 @@ impl BPETokenizer {
     /// ```
     pub fn is_eos_token(&self, token: usize) -> bool {
         token == self.vocab["<EOS>"]
+    }
+
+    /// 💾 Salva o vocabulário e as regras de merge em JSON, para reconstruir
+    /// exatamente o mesmo tokenizador usado ao treinar um checkpoint.
+    pub fn save_json<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let json = serde_json::to_string_pretty(self)?;
+        std::fs::write(path, json)?;
+        Ok(())
+    }
+
+    /// 📂 Carrega um tokenizador previamente salvo com `save_json`.
+    pub fn load_json<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let json = std::fs::read_to_string(path)?;
+        Ok(serde_json::from_str(&json)?)
     }
 }

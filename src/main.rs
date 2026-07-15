@@ -33,9 +33,9 @@ mod educational_logger;
 mod kernels;
 mod chunking;
 mod benchmarks;
+mod device;
+mod api;
 mod web_server;
-mod web_demo_integration;
-mod demo_bridge;
 
 use model::{MiniGPT, CheckpointMetadata};
 use training::Trainer;
@@ -367,18 +367,22 @@ enum Commands {
         /// 🌍 Endereço IP para bind do servidor
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
-        
+
         /// 🔌 Porta do servidor web
         #[arg(short, long, default_value = "3000")]
         port: u16,
-        
+
         /// 📁 Diretório dos arquivos interativos
         #[arg(long, default_value = "interativos")]
         dir: PathBuf,
-        
-        /// 🔗 Habilita integração WebSocket e API REST para comunicação em tempo real
-        #[arg(long, help = "Ativa WebSocket e API REST para integração CLI-Web")]
-        integration: bool,
+
+        /// 📄 Caminho do corpus usado pelas demonstrações
+        #[arg(long, default_value = "data/corpus_pt_br.txt")]
+        corpus: PathBuf,
+
+        /// 📂 Diretório de checkpoints do modelo
+        #[arg(long, default_value = "models")]
+        models_dir: PathBuf,
     },
 }
 
@@ -423,44 +427,32 @@ fn main() -> Result<()> {
     match cli.command {
         // 🌐 **MODO SERVIDOR WEB**
         // Inicia servidor web para interativos educacionais
-        Commands::Web { host, port, dir, integration } => {
+        Commands::Web { host, port, dir, corpus, models_dir } => {
+            let device = device::resolve_device();
+
             println!("🌐 Iniciando servidor web para interativos educacionais...");
             println!("📍 Host: {}", host);
             println!("🔌 Porta: {}", port);
             println!("📁 Diretório: {:?}", dir);
-            if integration {
-                println!("🔗 Integração WebSocket/API REST: ATIVADA");
-            }
-            
+
             let config = web_server::WebServerConfig {
                 host,
                 port,
                 interativos_dir: dir,
-                enable_integration: integration,
+                corpus_path: corpus,
+                models_dir,
             };
-            
+
             let rt = tokio::runtime::Runtime::new()?;
             rt.block_on(async {
-                web_server::start_web_server(Some(config)).await
+                web_server::start_web_server(config, device).await
             })?;
         }
         
         // 🎓 **MODO TREINAMENTO**
         // Treina o modelo do zero usando dados fornecidos
         Commands::Train { data, epochs } => {
-            // 🚀 **DISPOSITIVO PARA TREINAMENTO: METAL GPU ARM APPLE**
-        // Prioriza Metal GPU para máxima performance no ARM Apple
-            let device = match candle_core::Device::new_metal(0) {
-                Ok(metal_device) => {
-                    println!("🚀 Usando dispositivo: Metal GPU");
-                    println!("⚡ Aceleração de hardware ativada para treinamento!");
-                    metal_device
-                }
-                Err(e) => {
-                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
-                    candle_core::Device::Cpu
-                }
-            };
+            let device = device::resolve_device();
             println!("📚 Iniciando treinamento com dados de: {:?}", data);
             println!("🔄 Épocas configuradas: {}", epochs);
             train_model(data, epochs, &device)?
@@ -469,20 +461,7 @@ fn main() -> Result<()> {
         // 🎨 **MODO GERAÇÃO**
         // Gera texto criativo a partir de um prompt
         Commands::Generate { prompt, max_tokens, educational, show_tensors } => {
-            // 🚀 **DISPOSITIVO PARA GERAÇÃO: METAL GPU ARM APPLE**
-            // Prioriza Metal GPU para geração ultra-rápida
-            let device = match candle_core::Device::new_metal(0) {
-                Ok(metal_device) => {
-                    println!("🚀 Usando dispositivo: Metal GPU");
-                    println!("⚡ Geração acelerada por hardware ativada!");
-                    metal_device
-                }
-                Err(e) => {
-                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
-                    candle_core::Device::Cpu
-                }
-            };
-            println!("🚀 Usando dispositivo: {:?}", device);
+            let device = device::resolve_device();
             println!("✨ Gerando texto a partir de: '{}'", prompt);
             println!("🎯 Máximo de tokens: {}", max_tokens);
             generate_text(&prompt, max_tokens, &device, educational, show_tensors)?
@@ -491,28 +470,8 @@ fn main() -> Result<()> {
         // 💬 **MODO CHAT INTERATIVO**
         // Permite conversação em tempo real com o modelo
         Commands::Chat { educational, show_tensors } => {
-            // 🚀 **DISPOSITIVO PARA CHAT: GPU (com fallback para CPU)**
-            // Prioriza GPU para melhor performance em chat interativo
-            let device = match candle_core::Device::new_metal(0) {
-                Ok(metal_device) => {
-                    println!("🚀 Usando dispositivo: Metal GPU (aceleração de hardware)");
-                    metal_device
-                }
-                Err(_) => {
-                    // Fallback para CUDA se Metal não estiver disponível
-                    match candle_core::Device::new_cuda(0) {
-                        Ok(cuda_device) => {
-                            println!("🚀 Usando dispositivo: CUDA GPU (aceleração de hardware)");
-                            cuda_device
-                        }
-                        Err(_) => {
-                            println!("⚠️  GPU não disponível, usando CPU");
-                            candle_core::Device::Cpu
-                        }
-                    }
-                }
-            };
-            
+            let device = device::resolve_device();
+
             println!("💬 Modo chat ativado! Digite 'quit' ou 'exit' para terminar.");
             println!("🤖 Aguardando suas mensagens...");
             interactive_chat(&device, educational, show_tensors)?
@@ -534,18 +493,8 @@ fn main() -> Result<()> {
             educational, 
             info 
         } => {
-            let device = match candle_core::Device::new_metal(0) {
-                Ok(metal_device) => {
-                    println!("🚀 Usando dispositivo: Metal GPU");
-                    println!("⚡ Kernel fusion ativado para máxima performance!");
-                    metal_device
-                }
-                Err(e) => {
-                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
-                    candle_core::Device::Cpu
-                }
-            };
-            
+            let device = device::resolve_device();
+
             // 🎯 **SELEÇÃO INTELIGENTE DE CHECKPOINT**
             let selected_checkpoint = select_checkpoint(
                 checkpoint,
@@ -570,16 +519,7 @@ fn main() -> Result<()> {
         // ⚡ **MODO BENCHMARK DE KERNEL FUSION**
         // Testa performance das otimizações
         Commands::Benchmark { batch_size, seq_len, d_model, iterations, benchmark_type } => {
-            let device = match candle_core::Device::new_metal(0) {
-                Ok(metal_device) => {
-                    println!("🚀 Usando dispositivo: Metal GPU para benchmark");
-                    metal_device
-                }
-                Err(e) => {
-                    println!("⚠️  Metal GPU não disponível ({}), usando CPU", e);
-                    candle_core::Device::Cpu
-                }
-            };
+            let device = device::resolve_device();
             run_kernel_fusion_benchmark(batch_size, seq_len, d_model, iterations, &benchmark_type, &device)?
         }
         
@@ -900,20 +840,30 @@ fn load_and_run_model(
     device: &candle_core::Device,
 ) -> Result<()> {
     println!("📂 Carregando modelo de: {:?}", checkpoint_path);
-    
+
     // Carregar modelo do checkpoint
     let (model, metadata) = MiniGPT::load_from_checkpoint(&checkpoint_path, device)
         .map_err(|e| anyhow::anyhow!("Erro ao carregar checkpoint: {}", e))?;
     println!("✅ Modelo carregado com sucesso! (Step: {:?})", metadata.training_step);
-    
+
+    // 🔤 **CARREGAR O TOKENIZER EXATO DO TREINAMENTO**
+    // Sem o vocabulário original, os IDs de token não correspondem às mesmas
+    // palavras/subpalavras que o modelo aprendeu — a geração seria lixo.
+    let tokenizer_path = format!("{}.tokenizer.json", checkpoint_path.display());
+    let tokenizer = tokenizer::BPETokenizer::load_json(&tokenizer_path)
+        .map_err(|e| anyhow::anyhow!(
+            "Não foi possível carregar o tokenizer em {} ({}). Checkpoints salvos antes desta versão não possuem tokenizer.json — retreine o modelo.",
+            tokenizer_path, e
+        ))?;
+
     if chat_mode {
         // Modo chat interativo
         println!("💬 Iniciando chat com modelo carregado...");
-        interactive_chat_with_model(&model, educational)
+        interactive_chat_with_model(&model, &tokenizer, educational)
     } else if let Some(prompt_text) = prompt {
         // Geração de texto
         println!("🎨 Gerando texto a partir do prompt...");
-        generate_text_with_model(&model, &prompt_text, max_tokens, educational)
+        generate_text_with_model(&model, &tokenizer, &prompt_text, max_tokens, educational)
     } else {
         println!("⚠️  Especifique um prompt (-p) ou use modo chat (--chat)");
         Ok(())
@@ -1381,43 +1331,76 @@ fn run_kernel_fusion_benchmark(
 
 /// 🎨 **GERAÇÃO DE TEXTO COM MODELO CARREGADO**
 fn generate_text_with_model(
-    _model: &MiniGPT,
+    model: &MiniGPT,
+    tokenizer: &tokenizer::BPETokenizer,
     prompt: &str,
     max_tokens: usize,
     educational: bool,
 ) -> Result<()> {
-    // Implementação simplificada - na prática, você precisaria
-    // implementar a lógica de geração usando o modelo carregado
     println!("🎨 Gerando texto com modelo carregado...");
     println!("💭 Prompt: {}", prompt);
     println!("🎯 Max tokens: {}", max_tokens);
-    
+
     if educational {
-        println!("📚 Modo educacional ativado");
+        let tokens = tokenizer.encode(prompt).map_err(|e| anyhow::anyhow!("{}", e))?;
+        println!("📚 Prompt tokenizado em {} tokens: {:?}", tokens.len(), tokens);
     }
-    
-    // TODO: Implementar geração real
-    println!("⚠️  Geração com modelo carregado ainda não implementada");
-    
+
+    let generated = model
+        .generate(prompt, max_tokens, tokenizer, 0.8)
+        .map_err(|e| anyhow::anyhow!("Erro ao gerar texto: {}", e))?;
+
+    println!("\n📝 Texto gerado:\n{}", generated);
+
     Ok(())
 }
 
 /// 💬 **CHAT INTERATIVO COM MODELO CARREGADO**
 fn interactive_chat_with_model(
-    _model: &MiniGPT,
+    model: &MiniGPT,
+    tokenizer: &tokenizer::BPETokenizer,
     educational: bool,
 ) -> Result<()> {
-    // Implementação simplificada - na prática, você precisaria
-    // implementar a lógica de chat usando o modelo carregado
+    use std::io::{self, Write};
+
     println!("💬 Chat interativo com modelo carregado...");
-    
+    println!("🔤 Vocabulário: {} tokens", tokenizer.vocab_size());
+    println!("💡 Digite suas mensagens e pressione Enter. Digite 'quit' ou 'exit' para sair.");
     if educational {
-        println!("📚 Modo educacional ativado");
+        println!("📚 Modo educacional ativado — cada prompt será mostrado tokenizado.");
     }
-    
-    // TODO: Implementar chat real
-    println!("⚠️  Chat com modelo carregado ainda não implementado");
-    
+
+    let temperature = 0.8;
+    let max_tokens = 100;
+
+    loop {
+        print!("\n🧑 Você: ");
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let input = input.trim();
+
+        if input.is_empty() {
+            continue;
+        }
+        if input == "quit" || input == "exit" || input == "sair" {
+            println!("👋 Até logo!");
+            break;
+        }
+
+        if educational {
+            let tokens = tokenizer.encode(input).map_err(|e| anyhow::anyhow!("{}", e))?;
+            println!("📚 Tokens: {:?}", tokens);
+        }
+
+        let response = model
+            .generate(input, max_tokens, tokenizer, temperature)
+            .map_err(|e| anyhow::anyhow!("Erro ao gerar resposta: {}", e))?;
+
+        println!("🤖 Mini-GPT: {}", response);
+    }
+
     Ok(())
 }
 
@@ -1525,7 +1508,7 @@ fn train_model(data_path: PathBuf, epochs: usize, device: &candle_core::Device) 
     // 3. **Backpropagation**: Calcula gradientes (direção para melhorar)
     // 4. **Optimization**: Ajusta pesos usando gradiente descendente
     // 5. Repete por várias épocas até convergir
-    let mut trainer = Trainer::new(model, tokenizer, device.clone());
+    let mut trainer = Trainer::new(model, tokenizer, device.clone()).map_err(|e| anyhow::anyhow!("{}", e))?;
     trainer.train(&tokens, epochs).map_err(|e| anyhow::anyhow!("{}", e))?;
     
     // 💾 **ETAPA 5: PERSISTÊNCIA DO MODELO TREINADO**

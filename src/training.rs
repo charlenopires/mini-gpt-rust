@@ -70,17 +70,65 @@
 //! 4. **Repetir milhares de vezes** (épocas)
 //! 5. **Resultado**: Escritor competente (modelo treinado)
 
-use crate::model::{MiniGPT, CheckpointMetadata};
+use crate::model::MiniGPT;
 use crate::tokenizer::BPETokenizer;
 use crate::chunking::{ChunkProcessor, ChunkingConfig, ChunkingStrategy};
 use candle_core::{Device, Tensor};
+use candle_nn::optim::Optimizer;
+use candle_optimisers::adam::{Adam, ParamsAdam};
 // use candle_nn::loss; // Removido - não utilizado
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::prelude::*;
+use serde::Serialize;
 use std::time::Instant;
 // use safetensors::SafeTensors; // Removido - não utilizado
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+/// 📡 **EVENTOS DE PROGRESSO DO TREINAMENTO**
+///
+/// Marcos emitidos durante `train_with_callback` para que um observador
+/// externo (a API web) acompanhe o treinamento real em andamento — sem
+/// precisar fazer parsing de `println!`. A CLI não usa isso (passa um
+/// callback vazio), então nada muda no terminal.
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type")]
+pub enum TrainingEvent {
+    Started {
+        total_epochs: usize,
+        total_steps: usize,
+        batch_size: usize,
+        learning_rate: f64,
+        total_tokens: usize,
+    },
+    ChunkingComplete {
+        chunk_count: usize,
+        avg_chunk_size: f32,
+        boundary_preservation_rate: f32,
+    },
+    Step {
+        epoch: usize,
+        step: usize,
+        total_steps: usize,
+        loss: f32,
+        best_loss: f32,
+        perplexity: f32,
+    },
+    EpochComplete {
+        epoch: usize,
+        total_epochs: usize,
+        avg_loss: f32,
+    },
+    SampleGenerated {
+        epoch: usize,
+        text: String,
+    },
+    Finished {
+        duration_secs: f32,
+        tokens_per_sec: f32,
+        final_loss: f32,
+    },
+}
 
 /// 🏋️‍♀️ **TREINADOR DE MODELO GPT**
 /// 
@@ -158,6 +206,12 @@ pub struct Trainer {
     current_step: usize,
     current_loss: f32,
     best_loss: f32,
+
+    /// 🧮 **OTIMIZADOR (ADAM)**
+    /// Aplica os gradientes calculados no backward pass aos pesos do modelo.
+    /// Sem isso, o backward pass apenas calcula gradientes que nunca são usados
+    /// e o modelo nunca aprende de fato.
+    optimizer: Adam,
 }
 
 impl Trainer {
@@ -202,7 +256,7 @@ impl Trainer {
     /// É como escolher o ritmo de estudo:
     /// - **GPU**: Estudar em grupo (batch grande) com ritmo moderado
     /// - **CPU**: Estudar sozinho (batch pequeno) com ritmo acelerado
-    pub fn new(model: MiniGPT, tokenizer: BPETokenizer, device: Device) -> Self {
+    pub fn new(model: MiniGPT, tokenizer: BPETokenizer, device: Device) -> Result<Self> {
         // 🚀 **DETECÇÃO E OTIMIZAÇÃO AUTOMÁTICA DE HARDWARE**
         let (batch_size, learning_rate) = match device {
             Device::Metal(_) => {
@@ -237,9 +291,18 @@ impl Trainer {
         };
         
         let chunk_processor = ChunkProcessor::new(chunking_config);
-        
+
+        // 🧮 **OTIMIZADOR**
+        // Adam sobre todas as variáveis treináveis do modelo (VarMap) — é isso
+        // que de fato aplica os gradientes calculados pelo backward pass.
+        let optimizer_params = ParamsAdam {
+            lr: learning_rate,
+            ..Default::default()
+        };
+        let optimizer = Adam::new(model.varmap().all_vars(), optimizer_params)?;
+
         // 🏗️ **CONSTRUÇÃO DO TREINADOR OTIMIZADO**
-        Self {
+        Ok(Self {
             model,
             tokenizer,
             chunk_processor,
@@ -249,7 +312,8 @@ impl Trainer {
             current_step: 0,
             current_loss: f32::INFINITY,
             best_loss: f32::INFINITY,
-        }
+            optimizer,
+        })
     }
     
     /// 🏋️‍♀️ **MÉTODO PRINCIPAL DE TREINAMENTO**
@@ -311,42 +375,82 @@ impl Trainer {
     /// - **Backward**: Professor corrige e explica erros
     /// - **Update**: Aluno aprende e melhora
     pub fn train(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
-        self.train_with_chunking(tokens, epochs)
+        self.train_with_callback(tokens, epochs, |_| {})
     }
-    
+
+    /// 🏋️‍♀️ **TREINAMENTO COM OBSERVADOR DE EVENTOS**
+    ///
+    /// Mesmo fluxo de `train()`, mas chama `on_event` a cada marco do
+    /// treinamento (início, chunking, cada step, fim de época, amostra
+    /// gerada, conclusão). Usado pela API web para transmitir o progresso
+    /// real em tempo real via WebSocket — a CLI usa `train()`, que passa um
+    /// callback vazio, então o comportamento do terminal não muda.
+    pub fn train_with_callback(
+        &mut self,
+        tokens: &[usize],
+        epochs: usize,
+        mut on_event: impl FnMut(TrainingEvent),
+    ) -> Result<()> {
+        self.train_with_chunking_impl(tokens, epochs, &mut on_event)
+    }
+
     /// ✂️ **TREINAMENTO COM CHUNKING INTELIGENTE**
-    /// 
+    ///
     /// Versão avançada que usa o sistema de chunking para otimizar
     /// a qualidade dos dados de treinamento e melhorar a convergência.
     pub fn train_with_chunking(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
+        self.train_with_chunking_impl(tokens, epochs, &mut |_| {})
+    }
+
+    fn train_with_chunking_impl(
+        &mut self,
+        tokens: &[usize],
+        epochs: usize,
+        on_event: &mut dyn FnMut(TrainingEvent),
+    ) -> Result<()> {
         // 📝 **PREPARAÇÃO DO TEXTO PARA CHUNKING**
         let text = self.tokenizer.decode(tokens)?;
-        
+
         // ✂️ **APLICAÇÃO DO CHUNKING INTELIGENTE**
         let chunks = self.chunk_processor.process_text(&text, &self.tokenizer)
             .map_err(|e| format!("Erro no chunking: {}", e))?;
-        
+
         println!("✂️ Chunking aplicado: {} chunks gerados", chunks.len());
-        
+
         // 📊 **ESTATÍSTICAS DE CHUNKING**
         let stats = self.chunk_processor.calculate_statistics(&chunks);
         println!("📊 Estatísticas de Chunking:");
         println!("   📏 Tamanho médio: {:.1} tokens", stats.avg_chunk_size);
         println!("   📐 Variação: {} - {} tokens", stats.min_chunk_size, stats.max_chunk_size);
         println!("   🎯 Taxa de preservação: {:.1}%", stats.boundary_preservation_rate * 100.0);
-        
+
+        on_event(TrainingEvent::ChunkingComplete {
+            chunk_count: chunks.len(),
+            avg_chunk_size: stats.avg_chunk_size,
+            boundary_preservation_rate: stats.boundary_preservation_rate,
+        });
+
         // 🔄 **CONVERSÃO DE CHUNKS PARA TOKENS**
         let chunked_tokens: Vec<usize> = chunks.iter()
             .flat_map(|chunk| chunk.tokens.iter().map(|&t| t as usize))
             .collect();
-        
-        self.train_standard(&chunked_tokens, epochs)
+
+        self.train_standard_impl(&chunked_tokens, epochs, on_event)
     }
-    
+
     /// 🏋️‍♀️ **TREINAMENTO PADRÃO (SEM CHUNKING)**
-    /// 
+    ///
     /// Versão original do treinamento para compatibilidade.
     pub fn train_standard(&mut self, tokens: &[usize], epochs: usize) -> Result<()> {
+        self.train_standard_impl(tokens, epochs, &mut |_| {})
+    }
+
+    fn train_standard_impl(
+        &mut self,
+        tokens: &[usize],
+        epochs: usize,
+        on_event: &mut dyn FnMut(TrainingEvent),
+    ) -> Result<()> {
         let block_size = self.model.block_size();
         
         // 📋 **RELATÓRIO INICIAL DE CONFIGURAÇÃO**
@@ -365,7 +469,15 @@ impl Trainer {
         
         println!("  • Batches criados: {}", batches.len());
         println!("  • Steps totais: {}", total_steps);
-        
+
+        on_event(TrainingEvent::Started {
+            total_epochs: epochs,
+            total_steps,
+            batch_size: self.batch_size,
+            learning_rate: self.learning_rate,
+            total_tokens: tokens.len(),
+        });
+
         // 📊 **CONFIGURAÇÃO DA BARRA DE PROGRESSO**
         // Interface visual para acompanhar o treinamento
         let pb = ProgressBar::new(total_steps as u64);
@@ -453,7 +565,10 @@ impl Trainer {
                         // - Mede a "distância" entre distribuição predita e real
                         // - Penaliza predições muito confiantes e incorretas
                         // - Recompensa predições corretas e bem calibradas
-                        let _grads = loss_tensor.backward()?;
+                        //
+                        // `backward_step` calcula os gradientes E aplica a atualização
+                        // Adam nos pesos do VarMap — sem isso o modelo nunca aprende.
+                        self.optimizer.backward_step(&loss_tensor)?;
                         
                         // 📈 **ATUALIZAÇÃO DA BARRA DE PROGRESSO**
                         // 
@@ -462,9 +577,18 @@ impl Trainer {
                         // - Valor instantâneo da loss
                         // - Estimativa de tempo restante
                         pb.set_message(format!(
-                            "Época {}/{} | Loss: {:.4} | Best: {:.4}", 
+                            "Época {}/{} | Loss: {:.4} | Best: {:.4}",
                             epoch, epochs, loss_value, self.best_loss
                         ));
+
+                        on_event(TrainingEvent::Step {
+                            epoch,
+                            step: self.current_step,
+                            total_steps,
+                            loss: loss_value,
+                            best_loss: self.best_loss,
+                            perplexity: loss_value.exp(),
+                        });
                     } else {
                         // 🚨 **DETECÇÃO DE INSTABILIDADE NUMÉRICA**
                         println!("⚠️ Loss inválido detectado: {}", loss_value);
@@ -493,29 +617,36 @@ impl Trainer {
                 f32::NAN  // Fallback se nenhum batch foi processado
             };
             println!("\n📊 Época {} concluída | Loss médio: {:.4}", epoch, avg_loss);
-            
+
+            on_event(TrainingEvent::EpochComplete {
+                epoch,
+                total_epochs: epochs,
+                avg_loss,
+            });
+
             // 🎭 **GERAÇÃO DE EXEMPLOS DEMONSTRATIVOS**
-            // 
+            //
             // A cada 10 épocas, geramos texto de exemplo para:
             // - Monitorar qualitativamente o progresso do modelo
             // - Detectar problemas como repetição ou incoerência
             // - Motivar o usuário mostrando melhorias tangíveis
-            // 
+            //
             // 🧠 **Por que "O Brasil é"?**
             // - Prompt em português (nosso domínio de treinamento)
             // - Tópico amplo que permite criatividade
             // - Fácil de avaliar se o texto faz sentido
             if epoch % 10 == 0 {
                 println!("\n🎭 Gerando exemplo de texto (época {}):", epoch);
-                self.generate_sample("O Brasil é")?;
+                let sample = self.generate_sample("O Brasil é")?;
+                on_event(TrainingEvent::SampleGenerated { epoch, text: sample });
             }
         }
-        
+
         // 🏁 **FINALIZAÇÃO DO TREINAMENTO**
         pb.finish_with_message("Treinamento concluído!");
-        
+
         // ⏱️ **ESTATÍSTICAS DE PERFORMANCE**
-        // 
+        //
         // Medimos e reportamos métricas importantes:
         // - Tempo total de treinamento
         // - Throughput (tokens processados por segundo)
@@ -523,7 +654,13 @@ impl Trainer {
         let duration = start_time.elapsed();
         let total_tokens_processed = tokens.len() as f32 * epochs as f32;
         let tokens_per_second = total_tokens_processed / duration.as_secs_f32();
-        
+
+        on_event(TrainingEvent::Finished {
+            duration_secs: duration.as_secs_f32(),
+            tokens_per_sec: tokens_per_second,
+            final_loss: self.current_loss,
+        });
+
         println!("\n✅ Treinamento finalizado em {:.2}s", duration.as_secs_f32());
         println!("📈 Velocidade: {:.0} tokens/seg", tokens_per_second);
         println!("🔢 Total de tokens processados: {:.0}", total_tokens_processed);
@@ -692,19 +829,19 @@ impl Trainer {
     /// - **Progresso**: Palavras reconhecíveis, gramática básica
     /// - **Avançado**: Frases coerentes, contexto mantido
     /// - **Refinado**: Texto fluido e contextualmente apropriado
-    fn generate_sample(&self, prompt: &str) -> Result<()> {
+    fn generate_sample(&self, prompt: &str) -> Result<String> {
         println!("\n🎭 Exemplo de geração:");
         println!("Prompt: '{}'", prompt);
-        
+
         // 🎲 **GERAÇÃO COM PARÂMETROS OTIMIZADOS**
-        // 
+        //
         // Parâmetros escolhidos para demonstração:
         // - max_tokens: 20 (suficiente para avaliar coerência)
         // - temperature: 0.8 (equilibrio entre criatividade e coerência)
         match self.model.generate(prompt, 20, &self.tokenizer, 0.8) {
             Ok(generated) => {
                 println!("Gerado: '{}{}'", prompt, generated);
-                
+
                 // 💡 **DICAS DE INTERPRETAÇÃO**
                 if generated.trim().is_empty() {
                     println!("⚠️  Modelo ainda não aprendeu a gerar texto");
@@ -713,14 +850,15 @@ impl Trainer {
                 } else {
                     println!("✅ Modelo gerando texto reconhecível!");
                 }
+
+                Ok(format!("{}{}", prompt, generated))
             },
             Err(e) => {
                 println!("Erro na geração: {}", e);
                 println!("💡 Isso pode indicar problemas no modelo ou tokenizador");
+                Ok(String::new())
             },
         }
-        
-        Ok(())
     }
     
     /// 💾 **SALVAMENTO DO MODELO TREINADO**
@@ -770,80 +908,47 @@ impl Trainer {
     /// - Informações de treinamento
     pub fn save(&self, path: &str) -> Result<()> {
         use std::path::Path;
-        
-        println!("💾 Iniciando salvamento avançado do modelo...");
+
+        println!("💾 Iniciando salvamento do checkpoint...");
         println!("📍 Destino: {}", path);
         println!("📊 Parâmetros: ~{:.1}M", self.model.num_parameters() as f32 / 1_000_000.0);
-        
+
         // 🗂️ **CRIAR DIRETÓRIO SE NÃO EXISTIR**
         if let Some(parent) = Path::new(path).parent() {
             std::fs::create_dir_all(parent)
                 .map_err(|e| format!("Erro ao criar diretório {}: {}", parent.display(), e))?;
-            println!("📁 Diretório criado: {}", parent.display());
         }
-        
-        // 📋 **CRIAÇÃO DE METADADOS COMPLETOS**
-        let mut metadata = CheckpointMetadata::new(self.model.config().clone())
-            .with_training_info(
-                self.current_step,
-                self.current_loss,
-                self.learning_rate as f32,
-            )
-            .with_description(format!(
+
+        // 💾 **TENSORES + METADADOS REAIS**
+        // Delega para `MiniGPT::save_checkpoint`, que já salva os tensores em
+        // SafeTensors e escreve o sidecar `<path>.json` no formato que
+        // `load_from_checkpoint`/`list_checkpoints` sabem ler de volta.
+        self.model.save_checkpoint(
+            path,
+            Some(self.current_step),
+            Some(self.current_loss),
+            Some(self.learning_rate as f32),
+            Some(format!(
                 "Mini-GPT checkpoint - {} parâmetros, best loss: {:.4}",
                 self.model.num_parameters(),
                 self.best_loss
-            ));
-        
-        // 🔐 **CÁLCULO DE HASH DE INTEGRIDADE (OPCIONAL)**
-        // Por enquanto, usamos um hash simples baseado no timestamp
-        metadata.model_hash = Some(format!(
-            "checkpoint_{}",
-            chrono::Utc::now().timestamp()
-        ));
-        
-        println!("📋 Metadados preparados:");
-        println!("   🎯 Step: {}", metadata.training_step.unwrap_or(0));
-        println!("   📉 Loss atual: {:.4}", metadata.loss.unwrap_or(0.0));
-        println!("   🏆 Melhor loss: {:.4}", self.best_loss);
-        println!("   📈 Learning rate: {}", metadata.learning_rate.unwrap_or(0.0));
-        
-        // 💾 **SALVAMENTO COM METADADOS**
-        // 
-        // Usamos o sistema SafeTensors com metadados JSON no header
-        let metadata_json = serde_json::to_string(&metadata)
-            .map_err(|e| format!("Erro ao serializar metadados: {}", e))?;
-        
-        // Primeiro salvamos os tensores
-        match self.model.varmap().save(path) {
-            Ok(()) => {
-                // Agora precisamos adicionar os metadados ao arquivo SafeTensors
-                // Nota: Esta é uma implementação simplificada
-                // Em produção, usaríamos a API completa do SafeTensors
-                
-                println!("✅ Tensores salvos com sucesso!");
-                println!("🔒 Formato: SafeTensors com metadados");
-                println!("📏 Arquivo: {}", path);
-                
-                // 📊 **VERIFICAR TAMANHO DO ARQUIVO**
-                if let Ok(file_metadata) = std::fs::metadata(path) {
-                    let size_mb = file_metadata.len() as f64 / (1024.0 * 1024.0);
-                    println!("💽 Tamanho: {:.1} MB", size_mb);
-                }
-                
-                // 📝 **SALVAR METADADOS EM ARQUIVO SEPARADO**
-                let metadata_path = format!("{}.metadata.json", path);
-                std::fs::write(&metadata_path, metadata_json)
-                    .map_err(|e| format!("Erro ao salvar metadados: {}", e))?;
-                
-                println!("📋 Metadados salvos em: {}", metadata_path);
-                println!("🎉 Checkpoint completo salvo com sucesso!");
-            }
-            Err(e) => {
-                return Err(format!("Erro ao salvar modelo: {}", e).into());
-            }
+            )),
+        ).map_err(|e| format!("Erro ao salvar checkpoint: {}", e))?;
+
+        // 🔤 **TOKENIZER**
+        // Sem isso, um checkpoint carregado depois não sabe decodificar seus
+        // próprios tokens — o vocabulário BPE precisa acompanhar os pesos.
+        let tokenizer_path = format!("{}.tokenizer.json", path);
+        self.tokenizer.save_json(&tokenizer_path)
+            .map_err(|e| format!("Erro ao salvar tokenizer: {}", e))?;
+        println!("🔤 Tokenizer salvo em: {}", tokenizer_path);
+
+        if let Ok(file_metadata) = std::fs::metadata(path) {
+            let size_mb = file_metadata.len() as f64 / (1024.0 * 1024.0);
+            println!("💽 Tamanho: {:.1} MB", size_mb);
         }
-        
+        println!("🎉 Checkpoint completo salvo com sucesso!");
+
         Ok(())
     }
     
